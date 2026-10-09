@@ -1,0 +1,18 @@
+/* Module tokens. Every module uses the same KoreFi brand palette — Finance, Operations and
+   Growth are told apart by their illustrated cowork (see components/module/Illustration.tsx), not by
+   colour. Components read these --module-* names so a per-module accent could be reintroduced
+   in one place:  [data-module="finance"] { --module-strong: ...; }
+     --module-strong  fills that carry a label, and text on a tint
+     --module-mark    decorative strokes and dots
+     --module-tint    selected / hover backgrounds
+     --module-soft    quiet panels
+     --module-line    hairlines on tinted surfaces
+     --module-radius  corner radius of module surfaces */
+[data-module] {
+  --module-strong: var(--brand-1100);
+  --module-mark: var(--brand-900);
+  --module-tint: var(--brand-400);
+  --module-soft: var(--brand-200);
+  --module-line: var(--brand-600);
+  --module-radius: var(--radius-medium);
+}

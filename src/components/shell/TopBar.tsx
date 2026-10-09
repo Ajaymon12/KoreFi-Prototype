@@ -1,0 +1,20 @@
+import Image from "next/image";
+import { LocationSwitcher } from "./LocationSwitcher";
+import { MobileNav } from "./MobileNav";
+import { ProfileMenu } from "./ProfileMenu";
+
+// CuGlobalActionsBar (Figma 337:22219): wordmark, location switcher, account.
+export function TopBar() {
+  return (
+    <header className="flex h-12 shrink-0 items-center justify-between gap-2 px-2 pt-1 lg:h-[42px] lg:px-3 lg:pt-1.5 lg:pb-1">
+      <div className="flex min-w-0 items-center gap-1">
+        <MobileNav />
+        <Image src="/dashboard/korefi-logo.svg" alt="KoreFi" width={83.88} height={20} priority unoptimized className="ml-1 shrink-0 lg:ml-2 [.dark_&]:invert" />
+      </div>
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <LocationSwitcher />
+        <ProfileMenu />
+      </div>
+    </header>
+  );
+}

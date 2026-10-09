@@ -1,0 +1,21 @@
+/* Data-viz tokens, checked with the dataviz palette validator (CVD + lightness + contrast) against
+   each mode's chart surface. Declared in both mode blocks on purpose: a custom property that points
+   at a base step resolves where it's declared, so a `.dark` subtree needs its own copy. */
+:root,
+.light {
+  --chart-won: var(--green-900);
+  --chart-open: var(--amber-800);
+  --chart-lost: var(--red-900);
+  --chart-neutral: var(--gray-900);
+  --chart-series: var(--blue-900);
+  --chart-track: var(--gray-500);
+}
+
+.dark {
+  --chart-won: var(--green-900);
+  --chart-open: var(--amber-1100);
+  --chart-lost: var(--red-900);
+  --chart-neutral: var(--gray-900);
+  --chart-series: var(--blue-900);
+  --chart-track: var(--gray-500);
+}

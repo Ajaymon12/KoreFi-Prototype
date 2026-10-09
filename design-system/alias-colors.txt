@@ -1,0 +1,49 @@
+Brand/Lightest|brand/600|var(--color-primary)|Brand accent (#F76808). Brand marks, illustrations, highlights and large non-text shapes. Not for text, and not as a fill behind white labels.
+Brand/Light|brand/700|var(--color-primary)|Brand accent (#F76808). Brand marks, illustrations, highlights and large non-text shapes. Not for text, and not as a fill behind white labels.
+Brand/Primary Light|brand/800|var(--color-primary)|Brand accent (#F76808). Brand marks, illustrations, highlights and large non-text shapes. Not for text, and not as a fill behind white labels.
+Brand/Primary|brand/900|var(--color-primary)|Brand accent (#F76808). Brand marks, illustrations, highlights and large non-text shapes. Not for text, and not as a fill behind white labels.
+Brand/Primary Solid|brand/1100|var(--color-primary-solid)|Fill for primary buttons and solid brand surfaces. Pair with Text/Inverse Primary for labels.
+Text/Primary|gray/1200|var(--color-text-primary)|Primary text: body copy, headings, labels and button text.
+Text/Secondary|gray/1100|var(--color-text-secondary)|Supporting text: descriptions, helper text and metadata.
+Text/Tertiary|gray/1100|var(--color-text-tertiary)|Low-emphasis text such as placeholders and captions. Same value as Secondary for now so it meets AA.
+Text/Disabled|gray/800|var(--color-text-disabled)|Text in disabled controls only. Exempt from contrast rules; never use for readable content.
+Text/Inverse Primary|gray/100|var(--color-text-inverse-primary)|Text and icons on solid fills: Primary Solid, {Status}/Darkest and inverted (Text/Primary) surfaces.
+Text/Inverse Secondary|gray/300|var(--color-text-inverse-secondary)|Secondary text on inverted surfaces.
+Text/Clickable|brand/1100|var(--color-text-clickable)|Links and text buttons.
+Text/Information|blue/1100|var(--color-text-information)|Informational text and icons.
+Text/Success|green/1100|var(--color-text-success)|Success text and icons.
+Text/Warning|amber/1100|var(--color-text-warning)|Warning text and icons (use this, not Warning/Default, for icons on white).
+Text/Danger|red/1100|var(--color-text-danger)|Error text, validation messages and destructive-action icons.
+Background/Primary|gray/200|var(--color-background-primary)|Page / app background.
+Background/Secondary|gray/100|var(--color-background-secondary)|Cards, panels, modals and inputs placed on Background/Primary.
+Border/Default|gray/600|var(--color-border-default)|Dividers and decorative card borders. Not for input boundaries (below 3:1).
+Border/Darker|gray/800|var(--color-border-darker)|Stronger dividers, table borders and hover borders.
+Border/Input|gray/900|var(--color-border-input)|Boundaries of inputs, checkboxes, radios and other controls (meets 3:1).
+Focus/Primary|brand/1100|var(--color-focus-primary)|Default focus ring for interactive elements.
+Focus/Secondary|brand/1000|var(--color-focus-secondary)|Alternate focus ring, e.g. on tinted or brand surfaces.
+Focus/Danger|red/900|var(--color-focus-danger)|Focus ring for fields in an error state.
+Success/Lightest|green/200|var(--color-success-lightest)|Subtle background for success banners, alerts and badges.
+Success/Light|green/400|var(--color-success-light)|Hover background and subtle border for success surfaces.
+Success/Default|green/900|var(--color-success-default)|Solid success fill for large shapes, progress bars and indicators. Not for small text or icons on white.
+Success/Dark|green/1000|var(--color-success-dark)|Hover / pressed state for success solid fills.
+Success/Darkest|green/1100|var(--color-success-darkest)|Success button fill (with Text/Inverse Primary label) and success text on Success/Lightest.
+Info/Lightest|blue/200|var(--color-info-lightest)|Subtle background for info banners, alerts and badges.
+Info/Light|blue/400|var(--color-info-light)|Hover background and subtle border for info surfaces.
+Info/Default|blue/900|var(--color-info-default)|Solid info fill for large shapes, progress bars and indicators. Not for small text or icons on white.
+Info/Dark|blue/1000|var(--color-info-dark)|Hover / pressed state for info solid fills.
+Info/Darkest|blue/1100|var(--color-info-darkest)|Info button fill (with Text/Inverse Primary label) and info text on Info/Lightest.
+Warning/Lightest|amber/200|var(--color-warning-lightest)|Subtle background for warning banners, alerts and badges.
+Warning/Light|amber/400|var(--color-warning-light)|Hover background and subtle border for warning surfaces.
+Warning/Default|amber/900|var(--color-warning-default)|Solid warning fill for large shapes, progress bars and indicators. Not for small text or icons on white.
+Warning/Dark|amber/1000|var(--color-warning-dark)|Hover / pressed state for warning solid fills.
+Warning/Darkest|amber/1100|var(--color-warning-darkest)|Warning button fill (with Text/Inverse Primary label) and warning text on Warning/Lightest.
+Danger/Lightest|red/200|var(--color-danger-lightest)|Subtle background for danger banners, alerts and badges.
+Danger/Light|red/400|var(--color-danger-light)|Hover background and subtle border for danger surfaces.
+Danger/Default|red/900|var(--color-danger-default)|Solid danger fill for large shapes, progress bars and indicators. Not for small text or icons on white.
+Danger/Dark|red/1000|var(--color-danger-dark)|Hover / pressed state for danger solid fills.
+Danger/Darkest|red/1100|var(--color-danger-darkest)|Danger button fill (with Text/Inverse Primary label) and danger text on Danger/Lightest.
+Neutral/Lightest|gray/200|var(--color-neutral-lightest)|Subtle background for neutral banners, alerts and badges.
+Neutral/Light|gray/400|var(--color-neutral-light)|Hover background and subtle border for neutral surfaces.
+Neutral/Default|gray/900|var(--color-neutral-default)|Solid neutral fill for large shapes, progress bars and indicators. Not for small text or icons on white.
+Neutral/Dark|gray/1000|var(--color-neutral-dark)|Hover / pressed state for neutral solid fills.
+Neutral/Darkest|gray/1100|var(--color-neutral-darkest)|Neutral button fill (with Text/Inverse Primary label) and neutral text on Neutral/Lightest.

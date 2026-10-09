@@ -1,0 +1,61 @@
+@import "tailwindcss";
+/* KoreFi Foundation tokens (generated from Figma — see design-system/FOUNDATION.md). */
+@import "./foundation.css";
+@import "./module-themes.css";
+@import "./chart-tokens.css";
+
+/* Viewport breakpoints (mobile-first: a prefix applies from that width up). Mirrored in
+   src/lib/breakpoints.ts, which lists the devices each one is tested on. Tailwind's own
+   sm–2xl values are kept so existing classes behave the same; 3xl adds large desktops.
+     base  0     phones (360–639)
+     sm    640   large phones, small tablets
+     md    768   tablets (portrait)
+     lg    1024  tablet landscape, small laptops — the full app shell starts here
+     xl    1280  laptops (13–14")
+     2xl   1536  desktops
+     3xl   1920  large desktops (1080p and up) */
+@theme {
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+  --breakpoint-3xl: 120rem;
+
+  /* Page entrance after a route change (app/(app)/template.tsx, app/onboarding/template.tsx).
+     Opacity only — a transform here would re-anchor fixed drawers and dialogs mid-animation. */
+  --animate-page-in: page-in 200ms ease-out;
+  @keyframes page-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@layer base {
+  /* Scrollbars: thin, only present when content overflows, and the thumb is visible only
+     while that area is scrolling (ScrollbarReveal sets data-scrolling, then clears it). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  [data-scrolling] {
+    scrollbar-color: var(--color-border-input) transparent;
+  }
+
+  body {
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+  }
+}
+
+/* Slow float for the glass shapes on the sign-up panel. */
+@keyframes kf-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.kf-float { animation: kf-float 7s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .kf-float { animation: none; }
+}

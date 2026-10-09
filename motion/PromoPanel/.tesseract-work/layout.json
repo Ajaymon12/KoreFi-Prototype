@@ -1,0 +1,3593 @@
+[
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 1,
+  "name": "Loop fade",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455.0,
+    515.0
+   ],
+   "position": [
+    455.0,
+    515.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "rect": {
+   "size": [
+    910,
+    1030
+   ],
+   "fillColor": [
+    0.07058823529411765,
+    0.06274509803921569,
+    0.054901960784313725,
+    1.0
+   ],
+   "roundness": 0
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 2,
+  "name": "Logo lockup",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    186.584,
+    452
+   ],
+   "scale": [
+    640.0,
+    640.0
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 3,
+  "name": "Wordmark K",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 35.8289,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 31.5879,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 28.1178,
+      "y": 12.2497
+     },
+     {
+      "type": "lineTo",
+      "x": 26.5955,
+      "y": 14.0391
+     },
+     {
+      "type": "lineTo",
+      "x": 26.5955,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 23.0365,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 23.0365,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 26.5955,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 26.5955,
+      "y": 9.20484
+     },
+     {
+      "type": "lineTo",
+      "x": 30.9847,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 35.3248,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 30.4212,
+      "y": 9.53107
+     },
+     {
+      "type": "lineTo",
+      "x": 35.8289,
+      "y": 17.6475
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 4,
+  "name": "Wordmark o",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 41.569,
+      "y": 17.9441
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 40.5212,
+      "c1y": 17.9441,
+      "c2x": 39.5654,
+      "c2y": 17.7002,
+      "x": 38.7021,
+      "y": 17.2125
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 37.8387,
+      "c1y": 16.7248,
+      "c2x": 37.1565,
+      "c2y": 16.0624,
+      "x": 36.6556,
+      "y": 15.2254
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 36.1613,
+      "c1y": 14.3884,
+      "c2x": 35.9142,
+      "c2y": 13.4723,
+      "x": 35.9142,
+      "y": 12.4771
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 35.9142,
+      "c1y": 11.4621,
+      "c2x": 36.1647,
+      "c2y": 10.5328,
+      "x": 36.6656,
+      "y": 9.68923
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 37.1665,
+      "c1y": 8.84562,
+      "c2x": 37.8485,
+      "c2y": 8.17997,
+      "x": 38.7119,
+      "y": 7.69226
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 39.582,
+      "c1y": 7.19796,
+      "c2x": 40.5442,
+      "c2y": 6.95081,
+      "x": 41.5986,
+      "y": 6.95081
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 42.6532,
+      "c1y": 6.95081,
+      "c2x": 43.612,
+      "c2y": 7.19796,
+      "x": 44.4756,
+      "y": 7.69226
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 45.3455,
+      "c1y": 8.17997,
+      "c2x": 46.0309,
+      "c2y": 8.84562,
+      "x": 46.5318,
+      "y": 9.68923
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 47.0327,
+      "c1y": 10.5328,
+      "c2x": 47.2831,
+      "c2y": 11.4621,
+      "x": 47.2831,
+      "y": 12.4771
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 47.2831,
+      "c1y": 13.4789,
+      "c2x": 47.0327,
+      "c2y": 14.3983,
+      "x": 46.5318,
+      "y": 15.2353
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 46.0309,
+      "c1y": 16.0657,
+      "c2x": 45.3421,
+      "c2y": 16.7248,
+      "x": 44.4656,
+      "y": 17.2125
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 43.5956,
+      "c1y": 17.7002,
+      "c2x": 42.63,
+      "c2y": 17.9441,
+      "x": 41.569,
+      "y": 17.9441
+     },
+     {
+      "type": "close"
+     },
+     {
+      "type": "moveTo",
+      "x": 41.5986,
+      "y": 14.8102
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 42.0403,
+      "c1y": 14.8102,
+      "c2x": 42.4389,
+      "c2y": 14.708,
+      "x": 42.7949,
+      "y": 14.5037
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 43.1574,
+      "c1y": 14.2994,
+      "c2x": 43.4407,
+      "c2y": 14.0193,
+      "x": 43.6451,
+      "y": 13.6634
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 43.856,
+      "c1y": 13.3009,
+      "c2x": 43.9614,
+      "c2y": 12.8989,
+      "x": 43.9614,
+      "y": 12.4573
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 43.9614,
+      "c1y": 12.0092,
+      "c2x": 43.856,
+      "c2y": 11.6038,
+      "x": 43.6451,
+      "y": 11.2413
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 43.4407,
+      "c1y": 10.8789,
+      "c2x": 43.1574,
+      "c2y": 10.5955,
+      "x": 42.7949,
+      "y": 10.3911
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 42.4389,
+      "c1y": 10.1868,
+      "c2x": 42.0403,
+      "c2y": 10.0847,
+      "x": 41.5986,
+      "y": 10.0847
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 41.1571,
+      "c1y": 10.0847,
+      "c2x": 40.7551,
+      "c2y": 10.1868,
+      "x": 40.3925,
+      "y": 10.3911
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 40.0367,
+      "c1y": 10.5955,
+      "c2x": 39.7533,
+      "c2y": 10.8789,
+      "x": 39.5424,
+      "y": 11.2413
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 39.338,
+      "c1y": 11.6038,
+      "c2x": 39.236,
+      "c2y": 12.0092,
+      "x": 39.236,
+      "y": 12.4573
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 39.236,
+      "c1y": 12.8989,
+      "c2x": 39.338,
+      "c2y": 13.3009,
+      "x": 39.5424,
+      "y": 13.6634
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 39.7533,
+      "c1y": 14.0193,
+      "c2x": 40.0367,
+      "c2y": 14.2994,
+      "x": 40.3925,
+      "y": 14.5037
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 40.7551,
+      "c1y": 14.708,
+      "c2x": 41.1571,
+      "c2y": 14.8102,
+      "x": 41.5986,
+      "y": 14.8102
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 5,
+  "name": "Wordmark r",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 54.6868,
+      "y": 6.96071
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 55.1153,
+      "c1y": 6.96071,
+      "c2x": 55.5404,
+      "c2y": 7.0332,
+      "x": 55.9622,
+      "y": 7.1782
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 56.3839,
+      "c1y": 7.32319,
+      "c2x": 56.7859,
+      "c2y": 7.53738,
+      "x": 57.1683,
+      "y": 7.82079
+     },
+     {
+      "type": "lineTo",
+      "x": 55.6952,
+      "y": 10.5394
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 55.2142,
+      "c1y": 10.1967,
+      "c2x": 54.7363,
+      "c2y": 10.0254,
+      "x": 54.2618,
+      "y": 10.0254
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 53.9124,
+      "c1y": 10.0254,
+      "c2x": 53.5862,
+      "c2y": 10.1209,
+      "x": 53.283,
+      "y": 10.3121
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 52.9864,
+      "c1y": 10.4966,
+      "c2x": 52.7459,
+      "c2y": 10.7734,
+      "x": 52.5613,
+      "y": 11.1425
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 52.3768,
+      "c1y": 11.505,
+      "c2x": 52.2846,
+      "c2y": 11.9334,
+      "x": 52.2846,
+      "y": 12.4277
+     },
+     {
+      "type": "lineTo",
+      "x": 52.2846,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 48.9431,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 48.9431,
+      "y": 7.16832
+     },
+     {
+      "type": "lineTo",
+      "x": 51.5135,
+      "y": 7.16832
+     },
+     {
+      "type": "lineTo",
+      "x": 52.0078,
+      "y": 8.4535
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 52.3044,
+      "c1y": 7.97897,
+      "c2x": 52.68,
+      "c2y": 7.61319,
+      "x": 53.1347,
+      "y": 7.35615
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 53.5896,
+      "c1y": 7.09251,
+      "c2x": 54.1069,
+      "c2y": 6.96071,
+      "x": 54.6868,
+      "y": 6.96071
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 6,
+  "name": "Wordmark e",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 60.0017,
+      "y": 13.4855
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 60.1862,
+      "c1y": 14.0127,
+      "c2x": 60.4926,
+      "c2y": 14.4214,
+      "x": 60.9211,
+      "y": 14.7113
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 61.3559,
+      "c1y": 14.9947,
+      "c2x": 61.8568,
+      "c2y": 15.1364,
+      "x": 62.4238,
+      "y": 15.1364
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 62.852,
+      "c1y": 15.1364,
+      "c2x": 63.2311,
+      "c2y": 15.0705,
+      "x": 63.5607,
+      "y": 14.9387
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 63.8967,
+      "c1y": 14.8003,
+      "c2x": 64.2099,
+      "c2y": 14.6059,
+      "x": 64.4998,
+      "y": 14.3555
+     },
+     {
+      "type": "lineTo",
+      "x": 66.0222,
+      "y": 16.5501
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 65.5279,
+      "c1y": 16.9917,
+      "c2x": 64.9579,
+      "c2y": 17.3344,
+      "x": 64.3119,
+      "y": 17.5783
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 63.6727,
+      "c1y": 17.8156,
+      "c2x": 62.9707,
+      "c2y": 17.9342,
+      "x": 62.2062,
+      "y": 17.9342
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 61.1582,
+      "c1y": 17.9342,
+      "c2x": 60.2158,
+      "c2y": 17.687,
+      "x": 59.3787,
+      "y": 17.1927
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 58.5418,
+      "c1y": 16.6984,
+      "c2x": 57.886,
+      "c2y": 16.0328,
+      "x": 57.4115,
+      "y": 15.1958
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 56.9436,
+      "c1y": 14.3587,
+      "c2x": 56.7095,
+      "c2y": 13.4492,
+      "x": 56.7095,
+      "y": 12.4672
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 56.7095,
+      "c1y": 11.4654,
+      "c2x": 56.9336,
+      "c2y": 10.5427,
+      "x": 57.3819,
+      "y": 9.69912
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 57.83,
+      "c1y": 8.85551,
+      "c2x": 58.4496,
+      "c2y": 8.18656,
+      "x": 59.2404,
+      "y": 7.69226
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 60.0379,
+      "c1y": 7.19796,
+      "c2x": 60.9375,
+      "c2y": 6.95081,
+      "x": 61.9393,
+      "y": 6.95081
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 63.04,
+      "c1y": 6.95081,
+      "c2x": 63.9857,
+      "c2y": 7.18149,
+      "x": 64.7766,
+      "y": 7.64283
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 65.5675,
+      "c1y": 8.09758,
+      "c2x": 66.1673,
+      "c2y": 8.73359,
+      "x": 66.5759,
+      "y": 9.55083
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 66.9845,
+      "c1y": 10.3681,
+      "c2x": 67.1887,
+      "c2y": 11.3073,
+      "x": 67.1887,
+      "y": 12.3683
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 67.1887,
+      "c1y": 12.7308,
+      "c2x": 67.1591,
+      "c2y": 13.1032,
+      "x": 67.0998,
+      "y": 13.4855
+     },
+     {
+      "type": "lineTo",
+      "x": 60.0017,
+      "y": 13.4855
+     },
+     {
+      "type": "close"
+     },
+     {
+      "type": "moveTo",
+      "x": 62.0778,
+      "y": 9.62992
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 61.5438,
+      "c1y": 9.62992,
+      "c2x": 61.0892,
+      "c2y": 9.77492,
+      "x": 60.7133,
+      "y": 10.0649
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 60.3443,
+      "c1y": 10.3549,
+      "c2x": 60.0874,
+      "c2y": 10.7734,
+      "x": 59.9423,
+      "y": 11.3204
+     },
+     {
+      "type": "lineTo",
+      "x": 64.134,
+      "y": 11.3204
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 63.9955,
+      "c1y": 10.7668,
+      "c2x": 63.7484,
+      "c2y": 10.3483,
+      "x": 63.3926,
+      "y": 10.0649
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 63.0432,
+      "c1y": 9.77492,
+      "c2x": 62.6049,
+      "c2y": 9.62992,
+      "x": 62.0778,
+      "y": 9.62992
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 7,
+  "name": "Wordmark F",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 72.6466,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 69.0876,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 69.0876,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 78.6078,
+      "y": 3.75762
+     },
+     {
+      "type": "lineTo",
+      "x": 78.6078,
+      "y": 6.9706
+     },
+     {
+      "type": "lineTo",
+      "x": 72.6466,
+      "y": 6.9706
+     },
+     {
+      "type": "lineTo",
+      "x": 72.6466,
+      "y": 9.92652
+     },
+     {
+      "type": "lineTo",
+      "x": 78.6078,
+      "y": 9.92652
+     },
+     {
+      "type": "lineTo",
+      "x": 78.6078,
+      "y": 12.9418
+     },
+     {
+      "type": "lineTo",
+      "x": 72.6466,
+      "y": 12.9418
+     },
+     {
+      "type": "lineTo",
+      "x": 72.6466,
+      "y": 17.6475
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 8,
+  "name": "Wordmark i",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 81.8562,
+      "y": 5.88312
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 81.4672,
+      "c1y": 5.88312,
+      "c2x": 81.1212,
+      "c2y": 5.79414,
+      "x": 80.8182,
+      "y": 5.61619
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 80.515,
+      "c1y": 5.43166,
+      "c2x": 80.2777,
+      "c2y": 5.1944,
+      "x": 80.1064,
+      "y": 4.9044
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 79.9415,
+      "c1y": 4.60782,
+      "c2x": 79.8592,
+      "c2y": 4.29805,
+      "x": 79.8592,
+      "y": 3.97512
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 79.8592,
+      "c1y": 3.65218,
+      "c2x": 79.9415,
+      "c2y": 3.34241,
+      "x": 80.1064,
+      "y": 3.04583
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 80.2777,
+      "c1y": 2.74925,
+      "c2x": 80.515,
+      "c2y": 2.51198,
+      "x": 80.8182,
+      "y": 2.33404
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 81.1212,
+      "c1y": 2.1495,
+      "c2x": 81.4706,
+      "c2y": 2.05723,
+      "x": 81.866,
+      "y": 2.05723
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 82.2549,
+      "c1y": 2.05723,
+      "c2x": 82.6009,
+      "c2y": 2.1495,
+      "x": 82.904,
+      "y": 2.33404
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 83.2072,
+      "c1y": 2.51198,
+      "c2x": 83.4412,
+      "c2y": 2.74925,
+      "x": 83.6059,
+      "y": 3.04583
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 83.7774,
+      "c1y": 3.34241,
+      "c2x": 83.863,
+      "c2y": 3.65218,
+      "x": 83.863,
+      "y": 3.97512
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 83.863,
+      "c1y": 4.30466,
+      "c2x": 83.7774,
+      "c2y": 4.61442,
+      "x": 83.6059,
+      "y": 4.9044
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 83.4412,
+      "c1y": 5.1944,
+      "c2x": 83.2072,
+      "c2y": 5.43166,
+      "x": 82.904,
+      "y": 5.61619
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 82.6009,
+      "c1y": 5.79414,
+      "c2x": 82.2517,
+      "c2y": 5.88312,
+      "x": 81.8562,
+      "y": 5.88312
+     },
+     {
+      "type": "close"
+     },
+     {
+      "type": "moveTo",
+      "x": 83.4874,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 80.1458,
+      "y": 17.6475
+     },
+     {
+      "type": "lineTo",
+      "x": 80.1458,
+      "y": 7.1683
+     },
+     {
+      "type": "lineTo",
+      "x": 83.4874,
+      "y": 7.1683
+     },
+     {
+      "type": "lineTo",
+      "x": 83.4874,
+      "y": 17.6475
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 9,
+  "name": "Mark notch",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 7.70817,
+      "y": 7.52459
+     },
+     {
+      "type": "lineTo",
+      "x": 3.45799,
+      "y": 7.52459
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 3.40664,
+      "c1y": 7.52459,
+      "c2x": 3.35906,
+      "c2y": 7.55157,
+      "x": 3.3327,
+      "y": 7.59566
+     },
+     {
+      "type": "lineTo",
+      "x": 0.132041,
+      "y": 12.9496
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 0.0738744,
+      "c1y": 13.0469,
+      "c2x": 0.143973,
+      "c2y": 13.1705,
+      "x": 0.257334,
+      "y": 13.1705
+     },
+     {
+      "type": "lineTo",
+      "x": 4.42663,
+      "y": 13.1705
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 4.4774,
+      "c1y": 13.1705,
+      "c2x": 4.52455,
+      "c2y": 13.1441,
+      "x": 4.55108,
+      "y": 13.1008
+     },
+     {
+      "type": "lineTo",
+      "x": 7.83263,
+      "y": 7.74684
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 7.89223,
+      "c1y": 7.64958,
+      "c2x": 7.82225,
+      "c2y": 7.52459,
+      "x": 7.70817,
+      "y": 7.52459
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 10,
+  "name": "Mark slash",
+  "parentLayerId": 2,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 18.5343,
+      "y": 0.000785664
+     },
+     {
+      "type": "lineTo",
+      "x": 14.0596,
+      "y": 0.000785664
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 14.0078,
+      "c1y": 0.000785664,
+      "c2x": 13.9598,
+      "c2y": 0.0282369,
+      "x": 13.9336,
+      "y": 0.0729206
+     },
+     {
+      "type": "lineTo",
+      "x": 7.0598,
+      "y": 11.7951
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 7.03411,
+      "c1y": 11.839,
+      "c2x": 7.03305,
+      "c2y": 11.893,
+      "x": 7.05701,
+      "y": 11.9378
+     },
+     {
+      "type": "lineTo",
+      "x": 11.3271,
+      "y": 19.9221
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 11.3525,
+      "c1y": 19.9696,
+      "c2x": 11.402,
+      "c2y": 19.9992,
+      "x": 11.4559,
+      "y": 19.9992
+     },
+     {
+      "type": "lineTo",
+      "x": 16.1397,
+      "y": 19.9992
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 16.2512,
+      "c1y": 19.9992,
+      "c2x": 16.3215,
+      "c2y": 19.8794,
+      "x": 16.2672,
+      "y": 19.7821
+     },
+     {
+      "type": "lineTo",
+      "x": 11.8843,
+      "y": 11.9386
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 11.8591,
+      "c1y": 11.8934,
+      "c2x": 11.8597,
+      "c2y": 11.8383,
+      "x": 11.8858,
+      "y": 11.7937
+     },
+     {
+      "type": "lineTo",
+      "x": 18.6603,
+      "y": 0.220502
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 18.7173,
+      "c1y": 0.123189,
+      "c2x": 18.6471,
+      "c2y": 0.000785664,
+      "x": 18.5343,
+      "y": 0.000785664
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.09019607843137255,
+       0.09019607843137255,
+       0.09019607843137255,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 11,
+  "name": "Tagline",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    455.0,
+    690
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "sourceText": {
+   "text": "Every dollar, accounted for.",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Regular",
+   "fontSize": 38,
+   "fillColor": [
+    0.37254901960784315,
+    0.35294117647058826,
+    0.3333333333333333,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 12,
+  "name": "Kicker",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455.0,
+    770
+   ],
+   "position": [
+    455.0,
+    770
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 13,
+  "name": "Kicker text",
+  "parentLayerId": 12,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    455.0,
+    779
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "Built for restaurant owners",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 24,
+   "fillColor": [
+    0.7725490196078432,
+    0.41568627450980394,
+    0.16470588235294117,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 14,
+  "name": "Kicker pill",
+  "parentLayerId": 12,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    180.0,
+    26.0
+   ],
+   "position": [
+    455.0,
+    770.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    360,
+    52
+   ],
+   "fillColor": [
+    1.0,
+    0.9137254901960784,
+    0.8549019607843137,
+    1.0
+   ],
+   "roundness": 26
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 15,
+  "name": "Recovery scene",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 16,
+  "name": "Headline",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    64,
+    206
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "KoreFi gets it back.",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 58,
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": -10
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 17,
+  "name": "Total",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    58,
+    470
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "$12,480",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 176,
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": -30
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 18,
+  "name": "Total label",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    66,
+    530
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "recovered this month",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Regular",
+   "fontSize": 34,
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    0.7
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 19,
+  "name": "Gain +$18.40",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    189,
+    676
+   ],
+   "position": [
+    189,
+    676
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 20,
+  "name": "Amount",
+  "parentLayerId": 19,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    189,
+    690
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$18.40",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 21,
+  "name": "Pill",
+  "parentLayerId": 19,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    189.0,
+    676.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 22,
+  "name": "Gain +$42.00",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455,
+    676
+   ],
+   "position": [
+    455,
+    676
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 23,
+  "name": "Amount",
+  "parentLayerId": 22,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    455,
+    690
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$42.00",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 24,
+  "name": "Pill",
+  "parentLayerId": 22,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    455.0,
+    676.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 25,
+  "name": "Gain +$6.25",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    721,
+    676
+   ],
+   "position": [
+    721,
+    676
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 26,
+  "name": "Amount",
+  "parentLayerId": 25,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    721,
+    690
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$6.25",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 27,
+  "name": "Pill",
+  "parentLayerId": 25,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    721.0,
+    676.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 28,
+  "name": "Gain +$73.10",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    189,
+    776
+   ],
+   "position": [
+    189,
+    776
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 29,
+  "name": "Amount",
+  "parentLayerId": 28,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    189,
+    790
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$73.10",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 30,
+  "name": "Pill",
+  "parentLayerId": 28,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    189.0,
+    776.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 31,
+  "name": "Gain +$11.90",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455,
+    776
+   ],
+   "position": [
+    455,
+    776
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 32,
+  "name": "Amount",
+  "parentLayerId": 31,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    455,
+    790
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$11.90",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 33,
+  "name": "Pill",
+  "parentLayerId": 31,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    455.0,
+    776.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 34,
+  "name": "Gain +$27.35",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    721,
+    776
+   ],
+   "position": [
+    721,
+    776
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 35,
+  "name": "Amount",
+  "parentLayerId": 34,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    721,
+    790
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "+$27.35",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 38,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 36,
+  "name": "Pill",
+  "parentLayerId": 34,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    125.0,
+    36.0
+   ],
+   "position": [
+    721.0,
+    776.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    250,
+    72
+   ],
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    1.0
+   ],
+   "roundness": 36
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 37,
+  "name": "Footer",
+  "parentLayerId": 15,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    64,
+    930
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "Delivery payouts \u00b7 Chargebacks \u00b7 Fees",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Regular",
+   "fontSize": 26,
+   "fillColor": [
+    0.09019607843137255,
+    0.09019607843137255,
+    0.09019607843137255,
+    0.62
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 38,
+  "name": "Sweep slash",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    10.4,
+    10.0
+   ],
+   "position": [
+    2310,
+    515.0
+   ],
+   "scale": [
+    30000,
+    30000
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 18.5343,
+      "y": 0.000785664
+     },
+     {
+      "type": "lineTo",
+      "x": 14.0596,
+      "y": 0.000785664
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 14.0078,
+      "c1y": 0.000785664,
+      "c2x": 13.9598,
+      "c2y": 0.0282369,
+      "x": 13.9336,
+      "y": 0.0729206
+     },
+     {
+      "type": "lineTo",
+      "x": 7.0598,
+      "y": 11.7951
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 7.03411,
+      "c1y": 11.839,
+      "c2x": 7.03305,
+      "c2y": 11.893,
+      "x": 7.05701,
+      "y": 11.9378
+     },
+     {
+      "type": "lineTo",
+      "x": 11.3271,
+      "y": 19.9221
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 11.3525,
+      "c1y": 19.9696,
+      "c2x": 11.402,
+      "c2y": 19.9992,
+      "x": 11.4559,
+      "y": 19.9992
+     },
+     {
+      "type": "lineTo",
+      "x": 16.1397,
+      "y": 19.9992
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 16.2512,
+      "c1y": 19.9992,
+      "c2x": 16.3215,
+      "c2y": 19.8794,
+      "x": 16.2672,
+      "y": 19.7821
+     },
+     {
+      "type": "lineTo",
+      "x": 11.8843,
+      "y": 11.9386
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 11.8591,
+      "c1y": 11.8934,
+      "c2x": 11.8597,
+      "c2y": 11.8383,
+      "x": 11.8858,
+      "y": 11.7937
+     },
+     {
+      "type": "lineTo",
+      "x": 18.6603,
+      "y": 0.220502
+     },
+     {
+      "type": "cubicTo",
+      "c1x": 18.7173,
+      "c1y": 0.123189,
+      "c2x": 18.6471,
+      "c2y": 0.000785664,
+      "x": 18.5343,
+      "y": 0.000785664
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.9803921568627451,
+       0.5764705882352941,
+       0.3058823529411765,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 39,
+  "name": "Orange field",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455.0,
+    515.0
+   ],
+   "position": [
+    455.0,
+    515.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "rect": {
+   "size": [
+    910,
+    1030
+   ],
+   "fillColor": [
+    0.9803921568627451,
+    0.5764705882352941,
+    0.3058823529411765,
+    1.0
+   ],
+   "roundness": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 40,
+  "name": "Cream field",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455.0,
+    515.0
+   ],
+   "position": [
+    455.0,
+    515.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 0
+  },
+  "rect": {
+   "size": [
+    910,
+    1030
+   ],
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "roundness": 0
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 41,
+  "name": "Leak scene",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 42,
+  "name": "Eyebrow",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    64,
+    150
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "RESTAURANT MONEY",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 22,
+   "fillColor": [
+    0.9803921568627451,
+    0.5764705882352941,
+    0.3058823529411765,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": 180
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 43,
+  "name": "Line 1",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    58,
+    290
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "Money slips",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 112,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": -35
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 44,
+  "name": "Line 2",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    58,
+    408
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "through",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 112,
+   "fillColor": [
+    0.9686274509803922,
+    0.9568627450980393,
+    0.9450980392156862,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": -35
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 45,
+  "name": "Line 3",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    58,
+    526
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "the cracks.",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 112,
+   "fillColor": [
+    0.9803921568627451,
+    0.5764705882352941,
+    0.3058823529411765,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "left",
+   "tracking": -35
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 46,
+  "name": "Loss \u2212$18.40",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    201,
+    722
+   ],
+   "position": [
+    201,
+    722
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": -8,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 47,
+  "name": "Amount",
+  "parentLayerId": 46,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    201,
+    735
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "\u2212$18.40",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 34,
+   "fillColor": [
+    1.0,
+    0.5411764705882353,
+    0.47843137254901963,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 48,
+  "name": "Pill",
+  "parentLayerId": 46,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    105.0,
+    32.0
+   ],
+   "position": [
+    201.0,
+    722.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    210,
+    64
+   ],
+   "fillColor": [
+    0.16470588235294117,
+    0.11372549019607843,
+    0.09803921568627451,
+    1.0
+   ],
+   "roundness": 32,
+   "strokeEnabled": true,
+   "strokeColor": [
+    0.35294117647058826,
+    0.19215686274509805,
+    0.1607843137254902,
+    1.0
+   ],
+   "strokeWidth": 2
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 49,
+  "name": "Loss \u2212$42.00",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    465,
+    682
+   ],
+   "position": [
+    465,
+    682
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 6,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 50,
+  "name": "Amount",
+  "parentLayerId": 49,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    465,
+    695
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "\u2212$42.00",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 34,
+   "fillColor": [
+    1.0,
+    0.5411764705882353,
+    0.47843137254901963,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 51,
+  "name": "Pill",
+  "parentLayerId": 49,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    105.0,
+    32.0
+   ],
+   "position": [
+    465.0,
+    682.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    210,
+    64
+   ],
+   "fillColor": [
+    0.16470588235294117,
+    0.11372549019607843,
+    0.09803921568627451,
+    1.0
+   ],
+   "roundness": 32,
+   "strokeEnabled": true,
+   "strokeColor": [
+    0.35294117647058826,
+    0.19215686274509805,
+    0.1607843137254902,
+    1.0
+   ],
+   "strokeWidth": 2
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 52,
+  "name": "Loss \u2212$6.25",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    715,
+    752
+   ],
+   "position": [
+    715,
+    752
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": -4,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 53,
+  "name": "Amount",
+  "parentLayerId": 52,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    715,
+    765
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "\u2212$6.25",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 34,
+   "fillColor": [
+    1.0,
+    0.5411764705882353,
+    0.47843137254901963,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 54,
+  "name": "Pill",
+  "parentLayerId": 52,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    105.0,
+    32.0
+   ],
+   "position": [
+    715.0,
+    752.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    210,
+    64
+   ],
+   "fillColor": [
+    0.16470588235294117,
+    0.11372549019607843,
+    0.09803921568627451,
+    1.0
+   ],
+   "roundness": 32,
+   "strokeEnabled": true,
+   "strokeColor": [
+    0.35294117647058826,
+    0.19215686274509805,
+    0.1607843137254902,
+    1.0
+   ],
+   "strokeWidth": 2
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 55,
+  "name": "Loss \u2212$73.10",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    305,
+    852
+   ],
+   "position": [
+    305,
+    852
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 10,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 56,
+  "name": "Amount",
+  "parentLayerId": 55,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    305,
+    865
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "\u2212$73.10",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 34,
+   "fillColor": [
+    1.0,
+    0.5411764705882353,
+    0.47843137254901963,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 57,
+  "name": "Pill",
+  "parentLayerId": 55,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    105.0,
+    32.0
+   ],
+   "position": [
+    305.0,
+    852.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    210,
+    64
+   ],
+   "fillColor": [
+    0.16470588235294117,
+    0.11372549019607843,
+    0.09803921568627451,
+    1.0
+   ],
+   "roundness": 32,
+   "strokeEnabled": true,
+   "strokeColor": [
+    0.35294117647058826,
+    0.19215686274509805,
+    0.1607843137254902,
+    1.0
+   ],
+   "strokeWidth": 2
+  }
+ },
+ {
+  "type": "createFxGroupLayer",
+  "compositionId": "main",
+  "layerId": 58,
+  "name": "Loss \u2212$11.90",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    625,
+    862
+   ],
+   "position": [
+    625,
+    862
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": -9,
+   "opacity": 100
+  }
+ },
+ {
+  "type": "createFxTextLayer",
+  "compositionId": "main",
+  "layerId": 59,
+  "name": "Amount",
+  "parentLayerId": 58,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    625,
+    875
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "sourceText": {
+   "text": "\u2212$11.90",
+   "fontFamily": "Google Sans Flex",
+   "fontStyle": "Medium",
+   "fontSize": 34,
+   "fillColor": [
+    1.0,
+    0.5411764705882353,
+    0.47843137254901963,
+    1.0
+   ],
+   "strokeWidth": 0,
+   "justification": "center",
+   "tracking": 0
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 60,
+  "name": "Pill",
+  "parentLayerId": 58,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    105.0,
+    32.0
+   ],
+   "position": [
+    625.0,
+    862.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    210,
+    64
+   ],
+   "fillColor": [
+    0.16470588235294117,
+    0.11372549019607843,
+    0.09803921568627451,
+    1.0
+   ],
+   "roundness": 32,
+   "strokeEnabled": true,
+   "strokeColor": [
+    0.35294117647058826,
+    0.19215686274509805,
+    0.1607843137254902,
+    1.0
+   ],
+   "strokeWidth": 2
+  }
+ },
+ {
+  "type": "createFxShapeLayer",
+  "compositionId": "main",
+  "layerId": 61,
+  "name": "Crack",
+  "parentLayerId": 41,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    0,
+    0
+   ],
+   "position": [
+    0,
+    0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "shape": {
+   "path": {
+    "commands": [
+     {
+      "type": "moveTo",
+      "x": 0,
+      "y": 960
+     },
+     {
+      "type": "lineTo",
+      "x": 300,
+      "y": 960
+     },
+     {
+      "type": "lineTo",
+      "x": 330,
+      "y": 990
+     },
+     {
+      "type": "lineTo",
+      "x": 360,
+      "y": 960
+     },
+     {
+      "type": "lineTo",
+      "x": 910,
+      "y": 960
+     },
+     {
+      "type": "lineTo",
+      "x": 910,
+      "y": 964
+     },
+     {
+      "type": "lineTo",
+      "x": 362,
+      "y": 964
+     },
+     {
+      "type": "lineTo",
+      "x": 330,
+      "y": 996
+     },
+     {
+      "type": "lineTo",
+      "x": 298,
+      "y": 964
+     },
+     {
+      "type": "lineTo",
+      "x": 0,
+      "y": 964
+     },
+     {
+      "type": "close"
+     }
+    ]
+   },
+   "strokes": [],
+   "fills": [
+    {
+     "paint": {
+      "type": "solid",
+      "color": [
+       0.22745098039215686,
+       0.18823529411764706,
+       0.16862745098039217,
+       1.0
+      ]
+     },
+     "fillRule": "nonZeroWinding",
+     "blendMode": "normal",
+     "opacity": 1
+    }
+   ]
+  }
+ },
+ {
+  "type": "createFxRectLayer",
+  "compositionId": "main",
+  "layerId": 62,
+  "name": "Dark field",
+  "parentLayerId": null,
+  "activeRange": {
+   "start": 0,
+   "duration": 9000
+  },
+  "transform": {
+   "anchorPoint": [
+    455.0,
+    515.0
+   ],
+   "position": [
+    455.0,
+    515.0
+   ],
+   "scale": [
+    100,
+    100
+   ],
+   "rotation": 0,
+   "opacity": 100
+  },
+  "rect": {
+   "size": [
+    910,
+    1030
+   ],
+   "fillColor": [
+    0.07058823529411765,
+    0.06274509803921569,
+    0.054901960784313725,
+    1.0
+   ],
+   "roundness": 0
+  }
+ }
+]

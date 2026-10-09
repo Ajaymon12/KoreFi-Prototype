@@ -1,0 +1,20 @@
+{
+ "$schema": "https://jerboa.dev/schemas/fx-composition/editable/v1/document.schema.json",
+ "formatVersion": 1,
+ "dimensions": {
+  "width": 1272,
+  "height": 860
+ },
+ "duration": 6.0,
+ "composition": {
+  "id": "main",
+  "layers": [],
+  "name": "Main"
+ },
+ "backgroundColor": [
+  0.9764705882352941,
+  0.9764705882352941,
+  0.9764705882352941,
+  1
+ ]
+}
