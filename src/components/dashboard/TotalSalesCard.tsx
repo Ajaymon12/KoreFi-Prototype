@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChartPie, ListTree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PERIOD } from "@/lib/period";
+import { asset } from "@/lib/asset";
 import { DEFINITIONS } from "@/lib/metrics";
 import { DefinitionTip, DeltaChip } from "./primitives";
 
@@ -72,9 +73,9 @@ export function TotalSalesCard({ netSales, delta, keep, keepCaption, weeks }: To
       {view === "chart" ? (
         <div className="relative mt-auto mb-3 h-[135px]" role="img" aria-label={`Net sales trending up, ${PERIOD.axis[0]} to ${PERIOD.axis[PERIOD.axis.length - 1]}`}>
           {/* eslint-disable-next-line @next/next/no-img-element -- exact Figma vector, stretched to the card */}
-          <img src="/dashboard/sales-area.svg" alt="" className="absolute inset-x-0 top-0 h-[116px] w-full" />
+          <img src={asset("/dashboard/sales-area.svg")} alt="" className="absolute inset-x-0 top-0 h-[116px] w-full" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/dashboard/sales-line.svg" alt="" className="absolute inset-x-0 top-0 h-[58px] w-full" />
+          <img src={asset("/dashboard/sales-line.svg")} alt="" className="absolute inset-x-0 top-0 h-[58px] w-full" />
           {PERIOD.axis.map((label, i) => (
             <span key={label} className="absolute top-[124px] -translate-x-1/2 text-body-sm leading-none text-(--color-text-secondary)" style={{ left: `${AXIS_X[i]}%` }}>
               {label}

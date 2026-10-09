@@ -1,3 +1,11 @@
+# KoreFi prototype
+
+Live prototype: **https://ajaymon12.github.io/KoreFi-Prototype/**
+
+Click "Log in" on the first screen to open the dashboard with demo data, or create an account to
+walk through onboarding. Everything is mock data stored in your browser; nothing is sent anywhere.
+The site republishes automatically on every push to `main` (see `.github/workflows/pages.yml`).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

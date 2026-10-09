@@ -3,11 +3,12 @@ import { fmtCents } from "@/lib/mockData";
 import { PERIOD } from "@/lib/period";
 import { channelName, daysLeft, reconcile, windowCloses } from "./dashboard";
 import type { Deposit, Dispute, DisputeStatus, Payout } from "./types";
+import { asset } from "@/lib/asset";
 
 // Turns source records into ledger rows (date, description, amount, status, and the detail the
 // drawer shows). Every row is a report of what happened — no step asks the owner to act.
 
-const logo = (source: string) => `/dashboard/${source}.png`;
+const logo = (source: string) => asset(`/dashboard/${source}.png`);
 const day = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 export const DISPUTE_STATUS: Record<DisputeStatus, { label: string; tone: LedgerRow["status"]["tone"] }> = {

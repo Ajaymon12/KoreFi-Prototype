@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { asset } from "@/lib/asset";
 import { cn } from "@/lib/utils";
 import { ThemeShell } from "@/components/shell/ThemeShell";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
@@ -12,7 +13,7 @@ export function AuthFrame({ children, right }: { children: React.ReactNode; righ
   return (
     <ThemeShell className="flex min-h-screen flex-col bg-(--color-background-primary) text-(--color-text-primary)">
       <header className="flex h-[72px] shrink-0 items-center justify-between px-6 sm:px-12">
-        <Image src="/get-started/logo.svg" alt="KoreFi" width={84} height={20} priority unoptimized className="ml-2 [.dark_&]:invert" />
+        <Image src={asset("/get-started/logo.svg")} alt="KoreFi" width={84} height={20} priority unoptimized className="ml-2 [.dark_&]:invert" />
         <div className="flex items-center gap-5">
           <ThemeToggle />
           {right ?? (

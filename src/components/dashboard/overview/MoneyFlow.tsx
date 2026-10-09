@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { sum } from "@/lib/sources/dashboard";
 import type { StoreRow } from "@/lib/sources/overview";
 import type { SourceId } from "@/lib/sources/types";
+import { asset } from "@/lib/asset";
 import { FoodCostSlider, ReportCard, useOverview } from "./OverviewState";
 
 // "Revenue & payout": the flow from what you sold to what you keep, in the neutral flow-chart
@@ -19,7 +20,7 @@ const m0 = (n: number) => `${n < 0 ? "−" : ""}$${Math.round(Math.abs(n)).toLoc
 const ct = (n: number) => `${Math.round(n * 100)}¢`;
 const pct = (a: number, b: number) => (b && a / b > 0 && a / b < 0.005 ? "under 1%" : `${Math.round((a / (b || 1)) * 100)}%`);
 
-const LOGOS: Partial<Record<SourceId, string>> = { doordash: "/dashboard/doordash.png", ubereats: "/dashboard/ubereats.png", grubhub: "/dashboard/grubhub.png" };
+const LOGOS: Partial<Record<SourceId, string>> = { doordash: asset("/dashboard/doordash.png"), ubereats: asset("/dashboard/ubereats.png"), grubhub: asset("/dashboard/grubhub.png") };
 export const STORE_DOTS = ["var(--blue-900)", "var(--brand-900)", "var(--green-900)", "var(--amber-800)"];
 
 /** A marketplace that's connected but sent no payout for the period (e.g. Grubhub not syncing). */

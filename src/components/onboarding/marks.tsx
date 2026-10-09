@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { asset } from "@/lib/asset";
 import { cn } from "@/lib/utils";
 import type { Brand, DeliveryApp } from "@/lib/org/types";
 
@@ -38,7 +39,7 @@ export function BrandMark({ brand, brands, size = "md" }: { brand: Brand; brands
   );
 }
 
-const APP_LOGO: Partial<Record<DeliveryApp, string>> = { doordash: "/dashboard/doordash.png", ubereats: "/dashboard/ubereats.png", grubhub: "/dashboard/grubhub.png" };
+const APP_LOGO: Partial<Record<DeliveryApp, string>> = { doordash: asset("/dashboard/doordash.png"), ubereats: asset("/dashboard/ubereats.png"), grubhub: asset("/dashboard/grubhub.png") };
 
 export function AppLogo({ app, size = 20 }: { app: DeliveryApp; size?: number }) {
   const src = APP_LOGO[app];

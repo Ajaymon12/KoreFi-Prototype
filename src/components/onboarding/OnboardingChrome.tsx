@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { asset } from "@/lib/asset";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeShell } from "@/components/shell/ThemeShell";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
@@ -34,7 +35,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
     <ThemeShell className="flex min-h-screen flex-col bg-(--color-background-secondary) text-(--color-text-primary)">
       <header className="sticky top-0 z-30 bg-(--color-background-secondary)">
         <div className="flex h-16 items-center justify-between px-6 sm:px-10">
-          <Image src="/get-started/logo.svg" alt="KoreFi" width={84} height={20} priority unoptimized className="[.dark_&]:invert" />
+          <Image src={asset("/get-started/logo.svg")} alt="KoreFi" width={84} height={20} priority unoptimized className="[.dark_&]:invert" />
           <div className="flex items-center gap-5 text-body-md">
             {name && <span className="hidden text-(--color-text-secondary) sm:inline">{name}</span>}
             <ThemeToggle />

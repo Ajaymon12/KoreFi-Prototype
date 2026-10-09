@@ -43,3 +43,6 @@ next-env.d.ts
 # generated animation frames and review images (rebuilt by motion/*/.tesseract-work/build.py + rebuild.sh)
 motion/**/.tesseract-work/frames/
 motion/**/.tesseract-work/checks/
+
+# static export for GitHub Pages
+/.next-pages/

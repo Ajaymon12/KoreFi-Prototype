@@ -8,6 +8,7 @@ export const HELP_URL = "mailto:support@korefi.com";
 export const locations = ["Casa Alvarez Kitchen", "Casa Alvarez – Midtown"];
 
 import { PERIOD } from "./period";
+import { asset } from "./asset";
 
 export const period = PERIOD;
 
@@ -85,10 +86,10 @@ export const commission = {
     { label: "Pickup ($2,563.61)", tone: "soft" },
   ] as LegendItem[],
   rows: [
-    { name: "Doordash", logo: "/dashboard/doordash.png", sales: "$14,147.35", delivery: "$3,237.94", pickup: "$118.84", rate: "23.7%" },
-    { name: "UberEats", logo: "/dashboard/ubereats.png", sales: "$8,328.35", delivery: "$1,810.24", pickup: "$34.98", rate: "22.2%" },
-    { name: "Grubhub", logo: "/dashboard/grubhub.png", sales: "-", delivery: "-", pickup: "-", rate: "-" },
-    { name: "All channels", logo: "/dashboard/grubhub.png", sales: "$22,475.70", delivery: "$5,048.18", pickup: "$153.82", rate: "23.1%", total: true },
+    { name: "Doordash", logo: asset("/dashboard/doordash.png"), sales: "$14,147.35", delivery: "$3,237.94", pickup: "$118.84", rate: "23.7%" },
+    { name: "UberEats", logo: asset("/dashboard/ubereats.png"), sales: "$8,328.35", delivery: "$1,810.24", pickup: "$34.98", rate: "22.2%" },
+    { name: "Grubhub", logo: asset("/dashboard/grubhub.png"), sales: "-", delivery: "-", pickup: "-", rate: "-" },
+    { name: "All channels", logo: asset("/dashboard/grubhub.png"), sales: "$22,475.70", delivery: "$5,048.18", pickup: "$153.82", rate: "23.1%", total: true },
   ] as ChannelRow[],
 };
 

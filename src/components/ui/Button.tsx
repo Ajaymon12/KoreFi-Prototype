@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { asset } from "@/lib/asset";
 
 /**
  * ❖ Button — Design System – Master File (Figma tvX0AUyr9MTicoUXE7Peil, page 24:2).
@@ -67,8 +68,8 @@ function Spinner({ size }: { size: number }) {
   return (
     <span
       aria-hidden
-      className="inline-block shrink-0 animate-spin bg-current [mask:url(/ds/spinner.svg)_center/contain_no-repeat]"
-      style={{ width: size, height: size }}
+      className="inline-block shrink-0 animate-spin bg-current [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]"
+      style={{ width: size, height: size, maskImage: `url(${asset("/ds/spinner.svg")})`, WebkitMaskImage: `url(${asset("/ds/spinner.svg")})` }}
     />
   );
 }
