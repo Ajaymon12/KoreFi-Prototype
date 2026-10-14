@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { LayoutDashboard, Table } from "lucide-react";
+import { Clock, LayoutDashboard, ShieldCheck, Table } from "lucide-react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PageTabs } from "@/components/shell/PageTabs";
 import { DashCard, CardTitle } from "@/components/dashboard/parts";
@@ -16,6 +16,7 @@ import {
   disputesByReason,
   disputesByStore,
   DISPUTE_WINDOW_DAYS,
+  DISPUTING_SINCE,
   daysLeft,
   windowCloses,
   sum,
@@ -33,6 +34,12 @@ const TABS = [
 
 const STATUSES: DisputeStatus[] = ["won", "open", "lost", "auto_refunded"];
 const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+/** Some claims win more often than others (cooking and ingredient errors vs missing items), so show it per reason. */
+const reasonWin = (all: Dispute[], reason: string) => {
+  const decided = all.filter((d) => d.reason === reason && (d.status === "won" || d.status === "lost"));
+  return decided.length ? `won ${decided.filter((d) => d.status === "won").length} of ${decided.length} decided` : "none decided yet";
+};
 
 /** "DoorDash $43.75 · Uber Eats $13.30" for a set of disputes. */
 const channelSplit = (rows: Dispute[]) =>
@@ -56,14 +63,14 @@ export function ChargebackView({ data }: { data: DashboardData }) {
       <PageHeader title="Chargeback" />
       <PageTabs tabs={TABS} active={active} basePath="/operations/chargeback" />
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <DataSources sources={marketplaces.map((m) => ({ id: m.id, name: m.name, status: m.status }))} syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
-        {active === "overview" ? <Overview disputes={disputes} /> : <ChargebackList rows={chargebackRows(disputes)} groupBy={groupBy} basePath="/operations/chargeback" />}
+        <DataSources syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
+        {active === "overview" ? <Overview disputes={disputes} orders={data.ops.reduce((a, o) => a + o.orders, 0)} /> : <ChargebackList rows={chargebackRows(disputes)} groupBy={groupBy} basePath="/operations/chargeback" />}
       </div>
     </>
   );
 }
 
-function Overview({ disputes }: { disputes: Dispute[] }) {
+function Overview({ disputes, orders }: { disputes: Dispute[]; orders: number }) {
   const stats = disputeStats(disputes);
   const by = (s: DisputeStatus) => disputes.filter((d) => d.status === s);
   const amounts = Object.fromEntries(STATUSES.map((s) => [s, sum(by(s).map((d) => d.amount))])) as Record<DisputeStatus, number>;
@@ -78,12 +85,30 @@ function Overview({ disputes }: { disputes: Dispute[] }) {
     <>
       <StatStrip
         stats={[
-          { label: "Charged back", value: fmt(stats.disputed), sub: `${stats.total} orders · ${PERIOD.range}` },
+          { label: "Charged back", value: fmt(stats.disputed), sub: `${stats.total} orders${orders ? ` · ${(((stats.total - counts.auto_refunded) / orders) * 100).toFixed(1)}% of delivered orders` : ""}` },
           { label: "Won back", value: fmt(stats.recovered), sub: `${counts.won} orders`, tone: "success" },
           { label: "Win rate", value: pct(stats.winRate), sub: `${counts.won} of ${decided} decided` },
           { label: "Being disputed", value: fmt(amounts.open), sub: left === undefined ? "KoreFi is on it" : `KoreFi is on it · next window closes in ${Math.max(left, 0)} day${left === 1 ? "" : "s"}`, tone: amounts.open ? "warning" : "default" },
         ]}
       />
+
+      <DashCard>
+        <CardTitle title="How KoreFi handles these for you" />
+        <ul className="mt-3 grid gap-3 text-body-md text-(--color-text-primary) md:grid-cols-3">
+          <li className="flex items-start gap-2.5">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
+            <span>KoreFi files every eligible chargeback for you, on every store. You don’t need to do anything.</span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <Clock className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
+            <span>Each app only accepts disputes for so long: {Object.entries(DISPUTE_WINDOW_DAYS).map(([s, n]) => `${channelName(s)} ${n} days`).join(", ")}. We file well before that.</span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <LayoutDashboard className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
+            <span>We’ve been filing since {new Date(`${DISPUTING_SINCE}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}. Earlier charges aren’t counted here.</span>
+          </li>
+        </ul>
+      </DashCard>
 
       <DashCard>
         <CardTitle title="Where every charged-back dollar went" />
@@ -99,9 +124,6 @@ function Overview({ disputes }: { disputes: Dispute[] }) {
             <WinRing rate={stats.winRate} won={counts.won} decided={decided} />
           </div>
           <p className="mt-3 text-center text-body-sm text-(--color-text-secondary)">Disputes still open and charges the app paid are not counted.</p>
-          <p className="mt-2 text-center text-body-sm text-(--color-text-secondary)">
-            Filing windows: {Object.entries(DISPUTE_WINDOW_DAYS).map(([s, n]) => `${channelName(s)} ${n} days`).join(" · ")}. KoreFi files before they close.
-          </p>
         </DashCard>
         <DashCard>
           <CardTitle title="Charged back vs won back" />
@@ -124,7 +146,7 @@ function Overview({ disputes }: { disputes: Dispute[] }) {
           <CardTitle title="What went wrong" />
           <div className="mt-4">
             <RankedBars
-              rows={disputesByReason(disputes).map<BarRow>((r) => ({ key: r.key, label: r.label, amount: r.total.amount, count: r.total.count, detail: channelSplit(disputes.filter((d) => d.reason === r.key)) }))}
+              rows={disputesByReason(disputes).map<BarRow>((r) => ({ key: r.key, label: r.label, amount: r.total.amount, count: r.total.count, detail: `${channelSplit(disputes.filter((d) => d.reason === r.key))} · ${reasonWin(disputes, r.key)}` }))}
             />
           </div>
         </DashCard>

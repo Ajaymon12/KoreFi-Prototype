@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function Page() {
-  redirect("/operations/chargeback");
+  redirect("/operations/overview");
 }

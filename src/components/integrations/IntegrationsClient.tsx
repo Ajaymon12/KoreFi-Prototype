@@ -113,7 +113,7 @@ export function IntegrationsClient({ connections }: { connections: SourceConnect
         <div className="max-w-xl space-y-2">
           <h2 id="int-discover" className="text-subtitle-lg text-(--color-text-primary)">Discover integrations</h2>
           <p className="text-body-md text-(--color-text-secondary)">
-            Connect the tools you already use and KoreFi fills in your dashboards. KoreFi only reads from them and never changes anything. Delivery apps like DoorDash, Uber Eats and Grubhub are connected for you by the KoreFi team.
+            Connect the tools you already use and KoreFi fills in your dashboards. KoreFi only reads from them and never changes anything. Delivery app data from DoorDash, Uber Eats and Grubhub needs no connection. The KoreFi team uploads it for you.
           </p>
         </div>
         {available.length > 0 ? <ul className={grid}>{available.map(tile)}</ul> : <p className="text-body-md text-(--color-text-secondary)">Everything is connected.</p>}

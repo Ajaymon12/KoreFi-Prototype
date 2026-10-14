@@ -10,6 +10,6 @@ export const CONNECTIONS: SourceConnection[] = [
   { id: "quickbooks", name: "QuickBooks", group: "accounting", connected: false, status: "healthy", lastSyncedAt: "" },
   { id: "doordash", name: "DoorDash", group: "marketplace", connected: true, status: "healthy", lastSyncedAt: "2026-10-08T11:38:00Z" },
   { id: "ubereats", name: "Uber Eats", group: "marketplace", connected: true, status: "syncing", lastSyncedAt: "2026-10-08T09:05:00Z" },
-  { id: "grubhub", name: "Grubhub", group: "marketplace", connected: true, status: "error", lastSyncedAt: "2026-10-06T18:42:00Z", detail: "Credentials expired. Reconnect to resume syncing." },
+  { id: "grubhub", name: "Grubhub", group: "marketplace", connected: true, status: "error", lastSyncedAt: "2026-10-06T18:42:00Z", detail: "Latest upload is out of date. KoreFi will refresh it." },
   { id: "mercury", name: "Mercury", group: "bank", connected: true, status: "healthy", lastSyncedAt: "2026-10-08T11:00:00Z" },
 ];

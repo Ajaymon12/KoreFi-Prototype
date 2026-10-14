@@ -123,7 +123,7 @@ export function LocationSwitcher() {
           className="flex h-7 max-w-[48vw] items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-neutral-lightest) pr-2 pl-1.5 text-body-md text-(--color-text-primary) hover:bg-(--color-neutral-light) sm:max-w-[320px]"
         >
           {active ? <BrandMark brand={active} brands={state.brands} size="sm" /> : <Store className="size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />}
-          <span className="truncate">{label}</span>
+          <span className="min-w-0 flex-1 truncate text-left">{label}</span>
           <ChevronDown className="size-3.5 shrink-0 text-(--color-text-secondary)" />
         </button>
 
@@ -230,7 +230,7 @@ export function LocationSwitcher() {
 function DemoSwitcher() {
   return (
     <button className="flex h-7 max-w-[44vw] items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-neutral-lightest) px-2 text-body-md text-(--color-text-primary) hover:bg-(--color-neutral-light) sm:max-w-none">
-      <span className="truncate">{demoLocations[0]}</span>
+      <span className="min-w-0 flex-1 truncate text-left">{demoLocations[0]}</span>
       <ChevronDown className="size-3.5 shrink-0 text-(--color-text-secondary)" />
     </button>
   );

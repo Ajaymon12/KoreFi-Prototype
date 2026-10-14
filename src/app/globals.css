@@ -2,6 +2,7 @@
 /* KoreFi Foundation tokens (generated from Figma — see design-system/FOUNDATION.md). */
 @import "./foundation.css";
 @import "./module-themes.css";
+@import "./ops-theme.css";
 @import "./chart-tokens.css";
 
 /* Viewport breakpoints (mobile-first: a prefix applies from that width up). Mirrored in
@@ -58,4 +59,14 @@
 .kf-float { animation: kf-float 7s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .kf-float { animation: none; }
+}
+
+/* Indeterminate progress sweep (admin file upload "Reading file…"). */
+@keyframes kf-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.kf-indeterminate { animation: kf-indeterminate 1.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .kf-indeterminate { animation: none; }
 }

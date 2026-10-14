@@ -8,8 +8,8 @@ import { AppLogo, BrandMark } from "@/components/onboarding/marks";
 import { update, useOnboarding } from "@/lib/org/store";
 import type { DeliveryApp, OnboardingState } from "@/lib/org/types";
 
-// Step 4: which delivery apps each location is on. The owner only ticks boxes — KoreFi's team
-// connects DoorDash, Uber Eats and Grubhub for them, so no logins are asked for here.
+// Step 4: which delivery apps each location is on. The owner only ticks boxes — KoreFi's ops team
+// uploads their DoorDash, Uber Eats and Grubhub data (there is no integration), so no logins are asked for here.
 
 const APPS: { id: DeliveryApp; label: string }[] = [
   { id: "doordash", label: "DoorDash" },
@@ -34,7 +34,7 @@ export default function Delivery() {
       wide
       title="Which delivery apps do you use?"
       status={`${live.filter((l) => l.deliveryApps.length).length} of ${live.length} locations on delivery apps`}
-      description="Tick the apps each location sells on. Our team connects them for you, so you won’t need to share any logins here."
+      description="Tick the apps each location sells on. Our ops team uploads your delivery app data, so there’s nothing to connect and no logins to share."
       onContinue={() => {
         update((s) => skip(s, false));
         router.push(advance("delivery", state.step));
@@ -108,7 +108,7 @@ export default function Delivery() {
 
         <p className="flex items-start gap-2.5 rounded-medium bg-(--color-neutral-lightest) p-3.5 text-body-sm text-(--color-text-secondary)">
           <Headset className="mt-0.5 size-4 shrink-0" aria-hidden />
-          After setup, a KoreFi specialist links each store’s delivery accounts. It usually takes 1–2 business days, and we’ll email you when they’re live.
+          After setup, our ops team uploads each store’s delivery app data. It usually takes 1–2 business days, and we’ll email you when it’s in.
         </p>
       </div>
     </StepShell>

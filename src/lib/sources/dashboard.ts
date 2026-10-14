@@ -1,5 +1,5 @@
 import { fetchGroup } from "./client";
-import type { Balance, Deposit, Dispute, DisputeStatus, Invoice, Payout, SalesSnapshot, SourceConnection, SourceId, StorefrontStatus, StoreOps } from "./types";
+import type { Balance, Deposit, Dispute, DisputeStatus, Invoice, Payout, Promo, SalesSnapshot, SourceConnection, SourceId, StorefrontStatus, StoreOps } from "./types";
 
 export type DashboardData = {
   connections: SourceConnection[];
@@ -8,6 +8,7 @@ export type DashboardData = {
   storefronts: StorefrontStatus[];
   ops: StoreOps[];
   payouts: Payout[];
+  promos: Promo[];
   deposits: Deposit[];
   balances: Balance[];
   invoices: Invoice[];
@@ -17,7 +18,7 @@ export type DashboardData = {
 export async function getDashboardData(): Promise<DashboardData> {
   const groups = await Promise.all((["pos", "accounting", "marketplace", "bank"] as const).map(fetchGroup));
   const results = groups.flat();
-  const collect = <K extends "sales" | "disputes" | "storefronts" | "ops" | "payouts" | "deposits" | "balance" | "invoices">(key: K) =>
+  const collect = <K extends "sales" | "disputes" | "storefronts" | "ops" | "payouts" | "promos" | "deposits" | "balance" | "invoices">(key: K) =>
     results.flatMap((r) => {
       const v = r.data[key];
       return v === undefined ? [] : Array.isArray(v) ? v : [v];
@@ -29,6 +30,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     storefronts: collect("storefronts") as StorefrontStatus[],
     ops: collect("ops") as StoreOps[],
     payouts: collect("payouts") as Payout[],
+    promos: collect("promos") as Promo[],
     deposits: collect("deposits") as Deposit[],
     balances: collect("balance") as Balance[],
     invoices: collect("invoices") as Invoice[],
@@ -38,6 +40,64 @@ export async function getDashboardData(): Promise<DashboardData> {
 // ---- Selectors ----
 
 export const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+
+/** What the P&L can cover: everything once a POS is connected, otherwise only the delivery apps. */
+export type DataMode = "consolidated" | "3pd-only";
+export const dataMode = (connections: SourceConnection[]): DataMode =>
+  connections.some((c) => c.group === "pos" && c.connected && c.status !== "error") ? "consolidated" : "3pd-only";
+
+/** Where an open dispute is in KoreFi's pipeline. Filing is automatic: a charge found today is
+ * filed on the next run, then waits on the app until it decides or its window closes. */
+export type DisputeStage = "detected" | "filed" | "awaiting" | "won" | "lost" | "auto_refunded";
+export function disputeStage(d: Dispute, asOf: string): DisputeStage {
+  if (d.status !== "open") return d.status;
+  const age = daysLeft(asOf, d.date);
+  return age < 1 ? "detected" : age < 3 ? "filed" : "awaiting";
+}
+export const STAGE_LABEL: Record<DisputeStage, string> = {
+  detected: "Found",
+  filed: "Filed by KoreFi",
+  awaiting: "Waiting on the app",
+  won: "Won back",
+  lost: "Lost",
+  auto_refunded: "App paid it",
+};
+
+/** Whether a marketplace payout has reached the bank: in full, short, or not yet. */
+export type PayoutStatus = "landed" | "short" | "due";
+export function payoutStatus(p: Payout, deposits: Deposit[]): { status: PayoutStatus; deposited: number; delta: number; depositDate?: string } {
+  const r = reconcile([p], deposits)[0];
+  const dep = deposits.find((x) => x.reference.toUpperCase().includes(r.channel.toUpperCase()));
+  return { status: !dep ? "due" : r.delta < 0 ? "short" : "landed", deposited: r.deposited, delta: r.delta, depositDate: dep?.date };
+}
+
+export type PayoutWeek = { start: string; end: string; label: string; gross: number; fees: number; net: number; byChannel: { source: SourceId; name: string; net: number }[] };
+
+/** The period's payouts split into weeks from the apps' daily sales, keeping each app's fee rate.
+ * Providers only report the period total, so this is an estimate (labelled as such on the page). */
+export function payoutWeeks(payouts: Payout[], ops: StoreOps[], start: string, weeks = 4): PayoutWeek[] {
+  const t0 = Date.parse(`${start}T12:00:00Z`);
+  const iso = (i: number) => new Date(t0 + i * 864e5).toISOString().slice(0, 10);
+  const short = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return Array.from({ length: weeks }, (_, w) => {
+    const from = iso(w * 7);
+    const to = iso(w * 7 + 6);
+    const byChannel = payouts.map((p) => {
+      const sales = sum(ops.filter((o) => o.source === p.source).flatMap((o) => o.daily.filter((d) => d.date >= from && d.date <= to).map((d) => d.sales)));
+      const feeRate = p.gross ? p.fees / p.gross : 0;
+      return { source: p.source, name: channelName(p.source), gross: sales, fees: sales * feeRate, net: sales * (1 - feeRate) };
+    });
+    return {
+      start: from,
+      end: to,
+      label: `${short(from)} – ${short(to)}`,
+      gross: sum(byChannel.map((c) => c.gross)),
+      fees: sum(byChannel.map((c) => c.fees)),
+      net: sum(byChannel.map((c) => c.net)),
+      byChannel: byChannel.map(({ source, name, net }) => ({ source, name, net })),
+    };
+  });
+}
 
 export function disputeStats(disputes: Dispute[]) {
   const won = disputes.filter((d) => d.status === "won");
@@ -53,6 +113,9 @@ export function disputeStats(disputes: Dispute[]) {
 
 /** Days a marketplace gives to dispute an error charge (Uber Eats 30, DoorDash 14). Grubhub has no published window. */
 export const DISPUTE_WINDOW_DAYS: Partial<Record<SourceId, number>> = { ubereats: 30, doordash: 14 };
+
+/** First day KoreFi filed disputes for this owner. Charges before it were handled elsewhere and are outside the numbers. */
+export const DISPUTING_SINCE = "2026-09-08";
 
 /** ISO date the dispute window closes, or undefined when the marketplace has no fixed window. */
 export function windowCloses(d: Dispute): string | undefined {

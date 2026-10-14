@@ -109,7 +109,7 @@ export function payoutRows(payouts: Payout[], deposits: Deposit[]): LedgerRow[] 
             { label: "Reached your bank", value: fmtCents(dep.amount) },
             { label: "Difference", value: short ? `−${fmtCents(Math.abs(r.delta))}` : "None" },
           ],
-          link: { label: "Open Payouts", href: "/finance/payout" },
+          link: { label: "Open Reconciliation", href: "/finance/reconciliation" },
         },
       });
     }
@@ -137,7 +137,7 @@ export function payoutRows(payouts: Payout[], deposits: Deposit[]): LedgerRow[] 
           { label: "Fees", value: fmtCents(p.fees) },
           { label: "Rate", value: `${rate}% of sales` },
         ],
-        link: { label: "Open What you keep", href: "/finance/what-you-keep" },
+        link: { label: "Open Fees & commissions", href: "/operations/fees-and-commissions" },
       },
     });
     return rows;

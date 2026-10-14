@@ -89,7 +89,7 @@ export function reset() {
   save(EMPTY);
 }
 
-export const resumeHref = (s: OnboardingState) => (s.completed ? "/home/overview" : STEP_HREF[s.step]);
+export const resumeHref = (s: OnboardingState) => (s.completed ? "/home" : STEP_HREF[s.step]);
 
 export function useOnboarding() {
   const raw = useSyncExternalStore(subscribe, read, () => null);

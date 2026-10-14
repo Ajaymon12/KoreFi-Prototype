@@ -1,8 +1,8 @@
 import type { SourceGroup, SourceId } from "./types";
 
 // What each source gives KoreFi, in plain words. Shown on the Integrations page cards and in the
-// connect dialog. Delivery apps (DoorDash, Uber Eats, Grubhub) are not here: KoreFi's team sets
-// those up by hand, so an owner never connects them.
+// connect dialog. Delivery apps (DoorDash, Uber Eats, Grubhub) are not here: there is no integration, the
+// KoreFi ops team uploads that data, so an owner never connects them.
 
 export type CatalogEntry = { blurb: string; reads: string[]; tint: string };
 
