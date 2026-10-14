@@ -6,6 +6,7 @@ import { Timeline, type TimelineStep } from "@/components/ui/DetailDrawer";
 import { useOnboarding } from "@/lib/org/store";
 import { orgName } from "@/lib/org/name";
 import { HELP_URL } from "@/lib/mockData";
+import { OWNER_HOME } from "@/lib/nav";
 
 // Mercury's "You're nearly there": what happens next on the left, an application-style timeline
 // on the right. Nothing here asks the owner to do anything — skipped steps are listed as neutral
@@ -23,7 +24,7 @@ export default function Ready() {
   const timeline: TimelineStep[] = [
     { label: "Account created", date: "Today", state: "done" },
     { label: pos ? `Syncing ${pos}` : "Setting up your locations", date: "About 1 hour", state: "current" },
-    { label: "Delivery apps connected by KoreFi", date: state.skipped.includes("delivery") ? "We’ll reach out to set these up" : "1–2 business days", state: "upcoming" },
+    { label: "Delivery app data uploaded by KoreFi", date: state.skipped.includes("delivery") ? "We’ll reach out to set these up" : "1–2 business days", state: "upcoming" },
     { label: "First full report", date: "Within 2 business days", state: "upcoming" },
   ];
 
@@ -46,7 +47,7 @@ export default function Ready() {
           )}
         </ul>
 
-        <Link href="/home/overview" className={buttonVariants({ type: "primary", size: "large", className: "mt-8" })}>
+        <Link href={OWNER_HOME} className={buttonVariants({ type: "primary", size: "large", className: "mt-8" })}>
           Go to dashboard
         </Link>
       </div>

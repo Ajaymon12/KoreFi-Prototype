@@ -49,7 +49,7 @@ export function OrderQualityView({ data }: { data: DashboardData }) {
       <PageHeader title="Order quality" />
       <PageTabs tabs={TABS} active={active} basePath="/operations/order-quality" />
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <DataSources sources={marketplaces.map((m) => ({ id: m.id, name: m.name, status: m.status }))} syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
+        <DataSources syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
         <ChannelFilter basePath="/operations/order-quality" channels={channelsIn(ops)} active={channel} params={active === "stores" ? { tab: "stores" } : {}} />
         {active === "overview" ? <Overview rows={rows} disputes={disputes} /> : <ByStore rows={rows} disputes={disputes} />}
       </div>

@@ -17,13 +17,13 @@ const pct = (n: number) => `${Math.round(n * 100)}%`;
 const total = (a: StatusAmounts) => a.won + a.open + a.lost + a.auto_refunded;
 
 /** Hover/focus tooltip around any mark. */
-export function Tip({ content, className, children, style }: { content: React.ReactNode; className?: string; children?: React.ReactNode; style?: React.CSSProperties }) {
+export function Tip({ content, className, children, style, align = "center" }: { content: React.ReactNode; className?: string; children?: React.ReactNode; style?: React.CSSProperties; align?: "left" | "center" | "right" }) {
   return (
     <span tabIndex={0} className={cn("group/tip relative outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)", className)} style={style}>
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-max max-w-56 -translate-x-1/2 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 py-1.5 text-body-sm text-(--color-text-primary) shadow-md group-hover/tip:block group-focus/tip:block"
+        className={cn("pointer-events-none absolute bottom-full z-20 mb-2 hidden w-max max-w-56 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 py-1.5 text-body-sm text-(--color-text-primary) shadow-md group-hover/tip:block group-focus/tip:block", align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -translate-x-1/2")}
       >
         {content}
       </span>

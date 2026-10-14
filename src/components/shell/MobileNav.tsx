@@ -1,34 +1,17 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FOOTER_MODULES, NAV_MODULES, isInModule, moduleEntryHref, type NavModule } from "@/lib/nav";
-import { useDismiss } from "@/components/dashboard/useDismiss";
+import { NavDrawer } from "./NavDrawer";
 
-// Below the lg breakpoint the icon rail and section sidebar don't fit, so the top bar gets a menu
-// button that opens this drawer: every module with its sections listed under it (the rail and
-// sidebar folded into one list), Integrations and Settings at the bottom.
+// The module app's drawer: every module with its sections listed under it (the rail and sidebar
+// folded into one list), Integrations and Settings at the bottom.
 
 export function MobileNav() {
   const path = usePathname();
-  const [open, setOpen] = useState(false);
-  const panel = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
-  useDismiss(panel, open, close);
 
-  // Keep the page behind still while the drawer is open.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
-  const row = (m: NavModule) => {
+  const row = (m: NavModule, close: () => void) => {
     const active = isInModule(path, m);
     return (
       <li key={m.id} data-module={m.id}>
@@ -68,32 +51,13 @@ export function MobileNav() {
   };
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label="Open menu"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className="grid size-8 place-items-center rounded-medium text-(--color-text-primary) hover:bg-(--color-neutral-light) lg:hidden"
-      >
-        <Menu className="size-5" aria-hidden />
-      </button>
-      {open && (
-        <div className="fixed inset-0 z-50 bg-black/30 lg:hidden">
-          <div ref={panel} role="dialog" aria-modal="true" aria-label="Menu" className="flex h-full w-[min(300px,85vw)] flex-col bg-(--color-background-secondary) shadow-[8px_0_32px_rgb(0_0_0/0.18)]">
-            <div className="flex h-12 items-center justify-between border-b border-(--color-border-default) px-3">
-              <span className="pl-1 text-subtitle-sm text-(--color-text-primary)">Menu</span>
-              <button type="button" aria-label="Close menu" onClick={close} className="grid size-8 place-items-center rounded-medium text-(--color-text-secondary) hover:bg-(--color-neutral-light)">
-                <X className="size-4" aria-hidden />
-              </button>
-            </div>
-            <nav aria-label="Modules" className="flex flex-1 flex-col overflow-y-auto p-2">
-              <ul className="space-y-0.5">{NAV_MODULES.map(row)}</ul>
-              <ul className="mt-auto space-y-0.5 border-t border-(--color-border-default) pt-2">{FOOTER_MODULES.map(row)}</ul>
-            </nav>
-          </div>
-        </div>
+    <NavDrawer>
+      {(close) => (
+        <>
+          <ul className="space-y-0.5">{NAV_MODULES.map((m) => row(m, close))}</ul>
+          <ul className="mt-auto space-y-0.5 border-t border-(--color-border-default) pt-2">{FOOTER_MODULES.map((m) => row(m, close))}</ul>
+        </>
       )}
-    </>
+    </NavDrawer>
   );
 }

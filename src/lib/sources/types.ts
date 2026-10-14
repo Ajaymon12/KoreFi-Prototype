@@ -108,6 +108,25 @@ export type Deposit = {
   reference: string;
 };
 
+export type PromoType = "percent_off" | "bogo" | "free_delivery" | "sponsored";
+
+/** One promotion or ad campaign on one marketplace, for one store, over the period. */
+export type Promo = {
+  source: SourceId;
+  store: string;
+  campaign: string;
+  type: PromoType;
+  /** What it cost you: funded discounts plus any ad fees. */
+  spend: number;
+  /** Orders that used it, and how many came from first-time customers. */
+  orders: number;
+  newCustomers: number;
+  /** Subtotal of those orders. */
+  sales: number;
+  /** Spend by week of the period, oldest first. */
+  weeklySpend: number[];
+};
+
 export type Balance = { source: SourceId; amount: number; previousAmount: number };
 
 export type Invoice = {
@@ -124,6 +143,7 @@ export type SourceData = {
   storefronts?: StorefrontStatus[];
   ops?: StoreOps[];
   payouts?: Payout[];
+  promos?: Promo[];
   deposits?: Deposit[];
   balance?: Balance;
   invoices?: Invoice[];

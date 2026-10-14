@@ -1,5 +1,5 @@
 import { RAW } from "./fixtures";
-import type { Dispute, DisputeStatus, Invoice, SourceData, SourceId, StoreOps } from "./types";
+import type { Dispute, DisputeStatus, Invoice, Promo, PromoType, SourceData, SourceId, StoreOps } from "./types";
 import { PERIOD } from "@/lib/period";
 
 // One adapter per provider: raw payload in, normalised records out. Swapping in a real API later
@@ -7,6 +7,7 @@ import { PERIOD } from "@/lib/period";
 
 const cents = (n: number) => n / 100;
 const disputeStatus = (s: string): DisputeStatus => (s === "won" || s === "lost" || s === "auto_refunded" ? s : "open");
+const promoType = (s: string): PromoType => (s === "BOGO" ? "bogo" : s === "FREE_DELIVERY" ? "free_delivery" : s === "SPONSORED" ? "sponsored" : "percent_off");
 
 // ---- Order detail ----
 // Providers only report period totals, so the daily and hourly curves are spread from them with a
@@ -114,6 +115,17 @@ const adapters: Record<SourceId, () => SourceData> = {
       cause: s.offline_reason ?? undefined,
       estLostRevenue: s.offline_minutes * 4.5,
     })),
+    promos: RAW.doordash.promotions.map<Promo>((p) => ({
+      source: "doordash",
+      store: p.store_name,
+      campaign: p.name,
+      type: promoType(p.kind),
+      spend: p.merchant_funded + p.ad_spend,
+      orders: p.orders,
+      newCustomers: p.new_customer_orders,
+      sales: p.order_subtotal,
+      weeklySpend: p.weekly_cost,
+    })),
   }),
   ubereats: () => ({
     payouts: RAW.ubereats.payouts.map((p) => ({
@@ -145,6 +157,17 @@ const adapters: Record<SourceId, () => SourceData> = {
       downtimeMinutes: s.minutes_offline,
       cause: s.reason ?? undefined,
       estLostRevenue: cents(s.lost_sales_cents),
+    })),
+    promos: RAW.ubereats.offers.map<Promo>((o) => ({
+      source: "ubereats",
+      store: o.restaurant,
+      campaign: o.title,
+      type: promoType(o.offer_type),
+      spend: cents(o.cost_cents + o.ad_cents),
+      orders: o.redemptions,
+      newCustomers: o.first_time_redemptions,
+      sales: cents(o.basket_cents),
+      weeklySpend: o.weekly_cost_cents.map(cents),
     })),
   }),
   grubhub: () => ({

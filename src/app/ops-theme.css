@@ -1,0 +1,36 @@
+/* Ops product theme. Same KoreFi brand (type, radii, neutrals, status colours) but a cool indigo
+   accent in place of the Owner app's orange, so staff always know which product they are in.
+   Only the --brand-* scale is swapped: every --color-primary / --color-text-clickable /
+   --color-focus-primary alias in foundation.css reads from it, and those aliases live on the same
+   .light / .dark element that carries data-product, so they re-resolve with no further overrides.
+   Applied via <ThemeShell product="ops">. Don't edit foundation.css (generated from Figma). */
+
+[data-product="ops"].light {
+  --brand-100: #fbfbff;
+  --brand-200: #f6f7ff;
+  --brand-300: #eceeff;
+  --brand-400: #e1e4ff;
+  --brand-500: #d2d7ff;
+  --brand-600: #bfc6ff;
+  --brand-700: #a3adfb;
+  --brand-800: #8591f2;
+  --brand-900: #4f5bd5;
+  --brand-1000: #4450c4;
+  --brand-1100: #3a44a8;
+  --brand-1200: #1c1f4d;
+}
+
+[data-product="ops"].dark {
+  --brand-100: #0f1020;
+  --brand-200: #141530;
+  --brand-300: #1a1c3f;
+  --brand-400: #20234d;
+  --brand-500: #272b5c;
+  --brand-600: #30356f;
+  --brand-700: #3d4488;
+  --brand-800: #4f58b0;
+  --brand-900: #5560dc;
+  --brand-1000: #7580f0;
+  --brand-1100: #8d97ff;
+  --brand-1200: #e6e8ff;
+}

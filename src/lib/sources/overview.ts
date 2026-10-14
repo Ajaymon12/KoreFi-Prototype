@@ -97,9 +97,12 @@ export function briefFor(d: DashboardData, scope: Scope, rows: StoreRow[]): Brie
 
 export type InsightTag = "onit" | "watch" | "good" | "info";
 export type Step = { label: string; value: string; src?: string; result?: "bad" | "good" | "plain" };
+/** The MVP report an insight belongs on. "overview" = only on the overview's top list. */
+export type InsightPage = "profit" | "payouts" | "chargebacks" | "promos" | "overview";
 export type Insight = {
   id: string;
   cowork: "finance" | "operations" | "growth";
+  page: InsightPage;
   tag: InsightTag;
   sure: boolean;
   big: string;
@@ -132,7 +135,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
       if (r.delta >= 0) continue;
       const dep = d.deposits.find((x) => x.reference.toUpperCase().includes(r.channel.toUpperCase()));
       out.push({
-        id: `gap-${p.source}`, cowork: "finance", tag: "onit", sure: true,
+        id: `gap-${p.source}`, cowork: "finance", page: "payouts", tag: "onit", sure: true,
         big: `−${fmtCents(-r.delta)}`, bigTone: "danger", bigSub: "not in your bank yet",
         title: `${r.channel} paid out ${fmtCents(-r.delta)} more than reached your bank`,
         line: `KoreFi is following it up with ${r.channel}. Nothing for you to do.`,
@@ -143,7 +146,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
         ],
         source: `${r.channel} payout report and Mercury`,
         wrong: `${r.channel} split the payout and the rest lands in a later deposit.`,
-        href: "/finance/payout", impact: -r.delta,
+        href: "/finance/reconciliation", impact: -r.delta,
       });
     }
   }
@@ -154,7 +157,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
     const lost = sum(down.map((s) => s.estLostRevenue));
     const w = down[0];
     out.push({
-      id: "down", cowork: "operations", tag: "watch", sure: false,
+      id: "down", cowork: "operations", page: "profit", tag: "watch", sure: false,
       big: `−${fmtCents(lost)}`, bigTone: "danger", bigSub: "sales missed while paused",
       title: `${w.store} was paused on ${channelName(w.source)} for ${w.downtimeMinutes} min${w.cause ? ` (${w.cause.toLowerCase()})` : ""}`,
       line: `${sum(down.map((s) => s.downtimeMinutes))} minutes closed on the apps this period, across ${down.length} storefront${down.length > 1 ? "s" : ""}.`,
@@ -173,7 +176,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
   if (open.length) {
     const amt = sum(open.map((x) => x.amount));
     out.push({
-      id: "open", cowork: "operations", tag: "onit", sure: true,
+      id: "open", cowork: "operations", page: "chargebacks", tag: "onit", sure: true,
       big: fmtCents(amt), bigTone: "success", bigSub: "you can still get back",
       title: `${open.length} chargeback${open.length > 1 ? "s are" : " is"} being disputed for you`,
       line: `KoreFi's operations team filed ${open.length > 1 ? "them" : "it"} and is following up with the apps. Nothing for you to do.`,
@@ -185,7 +188,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
   if (won.length) {
     const amt = sum(won.map((x) => x.amount));
     out.push({
-      id: "won", cowork: "operations", tag: "good", sure: true,
+      id: "won", cowork: "operations", page: "chargebacks", tag: "good", sure: true,
       big: fmtCents(amt), bigTone: "success", bigSub: `won back on ${won.length} chargeback${won.length > 1 ? "s" : ""}`,
       title: `${fmtCents(amt)} of chargebacks came back to you`,
       line: "Paid back by the apps after KoreFi disputed them.",
@@ -199,7 +202,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
     const reasons = lost.map((x) => x.reason);
     const top = [...new Set(reasons)].sort((a, b) => reasons.filter((r) => r === b).length - reasons.filter((r) => r === a).length)[0];
     out.push({
-      id: "lost", cowork: "operations", tag: "info", sure: true,
+      id: "lost", cowork: "operations", page: "chargebacks", tag: "info", sure: true,
       big: `−${fmtCents(amt)}`, bigTone: "danger", bigSub: "chargebacks the apps kept",
       title: `${lost.length} chargeback${lost.length > 1 ? "s" : ""} couldn't be won back, mostly "${top.toLowerCase()}"`,
       line: "These were disputed but the apps sided with the customer.",
@@ -213,7 +216,7 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
   if (waits.length) {
     const w = waits[0];
     out.push({
-      id: "wait", cowork: "operations", tag: "watch", sure: true,
+      id: "wait", cowork: "operations", page: "overview", tag: "watch", sure: true,
       big: `${w.avoidableWaitMin.toFixed(1)} min`, bigSub: `driver wait · ${channelName(w.source)}`,
       title: `Drivers wait longer at ${w.store} on ${channelName(w.source)}`,
       line: `Up from ${w.previousAvoidableWaitMin.toFixed(1)} min the period before. Long waits can push the app to show you less.`,
@@ -232,24 +235,24 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
   if (apps.length > 1) {
     const [hi, lo] = [...apps].sort((a, b) => b.net / b.gross - a.net / a.gross);
     out.push({
-      id: "per", cowork: "finance", tag: "info", sure: true,
+      id: "per", cowork: "finance", page: "profit", tag: "info", sure: true,
       big: `${cents(hi.net / hi.gross)} vs ${cents(lo.net / lo.gross)}`, bigSub: `paid to you of every $1: ${hi.name} vs ${lo.name}`,
       title: `${hi.name} pays you a little more of every $1 than ${lo.name}`,
       line: "After commission, fees and promos, before food cost.",
       steps: [
         ...apps.map((a) => ({ label: `${a.name} paid you`, value: `${cents(a.net / a.gross)} of every $1`, src: `${fmtCents(a.net)} of ${fmtCents(a.gross)} sold` })),
       ],
-      source: `DoorDash and Uber Eats payout reports, ${PERIOD.range}`, href: "/finance/what-you-keep", impact: 0,
+      source: `DoorDash and Uber Eats payout reports, ${PERIOD.range}`, href: "/operations/fees-and-commissions", impact: 0,
     });
   }
 
-  // Orders across every channel (POS + apps), all stores only.
-  if (!scope.store) {
+  // Orders across every channel (POS + apps), all stores only; needs a POS to count every channel.
+  if (!scope.store && d.sales.length) {
     const orders = sum(d.sales.map((s) => s.orders));
     const prev = sum(d.sales.map((s) => s.previousOrders));
     const up = orders >= prev;
     out.push({
-      id: "orders", cowork: "growth", tag: up ? "good" : "watch", sure: true,
+      id: "orders", cowork: "growth", page: "profit", tag: up ? "good" : "watch", sure: true,
       big: `${up ? "+" : "−"}${Math.abs(orders - prev).toLocaleString("en-US")}`, bigTone: up ? "success" : "danger", bigSub: "orders vs the 30 days before",
       title: `Orders are ${up ? "up" : "down"} ${Math.abs(pctChange(orders, prev) * 100).toFixed(1)}% across all channels`,
       line: `${orders.toLocaleString("en-US")} orders in ${PERIOD.range}.`,
@@ -267,12 +270,54 @@ export function insightsFor(d: DashboardData, scope: Scope, rows: StoreRow[]): I
     const total = sum(rows.map((r) => r.gross));
     const top = [...rows].sort((a, b) => b.gross - a.gross);
     out.push({
-      id: "share", cowork: "finance", tag: "info", sure: true,
+      id: "share", cowork: "finance", page: "profit", tag: "info", sure: true,
       big: `${Math.round((top[0].gross / total) * 100)}%`, bigSub: `of your delivery sales · ${top[0].store}`,
       title: `${top[0].store} brings in most of your app sales`,
       line: `${fmtCents(top[0].gross)} of ${fmtCents(total)} sold on the apps.`,
       steps: [...top.map((r) => ({ label: r.store, value: fmtCents(r.gross), src: `${Math.round((r.gross / total) * 100)}% of all` })), { label: "All stores", value: fmtCents(total), result: "plain" }],
-      source: `DoorDash and Uber Eats, ${PERIOD.range}`, href: "/finance/sales", impact: 0,
+      source: `DoorDash and Uber Eats, ${PERIOD.range}`, href: "/operations/sales", impact: 0,
+    });
+  }
+
+  // Promos: which ones pay, and what they cost overall.
+  const promos = inScope(d.promos).filter((p) => p.spend > 0);
+  if (promos.length > 1) {
+    const per = (p: { sales: number; spend: number }) => p.sales / p.spend;
+    const ranked = [...promos].sort((a, b) => per(b) - per(a));
+    const best = ranked[0];
+    const worst = ranked[ranked.length - 1];
+    const avg = sum(promos.map((p) => p.sales)) / sum(promos.map((p) => p.spend));
+    const promoWhere = (p: { store: string; source: string; campaign: string }) => `${p.campaign} · ${where(p)}`;
+    out.push({
+      id: "promo-best", cowork: "growth", page: "promos", tag: "good", sure: true,
+      big: `$${per(best).toFixed(2)}`, bigTone: "success", bigSub: `in sales per $1 · ${best.campaign} on ${channelName(best.source)}`,
+      title: `"${best.campaign}" on ${channelName(best.source)} is your best-paying promo`,
+      line: `${fmtCents(best.sales)} of orders for ${fmtCents(best.spend)} of discounts${best.newCustomers ? `, ${best.newCustomers} from first-time customers` : ""}.`,
+      steps: ranked.map((p) => ({ label: promoWhere(p), value: `$${per(p).toFixed(2)} per $1`, src: `${fmtCents(p.sales)} on ${fmtCents(p.spend)}` })),
+      source: "DoorDash Marketing and Uber Eats Offers reports", href: "/mvp/promos", impact: 0,
+    });
+    if (per(worst) < avg * 0.6) {
+      out.push({
+        id: "promo-worst", cowork: "growth", page: "promos", tag: "watch", sure: true,
+        big: `$${per(worst).toFixed(2)}`, bigTone: "danger", bigSub: `in sales per $1 · ${worst.campaign} on ${channelName(worst.source)}`,
+        title: `"${worst.campaign}" on ${channelName(worst.source)} brings in less than your other promos`,
+        line: `$${per(worst).toFixed(2)} back per $1 against $${avg.toFixed(2)} across all promos.`,
+        steps: [{ label: promoWhere(worst), value: `$${per(worst).toFixed(2)} per $1`, src: `${fmtCents(worst.sales)} on ${fmtCents(worst.spend)}` }, { label: "All promos", value: `$${avg.toFixed(2)} per $1` }],
+        source: "DoorDash Marketing and Uber Eats Offers reports", href: "/mvp/promos?tab=campaigns", impact: worst.spend,
+      });
+    }
+    const spend = sum(promos.map((p) => p.spend));
+    const touched = sum(promos.map((p) => p.sales));
+    out.push({
+      id: "promo-cost", cowork: "growth", page: "promos", tag: "info", sure: true,
+      big: fmtCents(spend), bigSub: "spent on promos and ads",
+      title: `Promos cost ${(100 * spend / touched).toFixed(1)}% of the sales they touched`,
+      line: `${fmtCents(touched)} of orders used a promo this period; the apps charged ${fmtCents(spend)} for them.`,
+      steps: [
+        ...[...new Set(promos.map((p) => p.source))].map((s) => ({ label: channelName(s), value: fmtCents(sum(promos.filter((p) => p.source === s).map((p) => p.spend))), src: `${promos.filter((p) => p.source === s).length} campaigns` })),
+        { label: "All promos", value: fmtCents(spend), result: "plain" as const },
+      ],
+      source: "DoorDash Marketing and Uber Eats Offers reports", href: "/mvp/promos?tab=apps", impact: 0,
     });
   }
 

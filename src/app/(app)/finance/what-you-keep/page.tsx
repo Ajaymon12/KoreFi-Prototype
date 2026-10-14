@@ -1,11 +1,5 @@
-import { PageHeader } from "@/components/shell/PageHeader";
-import { CoworkPlaceholder } from "@/components/module/CoworkPlaceholder";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <>
-      <PageHeader title="What you keep" />
-      <CoworkPlaceholder title="What you keep" />
-    </>
-  );
+  redirect("/operations/fees-and-commissions");
 }

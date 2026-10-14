@@ -1,24 +1,31 @@
 import {
-  Banknote,
-  ClipboardCheck,
-  ChartNoAxesColumnIncreasing,
-  Coins,
-  ConciergeBell,
+  ArrowLeftRight,
   Blocks,
   BookOpenText,
+  Calculator,
+  ChartNoAxesColumnIncreasing,
+  ChefHat,
+  ClipboardCheck,
+  Coins,
+  ConciergeBell,
+  GitCompare,
   House,
   Landmark,
   LayoutDashboard,
-  ListChecks,
+  Mail,
   Megaphone,
-  NotebookText,
-  PiggyBank,
+  Percent,
   ReceiptText,
-  Repeat2,
+  Scale,
   Settings,
   ShieldAlert,
-  Star,
+  ShoppingBag,
+  Tag,
   Timer,
+  TrendingUp,
+  Truck,
+  Undo2,
+  UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,11 +42,6 @@ export const NAV_MODULES: NavModule[] = [
     label: "Home",
     href: "/home",
     Icon: House,
-    children: [
-      { label: "Overview", href: "/home/overview", Icon: LayoutDashboard },
-      { label: "Weekly notes", href: "/home/weekly-notes", Icon: NotebookText },
-      { label: "Tasks", href: "/home/tasks", Icon: ListChecks },
-    ],
   },
   {
     id: "finance",
@@ -48,10 +50,13 @@ export const NAV_MODULES: NavModule[] = [
     Icon: Coins,
     persona: { role: "Finance cowork", tagline: "Every dollar, accounted for.", illustration: "coins" },
     children: [
-      { label: "Sales", href: "/finance/sales", Icon: ReceiptText },
-      { label: "What you keep", href: "/finance/what-you-keep", Icon: PiggyBank },
-      { label: "Payout", href: "/finance/payout", Icon: Landmark },
-      { label: "Books & Tax", href: "/finance/books-and-tax", Icon: BookOpenText },
+      { label: "Overview", href: "/finance/overview", Icon: LayoutDashboard },
+      { label: "P&L", href: "/finance/pnl", Icon: TrendingUp },
+      { label: "Balance Sheet", href: "/finance/balance-summary", Icon: Scale },
+      { label: "Payouts", href: "/finance/payout", Icon: Landmark },
+      { label: "Reconciliation", href: "/finance/reconciliation", Icon: ArrowLeftRight },
+      { label: "Books", href: "/finance/books", Icon: BookOpenText },
+      { label: "Tax", href: "/finance/tax", Icon: Calculator },
     ],
   },
   {
@@ -61,10 +66,15 @@ export const NAV_MODULES: NavModule[] = [
     Icon: ConciergeBell,
     persona: { role: "Operations cowork", tagline: "Keeps the line moving.", illustration: "bell" },
     children: [
-      { label: "Chargebacks", href: "/operations/chargeback", Icon: ShieldAlert },
+      { label: "Overview", href: "/operations/overview", Icon: LayoutDashboard },
+      { label: "Sales", href: "/operations/sales", Icon: ReceiptText },
+      { label: "Orders", href: "/operations/orders", Icon: ShoppingBag },
       { label: "Order quality", href: "/operations/order-quality", Icon: ClipboardCheck },
       { label: "Wait & downtime", href: "/operations/wait-and-downtime", Icon: Timer },
-      { label: "Menu rating", href: "/operations/menu-rating", Icon: Star },
+      { label: "Fees & commissions", href: "/operations/fees-and-commissions", Icon: Percent },
+      { label: "Refunds & adjustments", href: "/operations/refunds-and-adjustments", Icon: Undo2 },
+      { label: "Chargebacks", href: "/operations/chargeback", Icon: ShieldAlert },
+      { label: "Platform comparison", href: "/operations/platform-comparison", Icon: GitCompare },
     ],
   },
   {
@@ -74,10 +84,14 @@ export const NAV_MODULES: NavModule[] = [
     Icon: ChartNoAxesColumnIncreasing,
     persona: { role: "Growth cowork", tagline: "Finds your next regulars.", illustration: "steps" },
     children: [
-      { label: "Promotions & ads", href: "/growth/promotions-and-ads", Icon: Megaphone },
-      { label: "Repeat customers", href: "/growth/repeat-customers", Icon: Repeat2 },
+      { label: "Overview", href: "/growth/overview", Icon: LayoutDashboard },
+      { label: "Delivery growth", href: "/growth/delivery-growth", Icon: Truck },
+      { label: "Pricing", href: "/growth/pricing", Icon: Tag },
+      { label: "Catering", href: "/growth/catering", Icon: UtensilsCrossed },
     ],
   },
+  // Sous, the read-only assistant. No sub pages: it opens straight into the full-size chat.
+  { id: "ai", label: "Sous", href: "/ai", Icon: ChefHat },
 ];
 
 // Pinned to the bottom of the rail; no sub modules, so no sub sidebar.
@@ -86,7 +100,69 @@ export const FOOTER_MODULES: NavModule[] = [
   { id: "settings", label: "Settings", href: "/settings", Icon: Settings },
 ];
 
-const ALL_MODULES = [...NAV_MODULES, ...FOOTER_MODULES];
+// ---- MVP owner dashboard ----
+// The MVP (/mvp) is a flat list, so it gets one Mercury-style sidebar instead of the rail +
+// sub-sidebar pair above. The old modules stay reachable until they are retired.
+export const OWNER_HOME = "/mvp/overview";
+
+const ICONS: Record<string, LucideIcon> = { "/mvp/profit": TrendingUp, "/mvp/payouts": Landmark, "/mvp/chargebacks": ShieldAlert, "/mvp/promos": Megaphone };
+
+/** Pages above the coworks: Overview, then the brief. */
+export const MVP_TOP: NavChild[] = [
+  { label: "Overview", href: "/mvp/overview", Icon: LayoutDashboard },
+  { label: "Weekly brief", href: "/mvp/brief", Icon: Mail },
+];
+
+/** A report under a cowork. `soon` = listed so owners know it's coming, not a link yet. */
+export type MvpItem = { label: string; href?: string; soon?: boolean };
+export type MvpGroup = { id: "finance" | "operations" | "growth"; label: string; illustration: Persona["illustration"]; items: MvpItem[] };
+
+// The reports grouped by the cowork that produces them, in the order the sidebar shows them.
+export const MVP_GROUPS: MvpGroup[] = [
+  {
+    id: "finance",
+    label: "Finance Coworker",
+    illustration: "coins",
+    items: [
+      { label: "Profit", href: "/mvp/profit" },
+      { label: "Payouts", href: "/mvp/payouts" },
+      { label: "Books & tax", soon: true },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Delivery Apps Coworker",
+    illustration: "bell",
+    items: [
+      { label: "Chargebacks", href: "/mvp/chargebacks" },
+      { label: "Store health", soon: true },
+      { label: "Menu prices", soon: true },
+    ],
+  },
+  {
+    id: "growth",
+    label: "Growth Coworker",
+    illustration: "steps",
+    items: [
+      { label: "Promos & ads", href: "/mvp/promos" },
+      { label: "Reviews", soon: true },
+      { label: "Regulars", soon: true },
+    ],
+  },
+];
+
+export const MVP_FOOTER: NavChild[] = FOOTER_MODULES.map(({ label, href, Icon }) => ({ label, href, Icon }));
+
+/** Every linked MVP page, flat; icons only matter where a page is shown on its own. */
+export const MVP_NAV: NavChild[] = [
+  ...MVP_TOP,
+  ...MVP_GROUPS.flatMap((g) => g.items.filter((i): i is MvpItem & { href: string } => !!i.href).map((i) => ({ label: i.label, href: i.href, Icon: ICONS[i.href] ?? LayoutDashboard }))),
+];
+
+/** Lets `getActiveModule` (page header, assistant) resolve /mvp/* without a persona prefix. */
+const MVP_MODULE: NavModule = { id: "mvp", label: "KoreFi", href: "/mvp", Icon: House, children: MVP_NAV };
+
+const ALL_MODULES = [...NAV_MODULES, ...FOOTER_MODULES, MVP_MODULE];
 
 export const isInModule = (pathname: string, m: NavModule) => pathname === m.href || pathname.startsWith(m.href + "/");
 

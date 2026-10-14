@@ -2,17 +2,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { CoworkAvatar } from "@/components/module/CoworkAvatar";
 import { getActiveModule } from "@/lib/nav";
-
-const itemClass = (active: boolean) =>
-  cn(
-    "flex h-[30px] w-full items-center gap-2 rounded-(--module-radius) px-3 text-menu-md transition-colors [&>svg]:size-3.5 [&>svg]:shrink-0",
-    active
-      ? "bg-(--module-tint) font-medium text-(--color-text-primary) [&>svg]:text-(--module-strong)"
-      : "text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)",
-  );
+import { navItemClass as itemClass } from "./navItem";
 
 // Sub sidebar (Figma 337:22222): the active module's sub modules. Modules without any
 // (Integrations, Settings) render no sub sidebar, so their page runs full width.

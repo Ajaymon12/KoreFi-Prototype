@@ -44,7 +44,7 @@ export function WaitAndDowntimeView({ data }: { data: DashboardData }) {
     <>
       <PageHeader title="Wait & downtime" />
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <DataSources sources={marketplaces.map((m) => ({ id: m.id, name: m.name, status: m.status }))} syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
+        <DataSources syncedAt={syncedAt} timezoneNote={PERIOD.timezoneNote} />
         <ChannelFilter basePath="/operations/wait-and-downtime" channels={channelsIn(ops)} active={channel} />
 
         <StatStrip

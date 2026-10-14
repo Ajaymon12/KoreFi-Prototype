@@ -7,7 +7,7 @@ import { useDismiss } from "@/components/dashboard/useDismiss";
 // Right-hand detail panel in the Mercury style (Mobbin: Mercury web transaction / reimbursement
 // drawers): an inset panel under the top bar, a compact title row, then flat sections split by
 // full-width hairlines (amount → timeline → label/value details → notes), and a slim footer.
-// No scrim — the list stays visible and its selected row stays highlighted. Previous / next row
+// A dimmed backdrop sits behind it; the page stays visible but out of focus. Previous / next row
 // buttons after Midday. Closes on ✕, Escape, or a click outside; clicking another row swaps it.
 
 export function DetailDrawer({
@@ -43,6 +43,8 @@ export function DetailDrawer({
 
   return (
     <>
+      {/* Backdrop: dims the page while the drawer is open. Clicks on it count as outside clicks, which close the drawer. */}
+      <div aria-hidden className={cn("fixed inset-0 z-30 bg-black/30 transition-opacity duration-200 motion-reduce:transition-none", open ? "opacity-100" : "pointer-events-none opacity-0")} />
       <aside
         ref={panel}
         role="dialog"
@@ -51,7 +53,7 @@ export function DetailDrawer({
         inert={!open}
         className={cn(
           // Sits inside the shell's gutters: below the 42px top bar, 8px in from the edges.
-          "fixed top-[46px] right-2 bottom-2 z-40 flex w-[calc(100%-1rem)] max-w-[420px] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_8px_32px_rgb(0_0_0/0.10)] transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none",
+          "fixed top-[46px] right-2 bottom-2 z-40 flex w-[calc(100%-1rem)] max-w-[520px] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_8px_32px_rgb(0_0_0/0.10)] transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none",
           open ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-[calc(100%+1rem)] opacity-0",
         )}
       >

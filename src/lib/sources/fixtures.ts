@@ -55,6 +55,13 @@ export const RAW = {
       { store_name: "Casa Alvarez – Midtown", subtotal: 5234.52, prior_subtotal: 4980.4, orders: 187, prior_orders: 176, cancelled: 9, prior_cancelled: 10, store_cancelled: 3, prior_store_cancelled: 4, items: 441, prior_items: 418, wait_min: 5.6, prior_wait_min: 5.1, prior_inaccurate: 4, prior_error_charges: 55, open_minutes: 19800, offline_by_weekday: [0, 5, 0, 0, 0, 0, 0], prior_offline_minutes: 18, top_items: [["Birria tacos", 97, 3], ["Elote", 61, 2], ["Carne asada burrito", 84, 2], ["Agua fresca", 52, 1], ["Quesabirria", 58, 1]] },
     ],
     stores: [{ name: "Casa Alvarez Kitchen", is_open: true, offline_minutes: 0, offline_reason: null }, { name: "Casa Alvarez – Midtown", is_open: true, offline_minutes: 5, offline_reason: "Credential error" }],
+    // Promotions and Sponsored Listings, as the merchant portal's "Marketing" export reports them.
+    promotions: [
+      { name: "BOGO Birria tacos", kind: "BOGO", store_name: "Casa Alvarez Kitchen", merchant_funded: 486.0, ad_spend: 0, orders: 81, new_customer_orders: 14, order_subtotal: 2187.4, weekly_cost: [104.5, 118.2, 131.7, 131.6] },
+      { name: "20% off, first order", kind: "PERCENT_OFF", store_name: "Casa Alvarez Kitchen", merchant_funded: 236.1, ad_spend: 0, orders: 46, new_customer_orders: 46, order_subtotal: 1180.5, weekly_cost: [52.3, 57.9, 61.4, 64.5] },
+      { name: "20% off, first order", kind: "PERCENT_OFF", store_name: "Casa Alvarez – Midtown", merchant_funded: 148.8, ad_spend: 0, orders: 29, new_customer_orders: 29, order_subtotal: 744.0, weekly_cost: [31.2, 36.0, 39.8, 41.8] },
+      { name: "Sponsored Listing", kind: "SPONSORED", store_name: "Casa Alvarez Kitchen", merchant_funded: 0, ad_spend: 320.0, orders: 58, new_customer_orders: 9, order_subtotal: 1624.3, weekly_cost: [80, 80, 80, 80] },
+    ],
   },
   ubereats: {
     payouts: [
@@ -78,6 +85,12 @@ export const RAW = {
       { restaurant: "Casa Alvarez – Midtown", subtotal_cents: 283164, prior_subtotal_cents: 299020, delivered: 112, prior_delivered: 118, cancelled: 5, prior_cancelled: 6, restaurant_cancelled: 2, prior_restaurant_cancelled: 3, units: 262, prior_units: 275, avoidable_wait_min: 4.9, prior_avoidable_wait_min: 5.2, prior_inaccurate: 3, prior_error_cents: 3000, open_minutes: 19800, offline_by_weekday: [0, 0, 0, 0, 0, 0, 0], prior_offline_minutes: 0, top_items: [["Birria tacos", 58, 2], ["Carne asada burrito", 49, 1], ["Elote", 33, 1], ["Quesabirria", 41, 1], ["Agua fresca", 27, 0]] },
     ],
     restaurants: [{ name: "Casa Alvarez Kitchen", status: "PAUSED", minutes_offline: 12, reason: "Server error", lost_sales_cents: 18400 }, { name: "Casa Alvarez – Midtown", status: "ONLINE", minutes_offline: 0, reason: null, lost_sales_cents: 0 }],
+    // Offers and ads from Uber Eats Manager, in cents.
+    offers: [
+      { title: "Free delivery on $25+", offer_type: "FREE_DELIVERY", restaurant: "Casa Alvarez Kitchen", cost_cents: 31240, ad_cents: 0, redemptions: 97, first_time_redemptions: 22, basket_cents: 329800, weekly_cost_cents: [7010, 7480, 8120, 8630] },
+      { title: "Free delivery on $25+", offer_type: "FREE_DELIVERY", restaurant: "Casa Alvarez – Midtown", cost_cents: 14650, ad_cents: 0, redemptions: 44, first_time_redemptions: 8, basket_cents: 146400, weekly_cost_cents: [3480, 3600, 3720, 3850] },
+      { title: "15% off, new customers", offer_type: "PERCENT_OFF", restaurant: "Casa Alvarez – Midtown", cost_cents: 9870, ad_cents: 0, redemptions: 23, first_time_redemptions: 23, basket_cents: 65800, weekly_cost_cents: [2210, 2380, 2560, 2720] },
+    ],
   },
   grubhub: {
     payouts: [] as unknown[],
