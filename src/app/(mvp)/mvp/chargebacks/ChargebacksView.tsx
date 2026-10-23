@@ -1,15 +1,16 @@
 "use client";
 import { useState } from "react";
-import { CircleDashed, CheckCircle2, Clock, LayoutDashboard, ShieldCheck, Table } from "lucide-react";
+import { CircleDashed, CheckCircle2, LayoutDashboard, ShieldAlert } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { MvpFrame, latestSync, useTab } from "@/components/mvp/frame";
-import { MvpInsights } from "@/components/mvp/MvpInsights";
+import { InsightBanner } from "@/components/mvp/MvpInsights";
+import { BigStat, Column, Fact, Panel, ShareBars, Sparkline, columnsClass } from "@/components/mvp/charts";
+import { HundredBar } from "@/components/finance/parts";
 import { DataSources } from "@/components/dashboard/DataSources";
-import { StatStrip } from "@/components/dashboard/StatStrip";
-import { DashCard, CardTitle } from "@/components/dashboard/parts";
-import { DataTable, StatusBadge, type Column } from "@/components/dashboard/primitives";
+import { StatusBadge } from "@/components/dashboard/primitives";
+import { AppName, ReportTable, type TableColumn, type TableFilter } from "@/components/ui/ReportTable";
 import { DetailDrawer, DetailList, DrawerSection, Timeline, type TimelineStep } from "@/components/ui/DetailDrawer";
 import { TrendChart } from "@/components/dashboard/ChargebackTrend";
-import { MoneyFlowBar, RankedBars, StatusLegend, StoreCompare, WinRing, type BarRow } from "@/components/dashboard/ChargebackCharts";
 import {
   channelName,
   cumulativeByDay,
@@ -33,13 +34,16 @@ import { PERIOD } from "@/lib/period";
 import type { Dispute, DisputeStatus } from "@/lib/sources/types";
 
 // MVP / Chargebacks: error charges from the delivery apps, with KoreFi's disputes filed for the
-// owner automatically. Open = what is being worked and where each one is; Resolved = what came
-// back and what did not; Breakdown = by store, app and reason.
+// owner automatically. Same language as Profit and Payouts: the AI card, three columns (headline,
+// one chart, what's behind it), then the table edge to edge.
+//   Summary   what was charged back, what came back, what went wrong; where every $100 went
+//   Open      what KoreFi is working, the next deadline, where each one is; the open list
+//   Resolved  won, lost, win rate; charged vs won back over time; the decided list
 
 const TABS = [
+  { key: "summary", label: "Summary", Icon: LayoutDashboard },
   { key: "open", label: "Open", Icon: CircleDashed },
   { key: "resolved", label: "Resolved", Icon: CheckCircle2 },
-  { key: "breakdown", label: "Breakdown", Icon: Table },
 ] as const;
 
 const STATUSES: DisputeStatus[] = ["won", "open", "lost", "auto_refunded"];
@@ -48,6 +52,7 @@ const day = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en
 const plusDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const key = (d: Dispute) => `${d.source}-${d.id}`;
+const ChartLabel = ({ children }: { children: React.ReactNode }) => <p className="mb-2 text-body-sm text-(--color-text-secondary)">{children}</p>;
 
 /** "DoorDash $43.75 · Uber Eats $13.30" for a set of disputes. */
 const channelSplit = (rows: Dispute[]) =>
@@ -74,7 +79,9 @@ function timeline(d: Dispute): TimelineStep[] {
 
 export function ChargebacksView({ data }: { data: DashboardData }) {
   const active = useTab(TABS);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // `?open=` reopens a chargeback from a copied link.
+  const linked = useSearchParams().get("open");
+  const [openId, setOpenId] = useState<string | null>(linked);
   const scope = scopeFor(undefined, locations);
   const insights = forPage(insightsFor(data, scope, storeRows(data, scope)), "chargebacks");
   const { disputes } = data;
@@ -88,28 +95,38 @@ export function ChargebacksView({ data }: { data: DashboardData }) {
   const resolved = disputes.filter((d) => d.status !== "open").sort((a, b) => (b.resolvedDate ?? b.date).localeCompare(a.resolvedDate ?? a.date));
   const cur = disputes.find((d) => key(d) === openId);
 
-  const base: Column<Dispute>[] = [
-    { key: "what", header: "What happened", cell: (d) => <span className="block max-w-72 truncate" title={d.detail}>{d.detail}</span> },
-    { key: "store", header: "Store", cell: (d) => d.store },
-    { key: "app", header: "App", cell: (d) => channelName(d.source) },
-    { key: "amount", header: "Charged", align: "right", cell: (d) => fmt(d.amount) },
+  // Table columns, after the Figma table: the order on two lines, the app with its logo, sortable figures.
+  const base: TableColumn<Dispute>[] = [
+    { key: "what", header: "What happened", cell: (d) => <span className="block max-w-72 truncate" title={d.detail}>{d.detail}</span>, sub: (d) => `${d.reason} · Order ${d.id}`, sort: (d) => d.detail },
+    { key: "store", header: "Store", cell: (d) => d.store, sort: (d) => d.store },
+    { key: "app", header: "App", cell: (d) => <AppName source={d.source} name={channelName(d.source)} />, sort: (d) => channelName(d.source) },
+    { key: "amount", header: "Charged", align: "right", cell: (d) => fmt(d.amount), sort: (d) => d.amount },
   ];
+  const filters: TableFilter<Dispute>[] = [
+    { key: "store", label: "Store", value: (d) => d.store },
+    { key: "app", label: "App", value: (d) => channelName(d.source) },
+  ];
+  const search = (d: Dispute) => `${d.detail} ${d.reason} ${d.id} ${d.store}`;
   const stageCell = (d: Dispute) => {
     const s = disputeStage(d, PERIOD.end);
     return <StatusBadge tone={STAGE_TONE[s]}>{STAGE_LABEL[s]}</StatusBadge>;
   };
-  const details = (d: Dispute) => (
-    <button type="button" onClick={() => setOpenId(key(d))} className="text-body-sm text-(--color-text-clickable) hover:underline">
-      Details
-    </button>
-  );
-  const openColumns: Column<Dispute>[] = [
+  // Rows open the detail beside the list (docked); prev / next step through the tab's own list.
+  const list = active === "resolved" ? resolved : open;
+  const at = cur ? list.findIndex((d) => key(d) === openId) : -1;
+  const rowProps = { onRowClick: (d: Dispute) => setOpenId(key(d)), selectedKey: openId, rowKey: key, search, searchPlaceholder: "Search orders…", noun: "chargebacks" };
+  const windowLeft = (d: Dispute) => {
+    const closes = windowCloses(d);
+    return closes ? daysLeft(closes, PERIOD.end) : Number.POSITIVE_INFINITY;
+  };
+  const openColumns: TableColumn<Dispute>[] = [
     ...base,
-    { key: "date", header: "Found", cell: (d) => day(d.date) },
-    { key: "stage", header: "Where it is", cell: stageCell },
+    { key: "date", header: "Found", cell: (d) => day(d.date), sort: (d) => d.date },
+    { key: "stage", header: "Where it is", cell: stageCell, sort: (d) => STAGE_LABEL[disputeStage(d, PERIOD.end)] },
     {
       key: "window",
       header: "App's window",
+      sort: windowLeft,
       cell: (d) => {
         const closes = windowCloses(d);
         if (!closes) return "No fixed window";
@@ -117,121 +134,170 @@ export function ChargebacksView({ data }: { data: DashboardData }) {
         return left < 0 ? "Closed" : `${left} day${left === 1 ? "" : "s"} left`;
       },
     },
-    { key: "open", header: "", align: "right", cell: details },
   ];
-  const resolvedColumns: Column<Dispute>[] = [
+  const resolvedColumns: TableColumn<Dispute>[] = [
     ...base,
-    { key: "date", header: "Decided", cell: (d) => day(d.resolvedDate ?? d.date) },
-    { key: "stage", header: "Outcome", cell: stageCell },
+    { key: "date", header: "Decided", cell: (d) => day(d.resolvedDate ?? d.date), sort: (d) => d.resolvedDate ?? d.date },
+    { key: "stage", header: "Outcome", cell: stageCell, sort: (d) => STAGE_LABEL[disputeStage(d, PERIOD.end)] },
     {
       key: "result",
       header: "For you",
       align: "right",
+      sort: (d) => (d.status === "won" ? d.amount : d.status === "lost" ? -d.amount : 0),
       cell: (d) => (d.status === "won" ? <span className="text-(--color-text-success)">+{fmt(d.amount)}</span> : d.status === "lost" ? <span className="text-(--color-text-danger)">−{fmt(d.amount)}</span> : <span className="text-(--color-text-secondary)">$0.00</span>),
     },
-    { key: "open", header: "", align: "right", cell: details },
   ];
 
+  // ---- Summary figures ----
+  const total = disputes.length;
+  const ordersDelivered = sum(data.ops.map((o) => o.orders));
+  const running = cumulativeByDay(disputes, PERIOD.start, 30);
+  const reasons = disputesByReason(disputes).filter((r) => r.total.count > 0).sort((a, b) => b.total.amount - a.total.amount);
+  const top = reasons[0];
+  const apps = [...new Set(disputes.map((d) => d.source))];
+  const appRows = (rows: Dispute[]) => apps.map((s) => ({ key: s, label: channelName(s), value: sum(rows.filter((d) => d.source === s).map((d) => d.amount)) }));
+  const stores = [...new Set(disputes.map((d) => d.store))];
+  const winRateOf = (rows: Dispute[]) => {
+    const dec = rows.filter((d) => d.status === "won" || d.status === "lost");
+    return dec.length ? `${pct(dec.filter((d) => d.status === "won").length / dec.length)} · ${dec.filter((d) => d.status === "won").length} of ${dec.length}` : "None decided yet";
+  };
+
+  // ---- Open figures ----
+  const stageCount = (s: DisputeStage) => open.filter((d) => disputeStage(d, PERIOD.end) === s).length;
+  const soonest = open
+    .map((d) => ({ d, closes: windowCloses(d) }))
+    .filter((x): x is { d: Dispute; closes: string } => !!x.closes)
+    .sort((a, b) => a.closes.localeCompare(b.closes))[0];
+  const soonestLeft = soonest ? daysLeft(soonest.closes, PERIOD.end) : undefined;
+  const banner = <InsightBanner insights={insights} title="What KoreFi sees in your chargebacks" />;
+
   return (
-    <MvpFrame title="Chargebacks" tabs={TABS} active={active} basePath="/mvp/chargebacks" actions={<DataSources syncedAt={latestSync(data.connections, "marketplace")} timezoneNote={PERIOD.timezoneNote} />}>
+    <MvpFrame title="Chargebacks" tabs={TABS} active={active} actions={<DataSources syncedAt={latestSync(data.connections, "marketplace")} timezoneNote={PERIOD.timezoneNote} />}>
+      {active === "summary" && (
+        <>
+          {banner}
+          <div className={columnsClass(3)}>
+            <Column title="Charged back" href="/mvp/chargebacks?tab=open">
+              <BigStat label={`Charged back · ${PERIOD.label.toLowerCase()}`} value={fmt(stats.disputed)} sub={`${total} order${total === 1 ? "" : "s"}${ordersDelivered ? ` · ${(((total - counts.auto_refunded) / ordersDelivered) * 100).toFixed(1)}% of delivered orders` : ""}`} />
+              <div>
+                <ChartLabel>Running total</ChartLabel>
+                <Sparkline points={running.map((p) => ({ label: day(p.date), value: p.charged }))} format={fmt} ariaLabel="Charged back, running total by day" />
+              </div>
+              <ShareBars title="By app" rows={appRows(disputes)} format={fmt} />
+            </Column>
+            <Column title="Won back" href="/mvp/chargebacks?tab=resolved">
+              <BigStat label="Paid back after KoreFi's disputes" value={fmt(stats.recovered)} tone="success" sub={`${pct(stats.winRate)} win rate · ${counts.won} of ${decided} decided`} />
+              <div>
+                <ChartLabel>Running total</ChartLabel>
+                <Sparkline points={running.map((p) => ({ label: day(p.date), value: p.recovered }))} format={fmt} color="var(--chart-won)" ariaLabel="Won back, running total by day" />
+              </div>
+              <div>
+                <Fact label="Being disputed" value={fmt(amounts.open)} hint={`${counts.open} orders KoreFi is still working`} />
+                <Fact label="Kept by the apps" value={amounts.lost ? <span className="text-(--color-text-danger)">−{fmt(amounts.lost)}</span> : "None"} />
+                <Fact label="App paid it" value={`${counts.auto_refunded} order${counts.auto_refunded === 1 ? "" : "s"}`} hint="The app refunded the customer itself; nothing was charged to you" />
+              </div>
+            </Column>
+            <Column title="What went wrong">
+              <BigStat label="Most common" value={top?.label ?? "–"} sub={top ? `${fmt(top.total.amount)} · ${top.total.count} order${top.total.count === 1 ? "" : "s"} · ${pct(top.total.amount / (stats.disputed || 1))} of charges` : "No chargebacks"} />
+              <ShareBars title="By reason" rows={reasons.map((r) => ({ key: r.key, label: r.label, value: r.total.amount, hint: channelSplit(disputes.filter((d) => d.reason === r.key)) }))} format={fmt} color="var(--chart-neutral)" />
+              <ShareBars title="By store" rows={disputesByStore(disputes, stores).map((s) => ({ key: s.store, label: s.store, value: sum(Object.values(s.amounts)), hint: `${pct(s.winRate)} won` }))} format={fmt} color="var(--chart-neutral)" />
+            </Column>
+          </div>
+          <Panel title="Where every $100 charged back went" sub={`${PERIOD.range} · KoreFi has been filing since ${day(DISPUTING_SINCE)}`}>
+            <HundredBar
+              total={stats.disputed || 1}
+              legendClassName="sm:grid-cols-2 xl:grid-cols-4"
+              parts={[
+                { key: "won", label: "Won back", value: amounts.won, color: "var(--chart-won)", hint: splits.won },
+                { key: "open", label: "Being disputed", value: amounts.open, color: "var(--chart-open)", hint: splits.open },
+                { key: "lost", label: "Kept by the apps", value: amounts.lost, color: "var(--chart-lost)", hint: splits.lost },
+                { key: "auto", label: "App paid it", value: amounts.auto_refunded, color: "var(--chart-neutral)", hint: splits.auto_refunded },
+              ]}
+            />
+          </Panel>
+        </>
+      )}
+
       {active === "open" && (
         <>
-          <StatStrip
-            stats={[
-              { label: "Being disputed", value: fmt(amounts.open), sub: `${counts.open} order${counts.open === 1 ? "" : "s"} · KoreFi is on it`, tone: counts.open ? "warning" : "default" },
-              { label: "Filed by KoreFi", value: String(open.filter((d) => disputeStage(d, PERIOD.end) !== "detected").length), sub: `${open.filter((d) => disputeStage(d, PERIOD.end) === "detected").length} found today, filing next run` },
-              { label: "Won back this period", value: fmt(stats.recovered), sub: `${counts.won} order${counts.won === 1 ? "" : "s"}`, tone: "success" },
-              { label: "Win rate", value: pct(stats.winRate), sub: `${counts.won} of ${decided} decided` },
-            ]}
-          />
-          <DashCard>
-            <CardTitle title="How KoreFi handles these for you" />
-            <ul className="mt-3 grid gap-3 text-body-md text-(--color-text-primary) md:grid-cols-3">
-              <li className="flex items-start gap-2.5">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
-                <span>Every eligible charge is disputed automatically, on every store, with the order evidence attached. You don&apos;t need to do anything.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <Clock className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
-                <span>Each app only accepts disputes for so long: {Object.entries(DISPUTE_WINDOW_DAYS).map(([s, n]) => `${channelName(s)} ${n} days`).join(", ")}. KoreFi files within a day.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <LayoutDashboard className="mt-0.5 size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
-                <span>Filing since {day(DISPUTING_SINCE)}. Earlier charges aren&apos;t counted here.</span>
-              </li>
-            </ul>
-          </DashCard>
-          <DashCard>
-            <CardTitle title="Open disputes" />
-            <div className="mt-2">
-              <DataTable columns={openColumns} rows={open} rowKey={key} empty="Nothing in dispute right now." />
-            </div>
-          </DashCard>
-          <MvpInsights insights={insights} />
+          {banner}
+          <div className={columnsClass(2)}>
+            <Column title="Being disputed">
+              <BigStat label={`${counts.open} order${counts.open === 1 ? "" : "s"} KoreFi is working`} value={fmt(amounts.open)} sub="Every eligible charge is disputed automatically within a day, with the order evidence. Nothing for you to do." />
+              <ShareBars title="By app" rows={appRows(open)} format={fmt} />
+              <ShareBars title="By store" rows={stores.map((st) => ({ key: st, label: st, value: sum(open.filter((d) => d.store === st).map((d) => d.amount)) }))} format={fmt} color="var(--chart-neutral)" />
+            </Column>
+            <Column title="Where they are">
+              <BigStat
+                label={soonest ? `Next deadline · ${channelName(soonest.d.source)} · ${soonest.d.detail}` : "Next deadline"}
+                value={soonestLeft === undefined ? "None" : soonestLeft <= 0 ? "Today" : `${soonestLeft} day${soonestLeft === 1 ? "" : "s"}`}
+                sub={soonest ? `Window closes ${day(soonest.closes)} · already filed by KoreFi` : "No open dispute windows"}
+              />
+              <div>
+                <Fact label="Found, filing next run" value={String(stageCount("detected"))} />
+                <Fact label="Filed by KoreFi" value={String(stageCount("filed"))} />
+                <Fact label="Waiting on the app" value={String(stageCount("awaiting"))} />
+              </div>
+              <div>
+                <p className="mb-1 text-body-sm text-(--color-text-secondary)">How long each app allows</p>
+                {Object.entries(DISPUTE_WINDOW_DAYS).map(([src, n]) => (
+                  <Fact key={src} label={channelName(src)} value={`${n} days`} />
+                ))}
+              </div>
+            </Column>
+          </div>
+          <ReportTable title="Open disputes" columns={openColumns} rows={open} {...rowProps} filters={filters} initialSort={{ key: "window", dir: "asc" }} empty="Nothing in dispute right now." />
         </>
       )}
 
       {active === "resolved" && (
         <>
-          <StatStrip
-            stats={[
-              { label: "Won back", value: fmt(amounts.won), sub: `${counts.won} order${counts.won === 1 ? "" : "s"}`, tone: "success" },
-              { label: "Lost", value: `−${fmt(amounts.lost)}`, sub: `${counts.lost} order${counts.lost === 1 ? "" : "s"} · the app sided with the customer`, tone: amounts.lost ? "danger" : "default" },
-              { label: "App paid it", value: String(counts.auto_refunded), sub: "refunded by the app, nothing charged to you" },
-              { label: "Win rate", value: pct(stats.winRate), sub: `${counts.won} of ${decided} decided` },
-            ]}
-          />
-          <DashCard>
-            <CardTitle title="Charged back vs won back" />
-            <p className="mt-1 text-body-sm text-(--color-text-secondary)">Running total by day. The gap between the lines is how long the apps take to pay back.</p>
-            <div className="mt-4">
-              <TrendChart points={cumulativeByDay(disputes, PERIOD.start, 30)} />
-            </div>
-          </DashCard>
-          <DashCard>
-            <CardTitle title="Decided this period" />
-            <div className="mt-2">
-              <DataTable columns={resolvedColumns} rows={resolved} rowKey={key} empty="Nothing decided yet." />
-            </div>
-          </DashCard>
-          <MvpInsights insights={insights} />
-        </>
-      )}
-
-      {active === "breakdown" && (
-        <>
-          <DashCard>
-            <CardTitle title="Where every charged-back dollar went" />
-            <div className="mt-4">
-              <MoneyFlowBar amounts={amounts} counts={counts} splits={splits} />
-            </div>
-          </DashCard>
-          <div className="grid gap-4 xl:grid-cols-[1fr_2fr]">
-            <DashCard>
-              <CardTitle title="Win rate" />
-              <div className="mt-4 grid place-items-center">
-                <WinRing rate={stats.winRate} won={counts.won} decided={decided} />
+          {banner}
+          <div className={columnsClass(3)}>
+            <Column title="Won back">
+              <BigStat label={`${counts.won} order${counts.won === 1 ? "" : "s"} paid back`} value={fmt(amounts.won)} tone="success" />
+              <ShareBars title="By app" rows={appRows(by("won"))} format={fmt} color="var(--chart-won)" />
+            </Column>
+            <Column title="Lost">
+              <BigStat label={`${counts.lost} order${counts.lost === 1 ? "" : "s"} the apps kept`} value={amounts.lost ? `−${fmt(amounts.lost)}` : "$0.00"} tone={amounts.lost ? "danger" : undefined} />
+              <ShareBars title="By reason" rows={disputesByReason(by("lost")).map((r) => ({ key: r.key, label: r.label, value: r.total.amount }))} format={fmt} color="var(--chart-lost)" />
+            </Column>
+            <Column title="Win rate">
+              <BigStat label="Of disputes the apps decided" value={pct(stats.winRate)} sub={`${counts.won} of ${decided} decided`} />
+              <div>
+                {apps.map((s) => (
+                  <Fact key={s} label={channelName(s)} value={winRateOf(disputes.filter((d) => d.source === s))} />
+                ))}
+                <Fact label="App paid it" value={`${counts.auto_refunded} · not counted`} hint="The app refunded the customer itself; nothing was disputed" />
               </div>
-              <p className="mt-3 text-center text-body-sm text-(--color-text-secondary)">Disputes still open and charges the app paid are not counted.</p>
-            </DashCard>
-            <DashCard>
-              <CardTitle title="By store" />
-              <div className="mt-4 space-y-3">
-                <StatusLegend />
-                <StoreCompare stores={disputesByStore(disputes, [...new Set(disputes.map((d) => d.store))])} />
-              </div>
-            </DashCard>
+            </Column>
           </div>
-          <DashCard>
-            <CardTitle title="What went wrong" />
-            <div className="mt-4">
-              <RankedBars rows={disputesByReason(disputes).map<BarRow>((r) => ({ key: r.key, label: r.label, amount: r.total.amount, count: r.total.count, detail: channelSplit(disputes.filter((d) => d.reason === r.key)) }))} />
-            </div>
-          </DashCard>
+          <Panel title="Charged back vs won back" sub="Running total by day. The gap between the lines is how long the apps take to pay back.">
+            <TrendChart points={running} />
+          </Panel>
+          <ReportTable
+            title="Decided this period"
+            columns={resolvedColumns}
+            rows={resolved}
+            {...rowProps}
+            filters={[...filters, { key: "outcome", label: "Outcome", value: (d) => STAGE_LABEL[disputeStage(d, PERIOD.end)] }]}
+            empty="Nothing decided yet."
+          />
         </>
       )}
 
-      <DetailDrawer open={!!cur} onClose={() => setOpenId(null)} eyebrow={cur && `${channelName(cur.source)} chargeback`} title={cur?.detail ?? ""} meta={cur && `Order ${cur.id} · ${day(cur.date)}`}>
+      <DetailDrawer
+        open={!!cur}
+        onClose={() => setOpenId(null)}
+        onPrev={at > 0 ? () => setOpenId(key(list[at - 1])) : undefined}
+        onNext={at >= 0 && at < list.length - 1 ? () => setOpenId(key(list[at + 1])) : undefined}
+        icon={ShieldAlert}
+        eyebrow={cur && `${channelName(cur.source)} chargeback`}
+        title={cur ? fmt(cur.amount) : ""}
+        status={cur && <StatusBadge tone={STAGE_TONE[disputeStage(cur, PERIOD.end)]}>{STAGE_LABEL[disputeStage(cur, PERIOD.end)]}</StatusBadge>}
+        meta={cur && `${cur.detail} · Order ${cur.id} · ${day(cur.date)}`}
+        permalink={cur ? `/mvp/chargebacks?tab=${cur.status === "open" ? "open" : "resolved"}&open=${encodeURIComponent(key(cur))}` : undefined}
+      >
         {cur && (
           <>
             <DrawerSection title="Where it is">

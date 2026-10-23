@@ -34,23 +34,40 @@ export function Panel({ title, sub, actions, className, children }: { title?: st
 /** The bordered multi-column surface the Summary tabs use. Literal class strings, so Tailwind sees them. */
 export const columnsClass = (layout: 2 | 3 | "2-3" = 3) =>
   cn(
-    "grid rounded-large border border-(--color-border-default) bg-(--color-background-secondary) px-5 py-1 max-xl:divide-y max-xl:divide-(--color-border-default) xl:divide-x xl:divide-(--color-border-default)",
+    "grid overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) max-xl:divide-y max-xl:divide-(--color-border-default) xl:divide-x xl:divide-(--color-border-default)",
     layout === 3 && "xl:grid-cols-3",
     layout === 2 && "xl:grid-cols-2",
     layout === "2-3" && "xl:grid-cols-[2fr_3fr]",
   );
 export const COLUMNS_CLASS = columnsClass(3);
 
-/** One report column: title with a link to its detail tab, then stacked rows. */
+/** One report column: title, then stacked rows. With `href` the whole column opens that page: the title
+ *  is the link, stretched over the column (one tab stop, a focus ring round the column), and hovering
+ *  tints the column, turns the title orange and slides in "View details ↗". Charts sit above the link
+ *  so their tooltips still work; everything else clicks through to it. */
 export function Column({ title, href, children }: { title: string; href?: string; children: React.ReactNode }) {
   return (
-    <section className="flex min-w-0 flex-col gap-5 px-5 py-4 first:pl-0 last:pr-0 max-xl:px-0 max-xl:py-3">
+    <section
+      className={cn(
+        "relative flex min-w-0 flex-col gap-5 px-5 py-5",
+        href && "group/col cursor-pointer transition-colors duration-150 hover:bg-(--gray-200) has-[a:focus-visible]:outline-2 has-[a:focus-visible]:-outline-offset-2 has-[a:focus-visible]:outline-(--color-focus-primary)",
+      )}
+    >
       <header className="flex items-center justify-between gap-3">
-        <h2 className="text-subtitle-lg text-(--color-text-primary)">{title}</h2>
+        <h2 className="text-subtitle-lg text-(--color-text-primary) transition-colors group-hover/col:text-(--brand-1100)">
+          {href ? (
+            <Link href={href} className="outline-none after:absolute after:inset-0 after:content-['']">
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
+        </h2>
         {href && (
-          <Link href={href} aria-label={`Open ${title}`} className="grid size-7 place-items-center rounded-medium text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)">
-            <ArrowUpRight className="size-4" aria-hidden />
-          </Link>
+          <span aria-hidden className="inline-flex h-7 items-center gap-1 rounded-circle px-1.5 text-body-sm font-medium text-(--color-text-secondary) transition-colors group-hover/col:bg-(--brand-300) group-hover/col:px-2.5 group-hover/col:text-(--brand-1100)">
+            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/col:max-w-24 group-hover/col:opacity-100">View details</span>
+            <ArrowUpRight className="size-4 transition-transform duration-200 group-hover/col:translate-x-0.5 group-hover/col:-translate-y-0.5" />
+          </span>
         )}
       </header>
       {children}
@@ -118,7 +135,7 @@ export function Sparkline({ points, format, ariaLabel, color = BRAND, className 
   const line = smoothPath(xs, ys);
   const last = points.length - 1;
   return (
-    <div className={cn("min-w-0", className)}>
+    <div className={cn("relative z-[1] min-w-0", className)}>
       <div className="relative h-28" role="img" aria-label={ariaLabel}>
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
           <defs>
@@ -149,6 +166,22 @@ export function Sparkline({ points, format, ariaLabel, color = BRAND, className 
   );
 }
 
+/** A tiny trend line for a table cell: the shape of the last weeks, ending in a dot. */
+export function MiniTrend({ values, color = BRAND, label }: { values: number[]; color?: string; label: string }) {
+  if (values.length < 2) return null;
+  const hi = Math.max(...values);
+  const lo = Math.min(...values);
+  const span = hi - lo || 1;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * 92 + 2, 22 - ((v - lo) / span) * 18] as const);
+  const [lx, ly] = pts[pts.length - 1];
+  return (
+    <svg viewBox="0 0 96 26" width={96} height={26} role="img" aria-label={label} className="inline-block align-middle">
+      <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={lx} cy={ly} r={2.25} fill={color} />
+    </svg>
+  );
+}
+
 export type InOut = { label: string; in: number; out: number };
 
 /** Money in beside money out, one pair per period (Mercury's "Cash in vs out"). In is brand, out a soft red. */
@@ -159,7 +192,8 @@ export function InOutBars({ periods, inLabel, outLabel, format, ariaLabel, outTo
   const inStyle = { background: "linear-gradient(to top, var(--brand-200), var(--brand-700))", borderTop: "2px solid var(--brand-1000)" };
   const outStyle = { background: `linear-gradient(to top, color-mix(in srgb, ${outColor} 6%, transparent), color-mix(in srgb, ${outColor} 38%, transparent))`, borderTop: `2px solid ${outColor}` };
   return (
-    <div>
+    // Above a column's stretched link, so the per-bar tooltips still respond.
+    <div className="relative z-[1]">
       <div className="flex h-36 items-end gap-2" role="img" aria-label={ariaLabel}>
         {periods.map((p) => (
           <Tip

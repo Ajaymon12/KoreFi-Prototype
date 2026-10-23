@@ -1,4 +1,5 @@
 import type { MockFile } from "./mock";
+import { getAccounts } from "./store";
 
 // Ops admin mock data: the customers KoreFi manages, the providers whose exports ops uploads, and
 // the upload history. Stand-ins until the admin API exists.
@@ -96,9 +97,23 @@ export const USERS: User[] = [
   { id: "sana", name: "Sana Kapoor", email: "sana@kapoorhospitality.com", restaurantIds: ["eggholic", "ahimsa"] },
 ];
 
-export const user = (id: string) => USERS.find((u) => u.id === id);
+// Clients outside the seeded USERS / RESTAURANTS (everyone else on Clients, and anyone ops add) fall
+// back to their account, so their File uploads page works with their own restaurants and outlets.
+export const user = (id: string): User | undefined => {
+  const seeded = USERS.find((u) => u.id === id);
+  if (seeded) return seeded;
+  const a = getAccounts().find((x) => x.id === id);
+  return a && { id: a.id, name: a.name, email: a.email, restaurantIds: a.restaurants.map((r) => r.id) };
+};
 
-export const restaurant = (id: string) => RESTAURANTS.find((r) => r.id === id);
+export const restaurant = (id: string): Restaurant | undefined => {
+  const seeded = RESTAURANTS.find((r) => r.id === id);
+  if (seeded) return seeded;
+  const r = getAccounts()
+    .flatMap((a) => a.restaurants)
+    .find((x) => x.id === id);
+  return r && { id: r.id, name: r.name, outlets: r.outlets.map((o) => ({ id: o.id, name: o.name })) };
+};
 export const outlet = (rid: string, oid: string) => restaurant(rid)?.outlets.find((o) => o.id === oid);
 
 /**

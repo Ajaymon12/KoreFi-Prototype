@@ -1,12 +1,10 @@
-import { Suspense } from "react";
-import { UsersView } from "@/components/admin/UsersView";
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// Every customer account KoreFi manages. UsersView reads ?status= / ?data= (Dashboard links), so it
-// sits in a Suspense boundary for the static export.
+// Users became Clients (/admin); old links land there. Client-side because the static export has no redirects().
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <UsersView />
-    </Suspense>
-  );
+  const router = useRouter();
+  useEffect(() => router.replace(`/admin${window.location.search}`), [router]);
+  return null;
 }

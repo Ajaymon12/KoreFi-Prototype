@@ -9,9 +9,10 @@ import { ThemeToggle } from "@/components/shell/ThemeToggle";
 // Mercury's account-creation frame: logo top-left, "Log in" top-right, one white card on a soft
 // canvas asking one thing at a time.
 
-export function AuthFrame({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+export function AuthFrame({ children, right, backdrop }: { children: React.ReactNode; right?: React.ReactNode; backdrop?: React.ReactNode }) {
   return (
-    <ThemeShell className="flex min-h-screen flex-col bg-(--color-background-primary) text-(--color-text-primary)">
+    <ThemeShell className="relative isolate flex min-h-screen flex-col bg-(--color-background-primary) text-(--color-text-primary)">
+      {backdrop && <div className="absolute inset-0 -z-10 overflow-hidden">{backdrop}</div>}
       <header className="flex h-[72px] shrink-0 items-center justify-between px-6 sm:px-12">
         <Image src={asset("/get-started/logo.svg")} alt="KoreFi" width={84} height={20} priority unoptimized className="ml-2 [.dark_&]:invert" />
         <div className="flex items-center gap-5">

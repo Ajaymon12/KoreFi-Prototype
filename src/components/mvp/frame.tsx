@@ -1,11 +1,12 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PageTabs, type PageTab } from "@/components/shell/PageTabs";
 
 // Every MVP report has the same frame: header (title + scope/period/freshness actions), the
 // page's views as tabs, then a scrolling body. Views live in `?tab=` (see PageTabs), read in the
-// browser so the pages stay static for the GitHub Pages export.
+// browser so the pages stay static for the GitHub Pages export. Tabs link within the current path,
+// so a report reused under another shell (/mvp2) keeps its tabs there.
 
 export type Tab<K extends string = string> = PageTab & { key: K };
 
@@ -20,15 +21,15 @@ type Props<K extends string> = {
   actions?: React.ReactNode;
   tabs?: readonly Tab<K>[];
   active?: K;
-  basePath: string;
   children: React.ReactNode;
 };
 
-export function MvpFrame<K extends string>({ title, actions, tabs, active, basePath, children }: Props<K>) {
+export function MvpFrame<K extends string>({ title, actions, tabs, active, children }: Props<K>) {
+  const path = usePathname();
   return (
     <>
       <PageHeader title={title} actions={actions} />
-      {tabs && active && <PageTabs tabs={[...tabs]} active={active} basePath={basePath} />}
+      {tabs && active && <PageTabs tabs={[...tabs]} active={active} basePath={path} />}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">{children}</div>
     </>
   );

@@ -1,19 +1,17 @@
-import type { Brand, Location, PosId } from "./types";
+import { BRAND, BRAND_LOGO, OUTLETS } from "@/lib/finance/outlets";
+import type { Brand, Location, OnboardingState, PosId } from "./types";
 
-// Mock "pull locations from your POS". Casa Alvarez runs on Square, Bean & Bloom on Toast, so a
-// multi-brand owner has to connect both — the case onboarding is built around. Three Casa Alvarez
-// stores sit within about a mile of each other in Manhattan (Koreatown / Midtown / Midtown East).
-// "Casa Alvarez Kitchen" and "Casa Alvarez – Midtown" match the store names in the dashboard fixtures.
+// Mock "pull locations from your POS". Taco Pros runs on Square, Bean & Bloom on Toast, so a
+// multi-brand owner has to connect both — the case onboarding is built around. Taco Pros' 34 stores are
+// the real chain's (lib/finance/outlets, which the reports follow), so the switcher and the reports agree;
+// its Oak Park pair share a ZIP, so the "tell nearby stores apart" step still has something to show.
 
 type Raw = Omit<Location, "id" | "brandId" | "name" | "included" | "deliveryApps" | "posSource">;
 
 const RAW: Record<PosId, Raw[]> = {
   square: [
-    { posName: "Casa Alvarez Kitchen", address: { street: "34 W 32nd St", city: "New York", state: "NY", zip: "10001" }, neighborhood: "Koreatown", lat: 40.7476, lng: -73.9867 },
-    { posName: "Casa Alvarez – Midtown", address: { street: "512 5th Ave", city: "New York", state: "NY", zip: "10036" }, neighborhood: "Midtown", lat: 40.7547, lng: -73.9806 },
-    { posName: "Casa Alvarez – Midtown East", address: { street: "655 Lexington Ave", city: "New York", state: "NY", zip: "10022" }, neighborhood: "Midtown East", lat: 40.7593, lng: -73.9701 },
-    { posName: "Casa Alvarez – Brooklyn", address: { street: "241 Smith St", city: "Brooklyn", state: "NY", zip: "11231" }, neighborhood: "Carroll Gardens", lat: 40.6826, lng: -73.993 },
-    { posName: "CA Training Store (do not use)", address: { street: "34 W 32nd St", city: "New York", state: "NY", zip: "10001" }, neighborhood: "Koreatown", lat: 40.7476, lng: -73.9867, looksLikeTest: true },
+    ...OUTLETS.map((o) => ({ posName: `${BRAND} – ${o.name}`, address: { street: o.street, city: o.city, state: o.state, zip: o.zip }, neighborhood: o.city })),
+    { posName: "TP Training Store (do not use)", address: { street: "1435 N Wells St", city: "Chicago", state: "IL", zip: "60610" }, neighborhood: "Chicago", looksLikeTest: true },
   ],
   toast: [
     { posName: "Bean & Bloom Café", address: { street: "88 Orchard St", city: "New York", state: "NY", zip: "10002" }, neighborhood: "Lower East Side", lat: 40.7189, lng: -73.9903 },
@@ -29,7 +27,7 @@ const RAW: Record<PosId, Raw[]> = {
 const SEP = /\s+[–—-]\s+/;
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-/** The part after "Brand – ", else the neighbourhood: "Casa Alvarez – Midtown" → "Midtown". */
+/** The part after "Brand – ", else the neighbourhood: "Taco Pros – Hyde Park" → "Hyde Park". */
 function shortName(r: Raw) {
   const parts = r.posName.split(SEP);
   return parts.length > 1 ? parts.slice(1).join(" – ") : r.neighborhood;
@@ -46,7 +44,7 @@ export function importFromPos(pos: PosId, brands: Brand[]): { brands: Brand[]; l
   const brandFor = (name: string) => {
     const hit = next.find((b) => b.name.toLowerCase() === name.toLowerCase());
     if (hit) return hit.id;
-    const b = { id: `b_${uid()}`, name };
+    const b: Brand = { id: `b_${uid()}`, name, ...(name === BRAND && { logo: BRAND_LOGO }) };
     next.push(b);
     return b.id;
   };
@@ -95,3 +93,30 @@ const streetName = (street: string) => street.replace(/^[\d-]+\s+/, "").replace(
 export const suggestName = (l: Location) => `${l.neighborhood} · ${streetName(l.address.street)}`;
 
 export const formatAddress = (l: Location) => `${l.address.street}, ${l.address.city}, ${l.address.state} ${l.address.zip}`;
+
+/** Setups saved while the sample restaurant was Casa Alvarez: that brand becomes Taco Pros, with its logo and its
+ *  34 stores in place of the old ones (keeping their delivery apps). Ids are fixed so the change is the same on
+ *  every read. A Taco Pros saved without the logo gets it. */
+export function toTacoPros(s: OnboardingState): OnboardingState {
+  const old = s.brands.find((b) => b.name.trim().toLowerCase() === "casa alvarez");
+  if (!old) {
+    const tp = s.brands.find((b) => b.name === BRAND && !b.logo);
+    return tp ? { ...s, brands: s.brands.map((b) => (b === tp ? { ...b, logo: BRAND_LOGO } : b)) } : s;
+  }
+  const mine = s.locations.filter((l) => l.brandId === old.id);
+  const at = s.locations.findIndex((l) => l.brandId === old.id);
+  const stores = OUTLETS.map<Location>((o, i) => ({
+    id: `l_tp${i}`,
+    brandId: old.id,
+    name: o.name,
+    posName: `${BRAND} – ${o.name}`,
+    posSource: mine[0]?.posSource ?? "square",
+    address: { street: o.street, city: o.city, state: o.state, zip: o.zip },
+    neighborhood: o.city,
+    included: true,
+    deliveryApps: mine[0]?.deliveryApps ?? [],
+  }));
+  const rest = s.locations.filter((l) => l.brandId !== old.id);
+  const locations = at < 0 ? [...rest, ...stores] : [...rest.slice(0, at), ...stores, ...rest.slice(at)];
+  return { ...s, brands: s.brands.map((b) => (b === old ? { ...b, name: BRAND, logo: BRAND_LOGO } : b)), locations };
+}

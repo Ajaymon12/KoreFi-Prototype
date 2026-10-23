@@ -9,6 +9,7 @@ import { useDismiss } from "@/components/dashboard/useDismiss";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { StatusBadge } from "@/components/dashboard/primitives";
 import { ProviderLogo } from "./ProviderLogo";
+import { takeUpload } from "@/lib/admin/pending";
 import { PROVIDERS, SEED_HISTORY, UPLOAD_STATUS as STATUS, USERS, outlet, provider, restaurant, user, type Category, type ProviderId, type Upload } from "@/lib/admin/data";
 import {
   SAMPLES,
@@ -47,10 +48,15 @@ type UploadState = { state: "idle" | "uploading" | "validating" | "failed"; prog
 type StatusFilter = "all" | Upload["status"];
 type ProviderFilter = "all" | ProviderId;
 
-export function UploadsView() {
+/** `accountId` scopes the page to one client (the ops client workspace): only their uploads, and the
+ * upload form's User is fixed to them. */
+export function UploadsView({ accountId }: { accountId?: string } = {}) {
   // Form
-  const [userId, setUserId] = useState("");
-  const [restaurantId, setRestaurantId] = useState("");
+  const [userId, setUserId] = useState(accountId ?? "");
+  const [restaurantId, setRestaurantId] = useState(() => {
+    const only = accountId ? user(accountId)?.restaurantIds : undefined;
+    return only?.length === 1 ? only[0] : "";
+  });
   const [category, setCategory] = useState<Category>("3pd");
   const [providerId, setProviderId] = useState<ProviderId | "">("");
   const [file, setFile] = useState<MockFile | null>(null);
@@ -96,6 +102,27 @@ export function UploadsView() {
     },
     [],
   );
+
+  // "Upload report" or a drop on the user workspace's panel: open the dialog, with the file if one came.
+  useEffect(() => {
+    const take = () => {
+      const p = takeUpload();
+      if (!p) return;
+      setOpen(true);
+      if (p.file) {
+        setFile(fromPicked(p.file));
+        setUpload({ state: "idle", progress: 0 });
+        setReading(true);
+        setTimeout(() => setReading(false), READ_MS);
+      }
+    };
+    const t = setTimeout(take, 0);
+    window.addEventListener("kf-admin-upload", take);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("kf-admin-upload", take);
+    };
+  }, []);
 
   const clearFilters = () => {
     setSearch("");
@@ -233,11 +260,12 @@ export function UploadsView() {
               ? "Your file and choices are kept."
               : "Next: KoreFi extracts the locations, then you map them from the table.";
 
-  const statusCount = (st: Upload["status"]) => history.filter((h) => h.status === st).length;
+  const statusCount = (st: Upload["status"]) => history.filter((h) => h.status === st && (!accountId || h.userId === accountId)).length;
   const q = search.trim().toLowerCase();
   const filtered = Boolean(q) || statusFilter !== "all" || providerFilter !== "all";
   const shown = history.filter(
     (h) =>
+      (!accountId || h.userId === accountId) &&
       (statusFilter === "all" || h.status === statusFilter) &&
       (providerFilter === "all" || h.provider === providerFilter) &&
       (!q || [h.fileName, restaurant(h.restaurantId)?.name, user(h.userId)?.name].some((x) => x?.toLowerCase().includes(q))),
@@ -308,12 +336,13 @@ export function UploadsView() {
           ) : (
             <div className="flex flex-col gap-4">
               <Select
-                label={<Req>User</Req>}
+                label={<Req>{accountId ? "Client" : "User"}</Req>}
                 error={showNeed && !userId ? "Select a user" : undefined}
                 placeholder="Select the customer account"
                 value={userId}
                 onChange={(e) => chooseUser(e.target.value)}
-                options={USERS.map((x) => ({ value: x.id, label: `${x.name} · ${x.email}` }))}
+                disabled={!!accountId}
+                options={(accountId ? [user(accountId)!] : USERS).map((x) => ({ value: x.id, label: `${x.name} · ${x.email}` }))}
               />
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <Select
@@ -436,8 +465,10 @@ export function UploadsView() {
         }}
         onPrefill={() => {
           setOpen(true);
-          setUserId("priya");
-          setRestaurantId("eggholic");
+          if (!accountId) {
+            setUserId("priya");
+            setRestaurantId("eggholic");
+          }
           setCategory("3pd");
           setProviderId("doordash");
         }}

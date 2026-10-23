@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
-import { ArrowLeftRight, CalendarDays, History } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, History, Landmark } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { MvpFrame, useTab } from "@/components/mvp/frame";
+import { cn } from "@/lib/utils";
 import { InsightBanner } from "@/components/mvp/MvpInsights";
 import { BigStat, COLUMNS_CLASS, Column, Fact, InOutBars, Panel, ShareBars, Sparkline, columnsClass } from "@/components/mvp/charts";
-import { DataTable, FreshnessStamp, StatusBadge, type Column as TableColumn } from "@/components/dashboard/primitives";
+import { FreshnessStamp, StatusBadge } from "@/components/dashboard/primitives";
+import { ReportTable, type TableColumn } from "@/components/ui/ReportTable";
 import { DetailDrawer, DetailList, DrawerSection, Timeline, type TimelineStep } from "@/components/ui/DetailDrawer";
 import { HundredBar } from "@/components/finance/parts";
 import { channelName, payoutStatus, payoutWeeks, sum, type DashboardData, type PayoutStatus, type PayoutWeek } from "@/lib/sources/dashboard";
@@ -53,7 +56,9 @@ const timeline = (r: Reported): TimelineStep[] => [
 
 export function PayoutsView({ data }: { data: DashboardData }) {
   const active = useTab(TABS);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // `?open=` reopens a payout from a copied link.
+  const linked = useSearchParams().get("open");
+  const [openId, setOpenId] = useState<string | null>(linked);
   const scope = scopeFor(undefined, locations);
   const insights = forPage(insightsFor(data, scope, storeRows(data, scope)), "payouts");
   const mercury = data.connections.find((c) => c.id === "mercury");
@@ -77,6 +82,7 @@ export function PayoutsView({ data }: { data: DashboardData }) {
   const weeks = payoutWeeks(data.payouts, data.ops, PERIOD.start);
   const appWeeks = (source: Row["source"]) => weeks.map((w) => ({ label: w.label, value: w.byChannel.find((c) => c.source === source)?.net ?? 0 }));
   const cur = rows.find((r) => r.source === openId);
+  const atR = reported.findIndex((r) => r.source === openId);
   const banner = <InsightBanner insights={insights} title="What KoreFi sees in this cycle" />;
 
   const details = (r: Row) => (
@@ -87,7 +93,7 @@ export function PayoutsView({ data }: { data: DashboardData }) {
 
   /** One app's card: headline, trend, the figures, and where its money is. */
   const AppCard = ({ r, view }: { r: Row; view: "cycle" | "recon" }) => (
-    <Panel className="flex flex-col gap-5">
+    <Panel className={cn("flex flex-col gap-5 transition-colors", openId === r.source && "border-(--color-primary-solid) ring-1 ring-(--color-primary-solid)")}>
       <div className="flex items-start justify-between gap-3">
         {r.payout ? (
           view === "cycle" ? (
@@ -125,10 +131,10 @@ export function PayoutsView({ data }: { data: DashboardData }) {
 
   type Week = PayoutWeek;
   const historyColumns: TableColumn<Week>[] = [
-    { key: "week", header: "Week", cell: (w) => w.label },
-    { key: "gross", header: "App sales", align: "right", cell: (w) => fmt(w.gross) },
-    { key: "fees", header: "Fees", align: "right", cell: (w) => `−${fmt(w.fees)}` },
-    { key: "net", header: "Paid to you", align: "right", cell: (w) => fmt(w.net) },
+    { key: "week", header: "Week", cell: (w) => w.label, sort: (w) => w.start },
+    { key: "gross", header: "App sales", align: "right", cell: (w) => fmt(w.gross), sort: (w) => w.gross },
+    { key: "fees", header: "Fees", align: "right", cell: (w) => `−${fmt(w.fees)}`, sub: (w) => pct(w.fees / (w.gross || 1)), sort: (w) => w.fees },
+    { key: "net", header: "Paid to you", align: "right", cell: (w) => fmt(w.net), sort: (w) => w.net },
     { key: "split", header: "By app", cell: (w) => w.byChannel.map((c) => `${c.name} ${fmt(c.net)}`).join(" · ") },
   ];
 
@@ -137,7 +143,7 @@ export function PayoutsView({ data }: { data: DashboardData }) {
       title="Payouts"
       tabs={TABS}
       active={active}
-      basePath="/mvp/payouts"
+     
       actions={mercury?.connected ? <FreshnessStamp at={mercury.lastSyncedAt} label="Mercury synced" /> : <StatusBadge tone="neutral">Mercury not connected</StatusBadge>}
     >
       {active === "week" && (
@@ -245,15 +251,22 @@ export function PayoutsView({ data }: { data: DashboardData }) {
               })()}
             </Column>
           </div>
-          <Panel title="Week by week" sub="Estimated from each app's daily sales; the apps report one payout per cycle.">
-            <div className="-mx-5 -mb-5">
-              <DataTable columns={historyColumns} rows={weeks} rowKey={(w) => w.start} />
-            </div>
-          </Panel>
+          <ReportTable title="Week by week" description="Estimated from each app's daily sales; the apps report one payout per cycle." columns={historyColumns} rows={weeks} rowKey={(w) => w.start} noun="weeks" initialSort={{ key: "week", dir: "desc" }} />
         </>
       )}
 
-      <DetailDrawer open={!!cur?.payout} onClose={() => setOpenId(null)} eyebrow={cur && `${cur.app} → Mercury`} title={cur ? `${cur.app} payout` : ""} meta={cur?.payout?.period}>
+      <DetailDrawer
+        open={!!cur?.payout}
+        onClose={() => setOpenId(null)}
+        onPrev={atR > 0 ? () => setOpenId(reported[atR - 1].source) : undefined}
+        onNext={atR >= 0 && atR < reported.length - 1 ? () => setOpenId(reported[atR + 1].source) : undefined}
+        icon={Landmark}
+        eyebrow={cur && `${cur.app} payout`}
+        title={cur?.payout ? fmt(cur.payout.net) : ""}
+        status={cur && <StatusBadge tone={STATUS[cur.status].tone}>{STATUS[cur.status].label}</StatusBadge>}
+        meta={cur?.payout && `Sales ${cur.payout.period} · to Mercury`}
+        permalink={cur ? `/mvp/payouts?tab=${active}&open=${cur.source}` : undefined}
+      >
         {cur?.payout && (
           <>
             <DrawerSection title="Where it is">

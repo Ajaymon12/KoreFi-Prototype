@@ -9,7 +9,9 @@ export type DeliveryApp = "doordash" | "ubereats" | "grubhub" | "other";
 export type Address = { street: string; city: string; state: string; zip: string };
 
 /** `logo` is a small data URL (see src/lib/org/logo.ts), so it lives with the rest of the saved setup. */
-export type Brand = { id: string; name: string; logo?: string };
+/** `awaitingReports`: added after setup, so no POS or 3PD report has been uploaded for it yet (the
+ * sample data is the first restaurant's); report pages show their launch state for it instead. */
+export type Brand = { id: string; name: string; logo?: string; awaitingReports?: boolean };
 
 export type Location = {
   id: string;
@@ -23,6 +25,8 @@ export type Location = {
   neighborhood: string;
   lat?: number;
   lng?: number;
+  /** Google Maps place id, for stores added by searching Google Maps (see ./places.ts). */
+  placeId?: string;
   included: boolean;
   /** Set when the import thinks this is a training/test store. */
   looksLikeTest?: boolean;
