@@ -1,6 +1,7 @@
 "use client";
 import { InsightBanner } from "@/components/mvp/MvpInsights";
-import { BigStat, COLUMNS_CLASS, Column, Fact, InOutBars, Panel, ShareBars, Sparkline, columnsClass } from "@/components/mvp/charts";
+import { BigStat, COLUMNS_CLASS, Column, Fact, InOutBars, MiniTrend, Panel, ShareBars, Sparkline, columnsClass } from "@/components/mvp/charts";
+import { AppName, ReportTable, TableFrame, type TableColumn } from "@/components/ui/ReportTable";
 import { StatementTable, type StmtColumn, type StmtRow } from "@/components/finance/StatementTable";
 import { ExportButton, HundredBar, downloadCsv, pct } from "@/components/finance/parts";
 import { channelName, moneyByStore, payoutWeeks, sum, type DashboardData, type PayoutWeek } from "@/lib/sources/dashboard";
@@ -11,7 +12,8 @@ import { PERIOD } from "@/lib/period";
 import { PART_COLORS, PosNote, type ProfitTab } from "./ProfitView";
 
 // Profit without a POS: a delivery-only P&L from the apps' payout, marketing and order-error
-// reports. Same four views as the books version, built from the same chart pieces.
+// reports. Same four views as the books version, built from the same chart pieces and tables
+// (edge to edge, sortable, a small trend line per row).
 
 type AppLine = { source: SourceId; app: string; gross: number; fees: number; promos: number; lost: number; net: number; paid: number };
 
@@ -78,6 +80,15 @@ export function AppsOnly({ tab, data, insights }: { tab: ProfitTab; data: Dashbo
   }
 
   if (tab === "channel") {
+    const appColumns: TableColumn<AppLine>[] = [
+      { key: "app", header: "App", cell: (l) => <AppName source={l.source} name={l.app} />, sort: (l) => l.app },
+      { key: "gross", header: "Sales", align: "right", cell: (l) => fmt(l.gross), sub: (l) => `${share(l.gross)} of app sales`, sort: (l) => l.gross },
+      { key: "trend", header: "By week", cell: (l) => <MiniTrend values={weeklyGross(l, weeks).map((w) => w.value)} label={`${l.app} sales by week`} /> },
+      { key: "fees", header: "Commissions & fees", align: "right", cell: (l) => `−${fmt(l.fees)}`, sort: (l) => l.fees },
+      { key: "promos", header: "Promos & ads", align: "right", cell: (l) => (l.promos ? `−${fmt(l.promos)}` : "None"), sort: (l) => l.promos },
+      { key: "lost", header: "Chargebacks lost", align: "right", cell: (l) => (l.lost ? `−${fmt(l.lost)}` : "None"), sort: (l) => l.lost },
+      { key: "paid", header: "Paid to you", align: "right", cell: (l) => <b className="font-semibold">{fmt(l.paid)}</b>, sub: (l) => `${Math.round((l.paid / (l.gross || 1)) * 100)}¢ of every $1`, sort: (l) => l.paid },
+    ];
     return (
       <>
         <PosNote />
@@ -85,21 +96,7 @@ export function AppsOnly({ tab, data, insights }: { tab: ProfitTab; data: Dashbo
         <Panel title="Where every $100 of app sales came from" sub={PERIOD.range}>
           <HundredBar total={gross} parts={lines.map((l, i) => ({ key: l.source, label: l.app, value: l.gross, color: PART_COLORS[i] }))} />
         </Panel>
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {lines.map((l) => (
-            <Panel key={l.source} className="flex flex-col gap-5">
-              <BigStat label={l.app} value={fmt(l.gross)} sub={`${share(l.gross)} of app sales · ${PERIOD.label.toLowerCase()}`} />
-              <Sparkline points={weeklyGross(l, weeks)} format={fmt} ariaLabel={`${l.app} sales by week`} />
-              <div>
-                <Fact label="Commissions & fees" value={`−${fmt(l.fees)}`} />
-                <Fact label="Promos & ads" value={l.promos ? `−${fmt(l.promos)}` : "None"} />
-                <Fact label="Chargebacks lost" value={l.lost ? `−${fmt(l.lost)}` : "None"} hint="After KoreFi's disputes" />
-                <Fact label="Paid to you" value={<b className="font-semibold">{fmt(l.paid)}</b>} />
-                <Fact label="Of every $1" value={`${Math.round((l.paid / (l.gross || 1)) * 100)}¢`} />
-              </div>
-            </Panel>
-          ))}
-        </div>
+        <ReportTable title="By app" description={PERIOD.range} columns={appColumns} rows={lines} rowKey={(l) => l.source} noun="apps" initialSort={{ key: "gross", dir: "desc" }} />
         <Source>Grubhub has no payout report yet; it appears here once KoreFi uploads it.</Source>
       </>
     );
@@ -108,6 +105,15 @@ export function AppsOnly({ tab, data, insights }: { tab: ProfitTab; data: Dashbo
   if (tab === "store") {
     // A store's app sales by week, summed over the apps' daily reports.
     const storeWeeks = (store: string) => weeks.map((w) => ({ label: w.label, value: sum(data.ops.filter((o) => o.store === store).flatMap((o) => o.daily.filter((d) => d.date >= w.start && d.date <= w.end).map((d) => d.sales))) }));
+    type St = (typeof stores)[number];
+    const storeColumns: TableColumn<St>[] = [
+      { key: "store", header: "Store", cell: (r) => r.store, sort: (r) => r.store },
+      { key: "gross", header: "App sales", align: "right", cell: (r) => fmt(r.gross), sub: (r) => `${share(r.gross)} of app sales`, sort: (r) => r.gross },
+      { key: "trend", header: "By week", cell: (r) => <MiniTrend values={storeWeeks(r.store).map((w) => w.value)} label={`${r.store} app sales by week`} /> },
+      { key: "fees", header: "Commissions & fees", align: "right", cell: (r) => `−${fmt(r.fees)}`, sort: (r) => r.fees },
+      { key: "byApp", header: "Paid by app", cell: (r) => r.channels.map((c) => `${c.name} ${fmt(c.net)}`).join(" · ") },
+      { key: "net", header: "Paid to you", align: "right", cell: (r) => <b className="font-semibold text-(--color-text-success)">{fmt(r.net)}</b>, sort: (r) => r.net },
+    ];
     return (
       <>
         <PosNote />
@@ -120,21 +126,7 @@ export function AppsOnly({ tab, data, insights }: { tab: ProfitTab; data: Dashbo
             <ShareBars rows={stores.map((s) => ({ key: s.store, label: s.store, value: s.net }))} format={fmt} />
           </Column>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {stores.map((s) => (
-            <Panel key={s.store} className="flex flex-col gap-5">
-              <BigStat label={s.store} value={fmt(s.net)} tone="success" sub={`paid to you · ${share(s.gross)} of app sales`} />
-              <Sparkline points={storeWeeks(s.store)} format={fmt} ariaLabel={`${s.store} app sales by week`} />
-              <div>
-                <Fact label="App sales" value={fmt(s.gross)} />
-                <Fact label="Commissions & fees" value={`−${fmt(s.fees)}`} />
-                {s.channels.map((c) => (
-                  <Fact key={c.source} label={`${c.name} paid`} value={fmt(c.net)} />
-                ))}
-              </div>
-            </Panel>
-          ))}
-        </div>
+        <ReportTable title="By store" description={PERIOD.range} columns={storeColumns} rows={stores} rowKey={(r) => r.store} noun="stores" initialSort={{ key: "net", dir: "desc" }} />
         <Source>Promos and chargebacks are reported per app, not per store, so store figures stop at commissions and fees.</Source>
       </>
     );
@@ -179,16 +171,20 @@ export function AppsOnly({ tab, data, insights }: { tab: ProfitTab; data: Dashbo
   return (
     <>
       <PosNote />
-      <Panel title="Delivery profit & loss by week" sub={PERIOD.range} actions={<ExportButton onClick={exportCsv} />} className="space-y-5">
-        <div className="grid gap-5 border-b border-(--color-border-default) pb-5 sm:grid-cols-3">
-          <BigStat label="App sales" value={fmt(gross)} sub={`${lines.length} apps reporting`} />
-          <BigStat label="Platform costs" value={`−${fmt(platform)}`} sub={`${share(platform)} of app sales`} />
-          <BigStat label="Paid to you" value={fmt(total("paid"))} tone="success" sub={`${Math.round((gross ? total("paid") / gross : 0) * 100)}¢ of every $1`} />
-        </div>
-        <div className="-mx-5 -mb-5">
-          <StatementTable caption={`Delivery profit & loss by week, ${PERIOD.range}`} columns={columns} rows={rows} />
-        </div>
-      </Panel>
+      <div className={columnsClass(3)}>
+        <Column title="App sales">
+          <BigStat label={PERIOD.range} value={fmt(gross)} sub={`${lines.length} apps reporting`} />
+        </Column>
+        <Column title="Platform costs">
+          <BigStat label="Commissions, fees, promos and chargebacks" value={`−${fmt(platform)}`} sub={`${share(platform)} of app sales`} />
+        </Column>
+        <Column title="Paid to you">
+          <BigStat label="After every platform cost" value={fmt(total("paid"))} tone="success" sub={`${Math.round((gross ? total("paid") / gross : 0) * 100)}¢ of every $1`} />
+        </Column>
+      </div>
+      <TableFrame title="Delivery profit & loss by week" description={`${PERIOD.range}. Open a line for each app.`} toolbar={<div className="ml-auto"><ExportButton onClick={exportCsv} /></div>}>
+        <StatementTable caption={`Delivery profit & loss by week, ${PERIOD.range}`} columns={columns} rows={rows} flush />
+      </TableFrame>
       <Source>Weekly figures are spread from each app&apos;s period payout by its daily sales. Promos and chargebacks are on the day they were charged.</Source>
     </>
   );

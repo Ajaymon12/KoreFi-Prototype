@@ -128,7 +128,7 @@ export function BriefView({ data }: { data: DashboardData }) {
   const set = (change: Partial<BriefPrefs>) => updatePrefs(change);
 
   return (
-    <MvpFrame title="Weekly brief" tabs={TABS} active={active} basePath="/mvp/brief">
+    <MvpFrame title="Weekly brief" tabs={TABS} active={active}>
       {active === "preview" && (
         <>
           <p className="flex items-start gap-2 rounded-large border border-(--color-border-default) bg-(--color-neutral-lightest) px-4 py-3 text-body-md text-(--color-text-secondary)">

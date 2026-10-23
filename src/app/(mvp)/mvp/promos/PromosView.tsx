@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import { LayoutDashboard, Megaphone, Smartphone } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { MvpFrame, latestSync, useTab } from "@/components/mvp/frame";
 import { MvpInsights } from "@/components/mvp/MvpInsights";
 import { DataSources } from "@/components/dashboard/DataSources";
 import { StatStrip } from "@/components/dashboard/StatStrip";
 import { DashCard, CardTitle, SplitBar } from "@/components/dashboard/parts";
-import { DataTable, type Column } from "@/components/dashboard/primitives";
+import { StatusBadge } from "@/components/dashboard/primitives";
+import { AppName, ReportTable, type TableColumn } from "@/components/ui/ReportTable";
 import { DetailDrawer, DetailList } from "@/components/ui/DetailDrawer";
 import { HundredBar } from "@/components/finance/parts";
 import { cn } from "@/lib/utils";
@@ -37,7 +39,9 @@ const Return = ({ value }: { value: number }) => <span className={cn("tabular-nu
 
 export function PromosView({ data }: { data: DashboardData }) {
   const active = useTab(TABS);
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  // `?open=` reopens a campaign from a copied link.
+  const linked = useSearchParams().get("open");
+  const [openKey, setOpenKey] = useState<string | null>(linked);
   const scope = scopeFor(undefined, locations);
   const insights = forPage(insightsFor(data, scope, storeRows(data, scope)), "promos");
   const { promos } = data;
@@ -47,42 +51,38 @@ export function PromosView({ data }: { data: DashboardData }) {
   const apps = promosByApp(promos);
   const trend = promoTrend(promos);
   const cur = campaigns.find((c) => c.key === openKey);
+  const at = campaigns.findIndex((c) => c.key === openKey);
 
-  const campaignColumns: Column<CampaignRow>[] = [
-    { key: "campaign", header: "Campaign", cell: (r) => r.campaign },
-    { key: "type", header: "Kind", cell: (r) => r.typeLabel },
-    { key: "app", header: "App", cell: (r) => r.app },
-    { key: "store", header: "Store", cell: (r) => r.store },
-    { key: "spend", header: "Cost to you", align: "right", cell: (r) => fmt(r.spend) },
-    { key: "orders", header: "Orders", align: "right", cell: (r) => `${r.orders}${r.newCustomers ? ` · ${r.newCustomers} new` : ""}` },
-    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales) },
-    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} /> },
-    { key: "open", header: "", align: "right", cell: (r) => <button type="button" onClick={() => setOpenKey(r.key)} className="text-body-sm text-(--color-text-clickable) hover:underline">Details</button> },
+  // After the Figma table: the campaign on two lines, the app with its logo, every figure sortable.
+  const campaignColumns: TableColumn<CampaignRow>[] = [
+    { key: "campaign", header: "Campaign", cell: (r) => r.campaign, sub: (r) => `${r.typeLabel} · ${r.store}`, sort: (r) => r.campaign },
+    { key: "app", header: "App", cell: (r) => <AppName source={r.source} name={r.app} />, sort: (r) => r.app },
+    { key: "spend", header: "Cost to you", align: "right", cell: (r) => fmt(r.spend), sort: (r) => r.spend },
+    { key: "orders", header: "Orders", align: "right", cell: (r) => String(r.orders), sub: (r) => (r.newCustomers ? `${r.newCustomers} new` : "–"), sort: (r) => r.orders },
+    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales), sort: (r) => r.sales },
+    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} />, sort: (r) => r.perDollar },
   ];
 
   type TypeRow = (typeof types)[number];
-  const typeColumns: Column<TypeRow>[] = [
-    { key: "label", header: "Kind", cell: (r) => r.label },
-    { key: "campaigns", header: "Campaigns", align: "right", cell: (r) => String(r.campaigns) },
-    { key: "share", header: "Share of spend", cell: (r) => <span className="flex items-center gap-2"><SplitBar fill={stats.spend ? r.spend / stats.spend : 0} className="w-24" />{pct(stats.spend ? r.spend / stats.spend : 0)}</span> },
-    { key: "spend", header: "Cost to you", align: "right", cell: (r) => fmt(r.spend) },
-    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales) },
-    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} /> },
+  const typeColumns: TableColumn<TypeRow>[] = [
+    { key: "label", header: "Kind", cell: (r) => r.label, sub: (r) => `${r.campaigns} campaign${r.campaigns === 1 ? "" : "s"}`, sort: (r) => r.label },
+    { key: "share", header: "Share of spend", cell: (r) => <span className="flex items-center gap-2"><SplitBar fill={stats.spend ? r.spend / stats.spend : 0} className="w-24" />{pct(stats.spend ? r.spend / stats.spend : 0)}</span>, sort: (r) => r.spend },
+    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales), sub: (r) => `on ${fmt(r.spend)} spent`, sort: (r) => r.sales },
+    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} />, sort: (r) => r.perDollar },
   ];
 
   type AppRow = (typeof apps)[number];
-  const appColumns: Column<AppRow>[] = [
-    { key: "app", header: "App", cell: (r) => r.app },
-    { key: "campaigns", header: "Campaigns", align: "right", cell: (r) => String(r.campaigns) },
-    { key: "spend", header: "Cost to you", align: "right", cell: (r) => fmt(r.spend) },
-    { key: "orders", header: "Orders", align: "right", cell: (r) => `${r.orders} · ${r.newCustomers} new` },
-    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales) },
-    { key: "cost", header: "Cost of sales", align: "right", cell: (r) => pct(r.costRate) },
-    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} /> },
+  const appColumns: TableColumn<AppRow>[] = [
+    { key: "app", header: "App", cell: (r) => <AppName source={r.source} name={r.app} />, sub: (r) => `${r.campaigns} campaign${r.campaigns === 1 ? "" : "s"}`, sort: (r) => r.app },
+    { key: "spend", header: "Cost to you", align: "right", cell: (r) => fmt(r.spend), sort: (r) => r.spend },
+    { key: "orders", header: "Orders", align: "right", cell: (r) => String(r.orders), sub: (r) => `${r.newCustomers} new`, sort: (r) => r.orders },
+    { key: "sales", header: "Sales", align: "right", cell: (r) => fmt(r.sales), sort: (r) => r.sales },
+    { key: "cost", header: "Cost of sales", align: "right", cell: (r) => pct(r.costRate), sort: (r) => r.costRate },
+    { key: "per", header: "Per $1", align: "right", cell: (r) => <Return value={r.perDollar} />, sort: (r) => r.perDollar },
   ];
 
   return (
-    <MvpFrame title="Promos" tabs={TABS} active={active} basePath="/mvp/promos" actions={<DataSources syncedAt={latestSync(data.connections, "marketplace")} timezoneNote={PERIOD.timezoneNote} />}>
+    <MvpFrame title="Promos" tabs={TABS} active={active} actions={<DataSources syncedAt={latestSync(data.connections, "marketplace")} timezoneNote={PERIOD.timezoneNote} />}>
       {active === "summary" && (
         <>
           <StatStrip
@@ -93,38 +93,45 @@ export function PromosView({ data }: { data: DashboardData }) {
               { label: "Return per $1", value: stats.spend ? per(stats.perDollar) : "–", sub: "in sales for every dollar of promo", tone: stats.perDollar >= 3 ? "success" : stats.perDollar < 1 ? "danger" : "default" },
             ]}
           />
-          <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
-            <DashCard>
-              <CardTitle title="Which kinds of promo pay" />
-              <div className="mt-2">
-                <DataTable columns={typeColumns} rows={types} rowKey={(r) => r.type} empty="No promos ran this period." />
-              </div>
-            </DashCard>
-            <DashCard>
-              <CardTitle title="Spend by week" />
-              <ul className="mt-4 space-y-3">
-                {trend.map((n, i) => (
-                  <li key={i} className="flex items-center gap-3 text-body-md">
-                    <span className="w-28 shrink-0 text-(--color-text-secondary)">{WEEKS[i] ?? `Week ${i + 1}`}</span>
-                    <SplitBar fill={Math.max(...trend) ? n / Math.max(...trend) : 0} className="flex-1" />
-                    <span className="w-20 text-right tabular-nums">{fmt(n)}</span>
-                  </li>
-                ))}
-              </ul>
-            </DashCard>
-          </div>
+          <DashCard>
+            <CardTitle title="Spend by week" />
+            <ul className="mt-4 space-y-3">
+              {trend.map((n, i) => (
+                <li key={i} className="flex items-center gap-3 text-body-md">
+                  <span className="w-28 shrink-0 text-(--color-text-secondary)">{WEEKS[i] ?? `Week ${i + 1}`}</span>
+                  <SplitBar fill={Math.max(...trend) ? n / Math.max(...trend) : 0} className="flex-1" />
+                  <span className="w-20 text-right tabular-nums">{fmt(n)}</span>
+                </li>
+              ))}
+            </ul>
+          </DashCard>
+          {/* Tables run edge to edge across the page (Figma), so this one gets its own row. */}
+          <ReportTable title="Which kinds of promo pay" columns={typeColumns} rows={types} rowKey={(r) => r.type} noun="kinds of promo" initialSort={{ key: "per", dir: "desc" }} empty="No promos ran this period." />
           <MvpInsights insights={insights} />
         </>
       )}
 
       {active === "campaigns" && (
         <>
-          <DashCard>
-            <CardTitle title="Every campaign, best return first" />
-            <div className="mt-2">
-              <DataTable columns={campaignColumns} rows={campaigns} rowKey={(r) => r.key} empty="No promos ran this period." />
-            </div>
-          </DashCard>
+          <ReportTable
+            title="Every campaign"
+            description="Best return first. Select a campaign for its weekly cost and customers."
+            columns={campaignColumns}
+            rows={campaigns}
+            rowKey={(r) => r.key}
+            search={(r) => `${r.campaign} ${r.store} ${r.typeLabel} ${r.app}`}
+            searchPlaceholder="Search campaigns…"
+            filters={[
+              { key: "app", label: "App", value: (r) => r.app },
+              { key: "kind", label: "Kind", value: (r) => r.typeLabel },
+              { key: "store", label: "Store", value: (r) => r.store },
+            ]}
+            initialSort={{ key: "per", dir: "desc" }}
+            noun="campaigns"
+            onRowClick={(r) => setOpenKey(r.key)}
+            selectedKey={openKey}
+            empty="No promos ran this period."
+          />
           <MvpInsights insights={insights} />
         </>
       )}
@@ -137,17 +144,23 @@ export function PromosView({ data }: { data: DashboardData }) {
               <HundredBar total={stats.spend} parts={apps.map((a, i) => ({ key: a.source, label: a.app, value: a.spend, color: COLORS[i] }))} />
             </div>
           </DashCard>
-          <DashCard>
-            <CardTitle title="By app" />
-            <div className="mt-2">
-              <DataTable columns={appColumns} rows={apps} rowKey={(r) => r.source} empty="No promos ran this period." />
-            </div>
-          </DashCard>
+          <ReportTable title="By app" columns={appColumns} rows={apps} rowKey={(r) => r.source} noun="apps" empty="No promos ran this period." />
           <MvpInsights insights={insights} />
         </>
       )}
 
-      <DetailDrawer open={!!cur} onClose={() => setOpenKey(null)} eyebrow={cur && `${cur.app} · ${cur.typeLabel}`} title={cur?.campaign ?? ""} meta={cur?.store}>
+      <DetailDrawer
+        open={!!cur}
+        onClose={() => setOpenKey(null)}
+        onPrev={at > 0 ? () => setOpenKey(campaigns[at - 1].key) : undefined}
+        onNext={at >= 0 && at < campaigns.length - 1 ? () => setOpenKey(campaigns[at + 1].key) : undefined}
+        icon={Megaphone}
+        eyebrow={cur && `${cur.app} promo`}
+        title={cur?.campaign ?? ""}
+        status={cur && <StatusBadge tone="neutral">{cur.typeLabel}</StatusBadge>}
+        meta={cur?.store}
+        permalink={cur ? `/mvp/promos?tab=campaigns&open=${encodeURIComponent(cur.key)}` : undefined}
+      >
         {cur && (
           <>
             <div>

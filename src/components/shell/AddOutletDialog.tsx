@@ -15,9 +15,11 @@ export type AddMode = { kind: "restaurant" } | { kind: "branch"; brand: Brand };
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-type Props = { mode: AddMode; siblings: Location[]; onClose: () => void; onDone: (scope: Scope, message: string) => void };
+type Noun = { one: string; many: string };
+/** `commit` replaces saving to the owner's setup (ops passes its own); `noun` is "branch" by default. */
+type Props = { mode: AddMode; siblings: Location[]; noun?: Noun; commit?: (brand: Brand, isNew: boolean, loc: Location) => void; onClose: () => void; onDone: (scope: Scope, message: string) => void };
 
-export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
+export function AddOutletDialog({ mode, siblings, noun = { one: "branch", many: "branches" }, commit, onClose, onDone }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   useDismiss(panel, true, onClose);
   const first = siblings[0];
@@ -29,7 +31,7 @@ export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
   const isRestaurant = mode.kind === "restaurant";
   const err = {
     restaurant: isRestaurant && !f.restaurant.trim() && "Enter the restaurant’s name",
-    name: !f.name.trim() && "Give this branch a short name",
+    name: !f.name.trim() && `Give this ${noun.one} a short name`,
     street: !f.street.trim() && "Enter the street address",
     city: !f.city.trim() && "Enter the city",
     state: !/^[A-Z]{2}$/.test(f.state) && "2 letters",
@@ -55,19 +57,20 @@ export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
       included: true,
       deliveryApps: [],
     };
-    update((s) => ({ brands: mode.kind === "restaurant" ? [...s.brands, brand] : s.brands, locations: [...s.locations, loc] }));
+    if (commit) commit(brand, mode.kind === "restaurant", loc);
+    else update((s) => ({ brands: mode.kind === "restaurant" ? [...s.brands, { ...brand, awaitingReports: true }] : s.brands, locations: [...s.locations, loc] }));
     if (mode.kind === "restaurant") onDone({ kind: "brand", id: brand.id }, `Added ${brand.name}`);
     else onDone({ kind: "location", id: loc.id }, `Added ${loc.name} to ${brand.name}`);
   };
 
-  const title = mode.kind === "restaurant" ? "Add a restaurant" : `Add a branch to ${mode.brand.name}`;
+  const title = mode.kind === "restaurant" ? "Add a restaurant" : `Add ${noun.one === "outlet" ? "an" : "a"} ${noun.one} to ${mode.brand.name}`;
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-black/30 p-4">
       <div ref={panel} role="dialog" aria-modal="true" aria-label={title} className="my-auto w-full max-w-[480px] rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-6 shadow-[0_16px_48px_rgb(0_0_0/0.18)]">
         <h2 className="text-subtitle-lg text-(--color-text-primary)">{title}</h2>
         <p className="mt-1 text-body-md text-(--color-text-secondary)">
-          {isRestaurant ? "A restaurant is a brand with its own name and logo, like Casa Alvarez. Add its first branch now; more can be added from the menu." : "A branch is one of its stores. Its sales appear once its POS is connected."}
+          {isRestaurant ? `A restaurant is a brand with its own name and logo, like Taco Pros. Add its first ${noun.one} now; more can be added later.` : `${noun.one[0].toUpperCase()}${noun.one.slice(1)}s are its individual stores. Sales appear once the POS is connected.`}
         </p>
 
         <form noValidate onSubmit={submit} className="mt-5 flex flex-col gap-4">
@@ -78,7 +81,7 @@ export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
             </>
           )}
 
-          <TextField label={isRestaurant ? "First branch name" : "Branch name"} placeholder="e.g. Midtown · 5th Ave" value={f.name} onChange={set("name")} error={show("name")} hint="What your team calls this store." autoFocus={!isRestaurant} />
+          <TextField label={isRestaurant ? `First ${noun.one} name` : `${noun.one[0].toUpperCase()}${noun.one.slice(1)} name`} placeholder="e.g. Midtown · 5th Ave" value={f.name} onChange={set("name")} error={show("name")} hint="What your team calls this store." autoFocus={!isRestaurant} />
           <TextField label="Street address" autoComplete="address-line1" value={f.street} onChange={set("street")} error={show("street")} />
           <div className="grid grid-cols-[1fr_72px_96px] gap-3">
             <TextField label="City" autoComplete="address-level2" value={f.city} onChange={set("city")} error={show("city")} />
@@ -87,7 +90,7 @@ export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
           </div>
           {sameZip && (
             <p className="rounded-medium bg-(--color-warning-lightest) p-3 text-body-sm text-(--color-text-primary)">
-              You already have <b className="font-medium">{sameZip.name}</b> in this ZIP. Give this branch a name that tells them apart, like “Midtown · Lex Ave”.
+              You already have <b className="font-medium">{sameZip.name}</b> in this ZIP. Give this {noun.one} a name that tells them apart, like “Midtown · Lex Ave”.
             </p>
           )}
 
@@ -96,7 +99,7 @@ export function AddOutletDialog({ mode, siblings, onClose, onDone }: Props) {
               Cancel
             </Button>
             <Button type="primary" size="small" htmlType="submit">
-              {isRestaurant ? "Add restaurant" : "Add branch"}
+              {isRestaurant ? "Add restaurant" : `Add ${noun.one}`}
             </Button>
           </div>
         </form>

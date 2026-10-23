@@ -5,13 +5,13 @@
 export const ACCOUNTING_SOURCE = "QuickBooks Online";
 export const BOOKS_SYNCED_AT = "2026-10-08T11:38:00Z";
 
-export const STORES = ["Casa Alvarez Kitchen", "Casa Alvarez – Midtown", "Casa Alvarez – Lakeview"] as const;
-export type Store = (typeof STORES)[number];
+import { OUTLETS, STORES, outletOf, type Store } from "./outlets";
+export { STORES, type Store };
 
-const STORE_SHARE: Record<Store, number> = { "Casa Alvarez Kitchen": 0.46, "Casa Alvarez – Midtown": 0.3, "Casa Alvarez – Lakeview": 0.24 };
-// Cost pressure per store, so the by-store view has real differences to show.
-const STORE_LABOR: Record<Store, number> = { "Casa Alvarez Kitchen": 1, "Casa Alvarez – Midtown": 1.06, "Casa Alvarez – Lakeview": 0.96 };
-const STORE_FOOD: Record<Store, number> = { "Casa Alvarez Kitchen": 1, "Casa Alvarez – Midtown": 1.02, "Casa Alvarez – Lakeview": 1.05 };
+// Each outlet's size, delivery lean and cost pressure come from ./outlets, so the by-store views have real
+// differences to show. The group is all of them: SCALE is how many "typical months" it adds up to.
+const share = (s: Store) => outletOf(s).share;
+const SCALE = OUTLETS.reduce((n, o) => n + o.share, 0);
 
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const LATEST = { year: 2026, month: 8 }; // Sep 2026, the latest closed month (0-based)
@@ -56,16 +56,17 @@ const season = (month: number) => 1 + 0.07 * Math.sin(((month - 2) / 12) * Math.
 /** One account, one store, one month (month is 0-based). */
 export function monthAmount(acc: Account, store: Store, year: number, month: number): number {
   const noise = 1 + 0.025 * wobble(hash(acc.id + store) + month * 3 + year);
-  const sales = STORE_SHARE[store] * season(month) * YEAR_SALES[year] * noise;
+  const o = outletOf(store);
+  const sales = o.share * season(month) * YEAR_SALES[year] * noise;
   if (acc.id === "commissions") {
     return Math.round(MARKETPLACES.reduce((s, id) => s + monthAmount(ACCOUNTS.find((a) => a.id === id)!, store, year, month), 0) * COMMISSION_RATE);
   }
-  if (acc.section === "revenue") return Math.round(acc.base * sales);
+  if (acc.section === "revenue") return Math.round(acc.base * sales * (MARKETPLACES.includes(acc.id) ? o.apps : 1));
   const cost = YEAR_COST[year] * noise;
-  if (acc.section === "cogs") return Math.round(acc.base * STORE_SHARE[store] * (0.5 + 0.5 * season(month)) * YEAR_SALES[year] * STORE_FOOD[store] * (acc.id === "food" ? 1.04 : 1) * noise);
-  if (acc.section === "labor") return Math.round(acc.base * STORE_SHARE[store] * STORE_LABOR[store] * cost * (0.7 + 0.3 * season(month)));
+  if (acc.section === "cogs") return Math.round(acc.base * o.share * (0.5 + 0.5 * season(month)) * YEAR_SALES[year] * o.food * (acc.id === "food" ? 1.04 : 1) * noise);
+  if (acc.section === "labor") return Math.round(acc.base * o.share * o.labor * cost * (0.7 + 0.3 * season(month)));
   // Fixed-ish costs follow the store, not the season.
-  return Math.round(acc.base * STORE_SHARE[store] * cost * (0.97 + 0.03 * season(month)));
+  return Math.round(acc.base * share(store) * cost * (0.97 + 0.03 * season(month)));
 }
 
 export type PeriodKey = "this-month" | "last-month" | "quarter" | "ytd";
@@ -233,7 +234,8 @@ export function balance(a: AsOf): Balance {
     "owner-equity": 60000,
   };
   const r: Record<string, number> = {};
-  for (const k of Object.keys(v)) r[k] = Math.round(v[k]);
+  // The figures above are for one typical month's worth of stores; the group is SCALE of those.
+  for (const k of Object.keys(v)) r[k] = Math.round(v[k] * SCALE);
   r["current-earnings"] = pnl(STORES, a.year, 0, a.month).net;
   const assets = BALANCE_LINES.filter((l) => l.kind === "asset").reduce((s, l) => s + r[l.id], 0);
   const liabilities = BALANCE_LINES.filter((l) => l.kind === "liability").reduce((s, l) => s + r[l.id], 0);

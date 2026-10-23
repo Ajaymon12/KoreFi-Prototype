@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AuthFrame } from "@/components/onboarding/AuthFrame";
 import { LoginShowcase } from "@/components/onboarding/LoginShowcase";
+import { DotField } from "@/components/onboarding/DotField";
 import { resumeHref, useOnboarding } from "@/lib/org/store";
 import { isAdminEmail, signIn } from "@/lib/admin/session";
 import { OWNER_HOME } from "@/lib/nav";
@@ -19,6 +20,7 @@ export default function Login() {
 
   return (
     <AuthFrame
+      backdrop={<DotField />}
       right={
         <Link href="/get-started" className="text-body-md text-(--color-text-primary) hover:underline">
           Create account

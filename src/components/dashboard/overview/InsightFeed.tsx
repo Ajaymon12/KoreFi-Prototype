@@ -68,7 +68,7 @@ function Summary({ insights }: { insights: Insight[] }) {
   );
 }
 
-export function Row({ x, onOpen }: { x: Insight; onOpen: () => void }) {
+function Row({ x, onOpen }: { x: Insight; onOpen: () => void }) {
   return (
     <li>
       <button

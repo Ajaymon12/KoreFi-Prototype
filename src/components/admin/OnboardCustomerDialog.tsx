@@ -9,7 +9,7 @@ import { PROVIDERS, type ProviderId } from "@/lib/admin/data";
 import { STEPS, type Account } from "@/lib/admin/accounts";
 import { emailTaken, inviteCustomer, inviteLink, type NewCustomer } from "@/lib/admin/store";
 
-// "Onboard customer": ops creates the account, optionally pre-connects sources, and sends the invite.
+// "Add user" (Dashboard): ops creates the account, optionally pre-connects sources, and sends the invite.
 // Flow modelled on Mobbin invite patterns: stepper counter + split form/preview (Attio), role cards
 // with a one-line description each (Uxcel), copyable invite link (Canva), confirmation toast.
 
@@ -66,9 +66,9 @@ export function OnboardCustomerDialog({ accounts, onClose, onDone }: { accounts:
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/30 p-3 sm:p-6" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label="Onboard customer" className="flex max-h-full w-full max-w-[920px] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_16px_48px_rgb(0_0_0/0.18)]">
+      <div role="dialog" aria-modal="true" aria-label="Add user" className="flex max-h-full w-full max-w-[920px] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_16px_48px_rgb(0_0_0/0.18)]">
         <div className="flex shrink-0 items-center gap-3 border-b border-(--color-border-default) px-5 py-3.5">
-          <h2 className="min-w-0 flex-1 text-subtitle-md text-(--color-text-primary)">Onboard customer</h2>
+          <h2 className="min-w-0 flex-1 text-subtitle-md text-(--color-text-primary)">Add user</h2>
           <ol className="hidden items-center gap-1.5 sm:flex" aria-label="Progress">
             {STEP_TITLES.map((_, i) => (
               <li key={i} aria-current={i === step ? "step" : undefined} className={cn("h-1 w-10 rounded-full transition-colors", i <= step ? "bg-(--color-primary)" : "bg-(--color-border-default)")} />

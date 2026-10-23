@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useSyncExternalStore } from "react";
+import { toTacoPros } from "./posImport";
 import type { OnboardingState, StepKey } from "./types";
 
 // Onboarding answers and the owner's org (brands, locations, connections), remembered per browser
@@ -52,7 +53,7 @@ const parse = (raw: string): OnboardingState => {
     const s = { ...EMPTY, ...JSON.parse(raw) };
     // Saved before the email-code step was removed: pick up at "About you" instead.
     if ((s.step as string) === "verify") s.step = "profile";
-    return s;
+    return toTacoPros(s);
   } catch {
     return EMPTY;
   }

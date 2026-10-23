@@ -19,6 +19,7 @@ import {
   Scale,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   ShoppingBag,
   Tag,
   Timer,
@@ -26,6 +27,7 @@ import {
   Truck,
   Undo2,
   UtensilsCrossed,
+  WandSparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -115,14 +117,15 @@ export const MVP_TOP: NavChild[] = [
 
 /** A report under a cowork. `soon` = listed so owners know it's coming, not a link yet. */
 export type MvpItem = { label: string; href?: string; soon?: boolean };
-export type MvpGroup = { id: "finance" | "operations" | "growth"; label: string; illustration: Persona["illustration"]; items: MvpItem[] };
+/** A cowork and its reports. Shown under one "Coworkers" heading, so the label is just the area. */
+export type MvpGroup = { id: "finance" | "operations" | "growth"; label: string; Icon: LucideIcon; items: MvpItem[] };
 
 // The reports grouped by the cowork that produces them, in the order the sidebar shows them.
 export const MVP_GROUPS: MvpGroup[] = [
   {
     id: "finance",
-    label: "Finance Coworker",
-    illustration: "coins",
+    label: "Finance",
+    Icon: Coins,
     items: [
       { label: "Profit", href: "/mvp/profit" },
       { label: "Payouts", href: "/mvp/payouts" },
@@ -131,8 +134,8 @@ export const MVP_GROUPS: MvpGroup[] = [
   },
   {
     id: "operations",
-    label: "Delivery Apps Coworker",
-    illustration: "bell",
+    label: "Delivery Apps",
+    Icon: Truck,
     items: [
       { label: "Chargebacks", href: "/mvp/chargebacks" },
       { label: "Store health", soon: true },
@@ -141,8 +144,8 @@ export const MVP_GROUPS: MvpGroup[] = [
   },
   {
     id: "growth",
-    label: "Growth Coworker",
-    illustration: "steps",
+    label: "Growth",
+    Icon: ChartNoAxesColumnIncreasing,
     items: [
       { label: "Promos & ads", href: "/mvp/promos" },
       { label: "Reviews", soon: true },
@@ -157,6 +160,39 @@ export const MVP_FOOTER: NavChild[] = FOOTER_MODULES.map(({ label, href, Icon })
 export const MVP_NAV: NavChild[] = [
   ...MVP_TOP,
   ...MVP_GROUPS.flatMap((g) => g.items.filter((i): i is MvpItem & { href: string } => !!i.href).map((i) => ({ label: i.label, href: i.href, Icon: ICONS[i.href] ?? LayoutDashboard }))),
+];
+
+// ---- MVP 2 (/mvp2) ----
+// The founders' second cut (Figma 1514:18163): Overview, then each coworker as a titled section of
+// reports (under one "Coworkers" heading, so labels are just the area). An item may point at a ?tab= of a shared page (Chargeback Transactions).
+export const MVP2_HOME = "/mvp2/pnl";
+export const MVP2_TOP: NavChild[] = [{ label: "Overview", href: "/mvp2/overview", Icon: LayoutDashboard }];
+export const MVP2_GROUPS: MvpGroup[] = [
+  {
+    id: "finance",
+    label: "Finance",
+    Icon: Coins,
+    items: [
+      { label: "P&L Summary", href: "/mvp2/pnl" },
+      { label: "3PD Payouts", href: "/mvp2/payouts" },
+      { label: "Balance Sheet", href: "/mvp2/balance-sheet" },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Operations",
+    Icon: ShieldCheck,
+    items: [
+      { label: "Chargeback Overview", href: "/mvp2/chargebacks" },
+      { label: "Chargeback Transactions", href: "/mvp2/chargebacks?tab=transactions" },
+    ],
+  },
+  {
+    id: "growth",
+    label: "Growth",
+    Icon: WandSparkles,
+    items: [{ label: "Pricing Intelligence", soon: true }],
+  },
 ];
 
 /** Lets `getActiveModule` (page header, assistant) resolve /mvp/* without a persona prefix. */

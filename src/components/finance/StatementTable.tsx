@@ -32,14 +32,20 @@ export function StatementTable({
   rows,
   onSelect,
   selectedId,
+  flush = false,
+  defaultOpen = false,
 }: {
   caption: string;
   columns: StmtColumn[];
   rows: StmtRow[];
   onSelect?: (id: string) => void;
   selectedId?: string | null;
+  /** The MVP table look (ReportTable): grey 42px header with "Expand all" in it, hairline rows, 16px edges. */
+  flush?: boolean;
+  /** Start with every group open (the weekly P&L reads like a full report). */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [open, setOpen] = useState<Record<string, boolean>>(() => (defaultOpen ? Object.fromEntries(groupIds(rows).map((id) => [id, true])) : {}));
   const ids = groupIds(rows);
   const allOpen = ids.length > 0 && ids.every((id) => open[id]);
   const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
@@ -57,7 +63,7 @@ export function StatementTable({
       <>
         <tr
           className={cn(
-            "group/row text-body-md text-(--color-text-primary) [&>*]:border-t [&>*]:border-(--color-border-default)",
+            cn("group/row text-body-md text-(--color-text-primary) [&>*]:border-t", flush ? "[&>*]:border-(--gray-300) first:[&>*]:border-t-0" : "[&>*]:border-(--color-border-default)"),
             kind === "subtotal" && "[&>*]:border-t-(--color-border-darker) [&>*]:bg-(--color-neutral-lightest)",
             kind === "total" && "[&>*]:border-t-(--color-border-darker) [&>*]:bg-(--color-neutral-light)",
             group && "hover:[&>*]:bg-(--color-neutral-lightest)/70",
@@ -67,7 +73,7 @@ export function StatementTable({
           )}
           onClick={group ? () => toggle(row.id) : selectable ? () => onSelect!(row.id) : undefined}
         >
-          <th scope="row" className={cn("h-11 px-3 text-left font-normal", (group || result) && "font-medium", kind === "total" && "font-semibold", row.muted && "text-(--color-text-secondary)")}>
+          <th scope="row" className={cn("h-11 px-3 text-left font-normal", flush && "h-12 pl-4", (group || result) && "font-medium", kind === "total" && "font-semibold", row.muted && "text-(--color-text-secondary)")}>
             <div className="flex items-center gap-1" style={{ paddingLeft: depth * 22 }}>
               {group ? (
                 <button
@@ -98,16 +104,26 @@ export function StatementTable({
               {c}
             </td>
           ))}
-          <td className="w-7 pr-2 text-right text-(--color-text-secondary)">{selectable && <ChevronRight aria-hidden className="ml-auto size-4 opacity-0 group-hover/row:opacity-100" />}</td>
+          <td className={cn("w-7 pr-2 text-right text-(--color-text-secondary)", flush && "pr-4")}>{selectable && <ChevronRight aria-hidden className="ml-auto size-4 opacity-0 group-hover/row:opacity-100" />}</td>
         </tr>
         {expanded && row.children!.map((c) => <Fragment key={c.id}>{renderRow(c, depth + 1)}</Fragment>)}
       </>
     );
   };
 
+  const expandAll = ids.length > 0 && (
+    <button
+      type="button"
+      onClick={toggleAll}
+      className="h-7 rounded-medium px-2 text-menu-sm text-(--color-text-clickable) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+    >
+      {allOpen ? "Collapse all" : "Expand all"}
+    </button>
+  );
+
   return (
     <div>
-      {ids.length > 0 && (
+      {!flush && ids.length > 0 && (
         <div className="mb-1 flex justify-end">
           <button
             type="button"
@@ -122,12 +138,12 @@ export function StatementTable({
         <table className="w-full min-w-[640px] border-separate border-spacing-0">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="text-body-sm text-(--color-text-secondary)">
-              <th scope="col" className="h-9 px-3 text-left font-normal">
-                <span className="sr-only">Line</span>
+            <tr className={cn("text-body-sm text-(--color-text-secondary)", flush && "bg-(--gray-200) [&>*]:border-y [&>*]:border-(--gray-300)")}>
+              <th scope="col" className={cn("h-9 px-3 text-left font-normal", flush && "h-[42px] pl-3")}>
+                {flush && expandAll ? expandAll : <span className="sr-only">Line</span>}
               </th>
               {columns.map((c) => (
-                <th key={c.key} scope="col" className="h-9 px-3 text-right font-normal whitespace-nowrap">
+                <th key={c.key} scope="col" className={cn("h-9 px-3 text-right font-normal whitespace-nowrap", flush && "h-[42px]")}>
                   {c.header}
                 </th>
               ))}

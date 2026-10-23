@@ -1,4 +1,6 @@
 import type { ProviderId } from "./data";
+import type { Address } from "@/lib/org/types";
+import { branchName, seedPlaces } from "@/lib/org/places";
 
 // Ops "Users" tab and Dashboard: every customer account KoreFi manages, dummy data until the admin
 // API exists. The first three share ids with USERS in ./data.ts (the upload form's user picker).
@@ -22,13 +24,28 @@ export const STEPS = [
 export type StepId = (typeof STEPS)[number]["id"];
 export const stepLabel = (id: StepId) => STEPS.find((s) => s.id === id)!.label;
 
+/** live = data arriving; stale = nothing new for 7+ days; setting_up = added, waiting for its first data. */
+export type OutletStatus = "live" | "stale" | "setting_up";
+export type AdminOutlet = { id: string; name: string; address: Address; neighborhood: string; lat?: number; lng?: number; placeId?: string; status: OutletStatus; added: string };
+/** A restaurant (brand) the customer runs, with its outlets. Same shape as an owner's Brand. */
+export type AccountRestaurant = { id: string; name: string; logo?: string; outlets: AdminOutlet[] };
+
+export const OUTLET_META: Record<OutletStatus, { label: string; dot: string }> = {
+  live: { label: "Live", dot: "bg-(--color-success-default)" },
+  stale: { label: "Stale", dot: "bg-(--color-warning-default)" },
+  setting_up: { label: "Setting up", dot: "bg-(--color-text-tertiary)" },
+};
+
 export type Account = {
   id: string;
   name: string;
   email: string;
   role: "Owner" | "Manager";
   company: string;
+  /** Outlet count: the list's length once outlets are added; before that, what they told us at invite. */
   outlets: number;
+  /** Restaurants and their outlets. Empty until the customer (or ops) adds locations. */
+  restaurants: AccountRestaurant[];
   status: AccountStatus;
   step: StepId;
   /** ISO timestamp of the last sign-in; null if they never signed in (invited). */
@@ -71,6 +88,22 @@ const SEEDS: Seed[] = [
   ["claire", "Claire Dubois", "Maison Crêpe", 2, "active", "done", "2026-10-06T14:44:00", "2026-07-30", "toast", ["ubereats", "doordash"], "stale", 0],
 ];
 
+const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+// Sana runs two brands (matches USERS in ./data.ts); everyone else one, named after the company.
+const BRANDS: Record<string, [string, number][]> = { sana: [["EggHolic", 2], ["Ahimsa", 3]] };
+
+/** Outlets come from the same Google Maps fixtures ops searches, so "Already added" lines up. */
+function seedRestaurants(id: string, company: string, outlets: number, step: StepId, data: DataHealth, joined: string): AccountRestaurant[] {
+  const brands = BRANDS[id] ?? [[company, outlets]];
+  // Customers who haven't reached the Locations step have none yet.
+  const none = step === "business" || step === "locations";
+  const status: OutletStatus = data === "fresh" ? "live" : data === "stale" ? "stale" : "setting_up";
+  return brands.map(([name, n]) => {
+    const places = none ? [] : seedPlaces(name, n);
+    return { id: `${id}-${slug(name)}`, name, outlets: places.map((p) => ({ id: `${id}-${p.placeId}`, name: branchName(p, places), address: p.address, neighborhood: p.neighborhood, lat: p.lat, lng: p.lng, placeId: p.placeId, status, added: joined })) };
+  });
+}
+
 export const ACCOUNTS: Account[] = SEEDS.map(([id, name, company, outlets, status, step, lastActive, joined, pos, delivery, data, openChargebacks, role]) => ({
   id,
   name,
@@ -78,6 +111,7 @@ export const ACCOUNTS: Account[] = SEEDS.map(([id, name, company, outlets, statu
   role: role ?? "Owner",
   company,
   outlets,
+  restaurants: seedRestaurants(id, company, outlets, step, data, joined),
   status,
   step,
   lastActive,

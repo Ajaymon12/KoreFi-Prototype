@@ -1,5 +1,5 @@
 "use client";
-import { Info, LayoutDashboard, Rows3, Store, Table } from "lucide-react";
+import { Info, LayoutDashboard, Rows3, Sparkles, Store, Table } from "lucide-react";
 import { MvpFrame, latestSync, useTab } from "@/components/mvp/frame";
 import { DataSources } from "@/components/dashboard/DataSources";
 import { BOOKS_SYNCED_AT } from "@/lib/finance/books";
@@ -13,7 +13,8 @@ import { AppsOnly } from "./AppsOnly";
 
 // MVP / Profit. With a POS connected: the books' P&L (in-store, website and the apps, then food,
 // labour and running costs). Without one: a delivery-only P&L built from the apps' payout, promo
-// and chargeback reports. Same four views either way: Summary, By channel, By store, Statement.
+// and chargeback reports. Same views either way: Summary, By channel, By store, Statement, and P&L
+// (the Statement's A/B partner: the week told as a story; apps-only falls back to the statement).
 // Every view is charts first (after Mercury's Books overview); the figures sit beside them.
 
 export const TABS = [
@@ -21,6 +22,7 @@ export const TABS = [
   { key: "channel", label: "By channel", Icon: Rows3 },
   { key: "store", label: "By store", Icon: Store },
   { key: "statement", label: "Statement", Icon: Table },
+  { key: "pnl", label: "P&L", Icon: Sparkles },
 ] as const;
 export type ProfitTab = (typeof TABS)[number]["key"];
 
@@ -44,7 +46,7 @@ export function ProfitView({ data }: { data: DashboardData }) {
   const sync = mode === "consolidated" ? BOOKS_SYNCED_AT : latestSync(data.connections, "marketplace");
 
   return (
-    <MvpFrame title="Profit" tabs={TABS} active={active} basePath="/mvp/profit" actions={<DataSources syncedAt={sync} timezoneNote={PERIOD.timezoneNote} />}>
+    <MvpFrame title="Profit" tabs={TABS} active={active} actions={<DataSources syncedAt={sync} timezoneNote={PERIOD.timezoneNote} />}>
       {mode === "consolidated" ? <Books tab={active} insights={insights} /> : <AppsOnly tab={active} data={data} insights={insights} />}
     </MvpFrame>
   );

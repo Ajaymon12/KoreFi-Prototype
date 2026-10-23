@@ -1,6 +1,12 @@
-import { OverviewView } from "@/components/admin/OverviewView";
+import { Suspense } from "react";
+import { ClientsHome } from "@/components/admin/ClientsHome";
 
-// Ops landing page: today's work queues, onboarding funnel, recent uploads. Dummy data.
+// Ops home: needs attention across clients, recently opened, and every client. ClientsHome reads
+// ?status= / ?data=, so it sits in a Suspense boundary for the static export. Dummy data.
 export default function Page() {
-  return <OverviewView />;
+  return (
+    <Suspense fallback={null}>
+      <ClientsHome />
+    </Suspense>
+  );
 }

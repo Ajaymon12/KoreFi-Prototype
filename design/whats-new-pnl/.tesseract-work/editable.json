@@ -1,0 +1,1155 @@
+{
+ "$schema": "https://jerboa.dev/schemas/fx-composition/editable/v1/document.schema.json",
+ "backgroundColor": [
+  1.0,
+  0.9450980392156862,
+  0.9058823529411764,
+  1.0
+ ],
+ "colorManagement": {
+  "workingSpace": "legacyDisplay"
+ },
+ "composition": {
+  "id": "main",
+  "layers": [
+   {
+    "blendMode": "normal",
+    "id": 34,
+    "layers": [
+     {
+      "activeRange": {
+       "duration": 1750,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 341,
+      "name": "Words",
+      "parent": 34,
+      "sourceText": {
+       "allCaps": false,
+       "applyFill": true,
+       "applyStroke": false,
+       "baselineShift": 0.0,
+       "boxText": false,
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+       ],
+       "fontFamily": "Google Sans Flex 24pt Medium",
+       "fontSize": 24.0,
+       "fontStyle": "Regular",
+       "justification": "center",
+       "strokeOverFill": false,
+       "strokeWidth": 0.0,
+       "text": "Unpaid orders, claimed for you",
+       "tracking": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        0.0,
+        0.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        735.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Text"
+     },
+     {
+      "activeRange": {
+       "duration": 1750,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 340,
+      "name": "Pill",
+      "parent": 34,
+      "rect": {
+       "fillColor": [
+        0.1215686274509804,
+        0.1215686274509804,
+        0.1215686274509804,
+        0.92
+       ],
+       "fillEnabled": true,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 28.0,
+       "size": [
+        460.0,
+        56.0
+       ],
+       "strokeEnabled": false,
+       "strokeWidth": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        230.0,
+        28.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        726.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     }
+    ],
+    "name": "Caption: Unpaid orders, claimed for you",
+    "playback": {
+     "inputOffsetMs": 0,
+     "inputRange": {
+      "duration": 1750,
+      "start": 5050
+     },
+     "mapping": {
+      "input": {
+       "duration": 1750,
+       "start": 5050
+      },
+      "output": {
+       "duration": 1750,
+       "start": 0
+      },
+      "type": "linear"
+     },
+     "type": "windowed"
+    },
+    "transform": {
+     "anchorPoint": [
+      640.0,
+      726.0
+     ],
+     "opacity": 0.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      640.0,
+      726.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      100.0,
+      100.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Group"
+   },
+   {
+    "blendMode": "normal",
+    "id": 33,
+    "layers": [
+     {
+      "activeRange": {
+       "duration": 1350,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 331,
+      "name": "Words",
+      "parent": 33,
+      "sourceText": {
+       "allCaps": false,
+       "applyFill": true,
+       "applyStroke": false,
+       "baselineShift": 0.0,
+       "boxText": false,
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+       ],
+       "fontFamily": "Google Sans Flex 24pt Medium",
+       "fontSize": 24.0,
+       "fontStyle": "Regular",
+       "justification": "center",
+       "strokeOverFill": false,
+       "strokeWidth": 0.0,
+       "text": "Every channel, side by side",
+       "tracking": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        0.0,
+        0.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        735.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Text"
+     },
+     {
+      "activeRange": {
+       "duration": 1350,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 330,
+      "name": "Pill",
+      "parent": 33,
+      "rect": {
+       "fillColor": [
+        0.1215686274509804,
+        0.1215686274509804,
+        0.1215686274509804,
+        0.92
+       ],
+       "fillEnabled": true,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 28.0,
+       "size": [
+        420.4,
+        56.0
+       ],
+       "strokeEnabled": false,
+       "strokeWidth": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        210.2,
+        28.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        726.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     }
+    ],
+    "name": "Caption: Every channel, side by side",
+    "playback": {
+     "inputOffsetMs": 0,
+     "inputRange": {
+      "duration": 1350,
+      "start": 3350
+     },
+     "mapping": {
+      "input": {
+       "duration": 1350,
+       "start": 3350
+      },
+      "output": {
+       "duration": 1350,
+       "start": 0
+      },
+      "type": "linear"
+     },
+     "type": "windowed"
+    },
+    "transform": {
+     "anchorPoint": [
+      640.0,
+      726.0
+     ],
+     "opacity": 0.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      640.0,
+      726.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      100.0,
+      100.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Group"
+   },
+   {
+    "blendMode": "normal",
+    "id": 32,
+    "layers": [
+     {
+      "activeRange": {
+       "duration": 1650,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 321,
+      "name": "Words",
+      "parent": 32,
+      "sourceText": {
+       "allCaps": false,
+       "applyFill": true,
+       "applyStroke": false,
+       "baselineShift": 0.0,
+       "boxText": false,
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+       ],
+       "fontFamily": "Google Sans Flex 24pt Medium",
+       "fontSize": 24.0,
+       "fontStyle": "Regular",
+       "justification": "center",
+       "strokeOverFill": false,
+       "strokeWidth": 0.0,
+       "text": "What each app keeps from every $1",
+       "tracking": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        0.0,
+        0.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        735.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Text"
+     },
+     {
+      "activeRange": {
+       "duration": 1650,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 320,
+      "name": "Pill",
+      "parent": 32,
+      "rect": {
+       "fillColor": [
+        0.1215686274509804,
+        0.1215686274509804,
+        0.1215686274509804,
+        0.92
+       ],
+       "fillEnabled": true,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 28.0,
+       "size": [
+        499.6,
+        56.0
+       ],
+       "strokeEnabled": false,
+       "strokeWidth": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        249.8,
+        28.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        726.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     }
+    ],
+    "name": "Caption: What each app keeps from every $1",
+    "playback": {
+     "inputOffsetMs": 0,
+     "inputRange": {
+      "duration": 1650,
+      "start": 1350
+     },
+     "mapping": {
+      "input": {
+       "duration": 1650,
+       "start": 1350
+      },
+      "output": {
+       "duration": 1650,
+       "start": 0
+      },
+      "type": "linear"
+     },
+     "type": "windowed"
+    },
+    "transform": {
+     "anchorPoint": [
+      640.0,
+      726.0
+     ],
+     "opacity": 0.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      640.0,
+      726.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      100.0,
+      100.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Group"
+   },
+   {
+    "blendMode": "normal",
+    "id": 31,
+    "layers": [
+     {
+      "activeRange": {
+       "duration": 850,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 311,
+      "name": "Words",
+      "parent": 31,
+      "sourceText": {
+       "allCaps": false,
+       "applyFill": true,
+       "applyStroke": false,
+       "baselineShift": 0.0,
+       "boxText": false,
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+       ],
+       "fontFamily": "Google Sans Flex 24pt Medium",
+       "fontSize": 24.0,
+       "fontStyle": "Regular",
+       "justification": "center",
+       "strokeOverFill": false,
+       "strokeWidth": 0.0,
+       "text": "New: P&L Summary",
+       "tracking": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        0.0,
+        0.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        735.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Text"
+     },
+     {
+      "activeRange": {
+       "duration": 850,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 310,
+      "name": "Pill",
+      "parent": 31,
+      "rect": {
+       "fillColor": [
+        0.1215686274509804,
+        0.1215686274509804,
+        0.1215686274509804,
+        0.92
+       ],
+       "fillEnabled": true,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 28.0,
+       "size": [
+        275.2,
+        56.0
+       ],
+       "strokeEnabled": false,
+       "strokeWidth": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        137.6,
+        28.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        640.0,
+        726.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     }
+    ],
+    "name": "Caption: New: P&L Summary",
+    "playback": {
+     "inputOffsetMs": 0,
+     "inputRange": {
+      "duration": 850,
+      "start": 200
+     },
+     "mapping": {
+      "input": {
+       "duration": 850,
+       "start": 200
+      },
+      "output": {
+       "duration": 850,
+       "start": 0
+      },
+      "type": "linear"
+     },
+     "type": "windowed"
+    },
+    "transform": {
+     "anchorPoint": [
+      640.0,
+      726.0
+     ],
+     "opacity": 0.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      640.0,
+      726.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      100.0,
+      100.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Group"
+   },
+   {
+    "blendMode": "normal",
+    "id": 10,
+    "layers": [
+     {
+      "type": "Image",
+      "id": 15,
+      "name": "Cursor",
+      "blendMode": "normal",
+      "activeRange": {
+       "start": 0,
+       "duration": 8000
+      },
+      "transform": {
+       "anchorPoint": [
+        15,
+        7
+       ],
+       "position": [
+        900,
+        620
+       ],
+       "scale": [
+        34,
+        34
+       ],
+       "rotation": 0,
+       "opacity": 0
+      },
+      "source": {
+       "assetId": "cursor",
+       "fit": "contain"
+      }
+     },
+     {
+      "activeRange": {
+       "duration": 8000,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 23,
+      "name": "Ring: differ",
+      "parent": 10,
+      "rect": {
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+       ],
+       "fillEnabled": false,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 12.0,
+       "size": [
+        128.95833333333331,
+        26.666666666666664
+       ],
+       "strokeColor": [
+        0.9686274509803922,
+        0.4078431372549019,
+        0.03137254901960784,
+        1.0
+       ],
+       "strokeEnabled": true,
+       "strokeWidth": 3.0
+      },
+      "transform": {
+       "anchorPoint": [
+        64.47916666666666,
+        13.333333333333332
+       ],
+       "opacity": 0.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        742.4236111111111,
+        413.63888888888886
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     },
+     {
+      "activeRange": {
+       "duration": 8000,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 22,
+      "name": "Ring: channels",
+      "parent": 10,
+      "rect": {
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+       ],
+       "fillEnabled": false,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 12.0,
+       "size": [
+        776.4444444444443,
+        292.0
+       ],
+       "strokeColor": [
+        0.9686274509803922,
+        0.4078431372549019,
+        0.03137254901960784,
+        1.0
+       ],
+       "strokeEnabled": true,
+       "strokeWidth": 3.0
+      },
+      "transform": {
+       "anchorPoint": [
+        388.2222222222222,
+        146.0
+       ],
+       "opacity": 0.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        875.5555555555554,
+        446.75
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     },
+     {
+      "activeRange": {
+       "duration": 8000,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 21,
+      "name": "Ring: fees",
+      "parent": 10,
+      "rect": {
+       "fillColor": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+       ],
+       "fillEnabled": false,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 12.0,
+       "size": [
+        491.8194444444444,
+        140.52777777777777
+       ],
+       "strokeColor": [
+        0.9686274509803922,
+        0.4078431372549019,
+        0.03137254901960784,
+        1.0
+       ],
+       "strokeEnabled": true,
+       "strokeWidth": 3.0
+      },
+      "transform": {
+       "anchorPoint": [
+        245.9097222222222,
+        70.26388888888889
+       ],
+       "opacity": 0.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        998.7569444444443,
+        210.4861111111111
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     },
+     {
+      "type": "Image",
+      "id": 13,
+      "name": "Page + popover",
+      "blendMode": "normal",
+      "activeRange": {
+       "start": 0,
+       "duration": 8000
+      },
+      "transform": {
+       "anchorPoint": [
+        0,
+        0
+       ],
+       "position": [
+        0,
+        0
+       ],
+       "scale": [
+        44.44444444444444,
+        44.44444444444444
+       ],
+       "rotation": 0,
+       "opacity": 0
+      },
+      "source": {
+       "assetId": "shot-popover",
+       "fit": "contain"
+      }
+     },
+     {
+      "type": "Image",
+      "id": 12,
+      "name": "Page",
+      "blendMode": "normal",
+      "activeRange": {
+       "start": 0,
+       "duration": 8000
+      },
+      "transform": {
+       "anchorPoint": [
+        0,
+        0
+       ],
+       "position": [
+        0,
+        0
+       ],
+       "scale": [
+        44.44444444444444,
+        44.44444444444444
+       ],
+       "rotation": 0,
+       "opacity": 100
+      },
+      "source": {
+       "assetId": "shot-page",
+       "fit": "contain"
+      }
+     },
+     {
+      "activeRange": {
+       "duration": 8000,
+       "start": 0
+      },
+      "blendMode": "normal",
+      "id": 11,
+      "name": "Page shadow",
+      "parent": 10,
+      "rect": {
+       "fillColor": [
+        0.4784313725490196,
+        0.2274509803921569,
+        0.06274509803921569,
+        0.08
+       ],
+       "fillEnabled": true,
+       "position": [
+        0.0,
+        0.0
+       ],
+       "roundness": 12.0,
+       "size": [
+        1296.0,
+        816.0
+       ],
+       "strokeEnabled": false,
+       "strokeWidth": 0.0
+      },
+      "transform": {
+       "anchorPoint": [
+        0.0,
+        0.0
+       ],
+       "opacity": 100.0,
+       "orientation": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        -8.0,
+        4.0
+       ],
+       "rotation": 0.0,
+       "rotationX": 0.0,
+       "rotationY": 0.0,
+       "scale": [
+        100.0,
+        100.0
+       ],
+       "skew": 0.0,
+       "skewAxis": 0.0
+      },
+      "type": "Rect"
+     }
+    ],
+    "name": "Camera",
+    "playback": {
+     "inputOffsetMs": 0,
+     "inputRange": {
+      "duration": 8000,
+      "start": 0
+     },
+     "mapping": {
+      "input": {
+       "duration": 8000,
+       "start": 0
+      },
+      "output": {
+       "duration": 8000,
+       "start": 0
+      },
+      "type": "linear"
+     },
+     "type": "windowed"
+    },
+    "transform": {
+     "anchorPoint": [
+      640.0,
+      400.0
+     ],
+     "opacity": 100.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      640.0,
+      400.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      86.0,
+      86.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Group"
+   },
+   {
+    "activeRange": {
+     "duration": 8000,
+     "start": 0
+    },
+    "blendMode": "normal",
+    "id": 1,
+    "name": "Background",
+    "rect": {
+     "fillColor": [
+      1.0,
+      0.9725490196078432,
+      0.9490196078431372,
+      1.0
+     ],
+     "fillEnabled": true,
+     "fillPaint": {
+      "end": [
+       1280.0,
+       800.0
+      ],
+      "gradientType": "linear",
+      "start": [
+       0.0,
+       0.0
+      ],
+      "stops": [
+       {
+        "color": [
+         1.0,
+         0.9725490196078432,
+         0.9490196078431372,
+         1.0
+        ],
+        "offset": 0.0
+       },
+       {
+        "color": [
+         1.0,
+         0.8627450980392157,
+         0.7647058823529411,
+         1.0
+        ],
+        "offset": 1.0
+       }
+      ],
+      "type": "gradient"
+     },
+     "position": [
+      0.0,
+      0.0
+     ],
+     "roundness": 0.0,
+     "size": [
+      1280.0,
+      800.0
+     ],
+     "strokeEnabled": false,
+     "strokeWidth": 0.0
+    },
+    "transform": {
+     "anchorPoint": [
+      0.0,
+      0.0
+     ],
+     "opacity": 100.0,
+     "orientation": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "position": [
+      0.0,
+      0.0
+     ],
+     "rotation": 0.0,
+     "rotationX": 0.0,
+     "rotationY": 0.0,
+     "scale": [
+      100.0,
+      100.0
+     ],
+     "skew": 0.0,
+     "skewAxis": 0.0
+    },
+    "type": "Rect"
+   }
+  ],
+  "name": "Main"
+ },
+ "dimensions": {
+  "height": 800,
+  "width": 1280
+ },
+ "duration": 8.0,
+ "formatVersion": 1
+}
