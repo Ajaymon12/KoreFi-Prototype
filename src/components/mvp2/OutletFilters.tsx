@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Building2, Check, ChevronDown, ListFilter, MapPin, Plus, Search, Store as StoreIcon, X, type LucideIcon } from "lucide-react";
+import { Building2, Check, ChevronDown, ChevronLeft, ChevronRight, ListFilter, MapPin, Plus, Search, Store as StoreIcon, X, type LucideIcon } from "lucide-react";
 import { useDismiss } from "@/components/dashboard/useDismiss";
 import { totals } from "@/components/finance/PnlStory";
 import { usd } from "@/components/finance/parts";
@@ -25,6 +25,7 @@ import {
   type OutletStats,
   type Rule,
 } from "@/lib/finance/outletFilter";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { cn } from "@/lib/utils";
 
 // Which outlets a report covers, after Asana's filters (Mobbin: Asana portfolios and project list).
@@ -56,13 +57,15 @@ export function useOutletFilter(range: [number, number]) {
 }
 export type OutletScope = ReturnType<typeof useOutletFilter>;
 
-/** The Filter button and the State / City / Outlet pills. */
-export function OutletFilters({ scope }: { scope: OutletScope }) {
+/** The Filter button and the State / City / Outlet pills. `compact` (phones) keeps the button alone: its panel has every rule. */
+export function OutletFilters({ scope, compact = false }: { scope: OutletScope; compact?: boolean }) {
   return (
     <>
       <FilterPanel scope={scope} />
       {FIELDS.map((f) => (
-        <FieldPill key={f.key} field={f.key} scope={scope} />
+        <div key={f.key} className={cn("contents", compact && "max-md:hidden")}>
+          <FieldPill field={f.key} scope={scope} />
+        </div>
       ))}
     </>
   );
@@ -119,7 +122,7 @@ function optionsFor(field: Field, scope: OutletScope, skip?: Rule) {
 }
 
 /** Asana's assignee menu: "Find a …" on top, then the values; a click picks or unpicks at once. */
-function OptionList({ field, options, value, onChange, stats }: { field: Field; options: { value: string; count: number }[]; value: string[]; onChange: (v: string[]) => void; stats: OutletStats }) {
+function OptionList({ field, options, value, onChange, stats, sheet = false }: { field: Field; options: { value: string; count: number }[]; value: string[]; onChange: (v: string[]) => void; stats: OutletStats; /** In the phone sheet: full width, taller rows, no keyboard popped up, the sheet scrolls. */ sheet?: boolean }) {
   const [query, setQuery] = useState("");
   const meta = FIELDS.find((f) => f.key === field)!;
   const q = query.trim().toLowerCase();
@@ -131,12 +134,12 @@ function OptionList({ field, options, value, onChange, stats }: { field: Field; 
   const shown = options.filter((o) => !q || `${valueLabel(field, o.value)} ${sub(o.value) ?? ""} ${field === "state" ? o.value : ""}`.toLowerCase().includes(q));
   const flip = (v: string) => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
   return (
-    <div className="w-72">
-      <div className="p-2">
-        <label className="flex h-8 items-center gap-2 rounded-medium border border-(--color-focus-primary) px-2.5 outline-2 -outline-offset-1 outline-(--color-focus-primary)/30">
+    <div className={sheet ? "w-full" : "w-72"}>
+      <div className={sheet ? "p-3" : "p-2"}>
+        <label className={cn("flex items-center gap-2 rounded-medium border px-2.5", sheet ? "h-10 border-(--color-border-default) bg-(--color-neutral-lightest)" : "h-8 border-(--color-focus-primary) outline-2 -outline-offset-1 outline-(--color-focus-primary)/30")}>
           <Search aria-hidden className="size-3.5 shrink-0 text-(--color-text-secondary)" />
           <input
-            autoFocus
+            autoFocus={!sheet}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -147,12 +150,12 @@ function OptionList({ field, options, value, onChange, stats }: { field: Field; 
           />
         </label>
       </div>
-      <ul role="listbox" aria-multiselectable aria-label={meta.label} className="max-h-72 overflow-y-auto px-1 pb-1">
+      <ul role="listbox" aria-multiselectable aria-label={meta.label} className={cn("px-1 pb-1", !sheet && "max-h-72 overflow-y-auto")}>
         {shown.map((o) => {
           const on = value.includes(o.value);
           return (
             <li key={o.value} role="option" aria-selected={on}>
-              <button type="button" onClick={() => flip(o.value)} className="flex min-h-9 w-full items-center gap-2.5 rounded-medium px-2 py-1.5 text-left outline-none hover:bg-(--color-neutral-lightest) focus-visible:bg-(--color-neutral-lightest)">
+              <button type="button" onClick={() => flip(o.value)} className={cn("flex w-full items-center gap-2.5 rounded-medium px-2 py-1.5 text-left outline-none hover:bg-(--color-neutral-lightest) focus-visible:bg-(--color-neutral-lightest)", sheet ? "min-h-12" : "min-h-9")}>
                 <span className={cn("grid size-4 shrink-0 place-items-center rounded-small border", on ? "border-(--color-primary-solid) bg-(--color-primary-solid) text-white" : "border-(--color-border-darker)")}>{on && <Check aria-hidden className="size-3" strokeWidth={3} />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-body-md text-(--color-text-primary)">{valueLabel(field, o.value)}</span>
@@ -369,5 +372,117 @@ function RuleRow({ rule, scope, onChange, onRemove }: { rule: Rule; scope: Outle
         <X aria-hidden className="size-4" />
       </button>
     </li>
+  );
+}
+
+// ───────────────────────── Phone: the filters as a bottom sheet ─────────────────────────
+
+type SheetView = "root" | Field | "date";
+
+/** Phones: every filter in one bottom sheet (Asana iOS): the quick filters, a row each for State / City / Outlet and
+ *  the date, each opening its own list with search and checkboxes, and "Show results" pinned under it. The same
+ *  rules as the desktop pills and panel (the pills edit each field's "is" rule). */
+export function OutletFilterSheet({ scope, open, onClose, presets, range, onRange }: { scope: OutletScope; open: boolean; onClose: () => void; presets: { label: string; range: [number, number] }[]; range: [number, number]; onRange: (r: [number, number]) => void }) {
+  const [view, setView] = useState<SheetView>("root");
+  const { filter, setFilter } = scope;
+  const n = activeCount(filter);
+  const close = () => {
+    setView("root");
+    onClose();
+  };
+  const toggleQuick = (k: string) => setFilter((f) => ({ ...f, quick: f.quick.includes(k) ? f.quick.filter((x) => x !== k) : [...f.quick, k] }));
+  const preset = presets.find((p) => p.range[0] === range[0] && p.range[1] === range[1]);
+  const field = FIELDS.find((f) => f.key === view);
+  const results = `Show results · ${scope.stores.length} of ${OUTLETS.length} outlets`;
+
+  const row = "flex min-h-12 w-full items-center gap-3 border-b border-(--color-border-default) px-4 text-left outline-none focus-visible:bg-(--color-neutral-lightest)";
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={close}
+      title={field ? field.label : view === "date" ? "Date range" : "Filters"}
+      left={
+        view !== "root" ? (
+          <button type="button" onClick={() => setView("root")} className="-ml-1 flex h-8 items-center rounded-small outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+            <ChevronLeft aria-hidden className="size-5" />
+            Back
+          </button>
+        ) : (
+          n > 0 && (
+            <button type="button" onClick={() => setFilter(NO_FILTER)} className="h-8 rounded-small outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+              Clear
+            </button>
+          )
+        )
+      }
+      action={view === "root" ? results : "Done"}
+      onAction={view === "root" ? close : () => setView("root")}
+    >
+      {view === "root" && (
+        <>
+          <p className="px-4 pt-3 pb-2 text-body-sm text-(--color-text-secondary)">Quick filters</p>
+          <div className="flex flex-wrap gap-2 px-4 pb-4">
+            {QUICK.map((q) => {
+              const on = filter.quick.includes(q.key);
+              return (
+                <button key={q.key} type="button" aria-pressed={on} onClick={() => toggleQuick(q.key)} className={cn(chip(on), "h-9 px-3 text-body-md")}>
+                  {on && <Check aria-hidden className="size-4" />}
+                  {q.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-(--color-border-default)">
+            {FIELDS.map((f) => {
+              const Icon = FIELD_ICON[f.key];
+              const values = pillRule(filter, f.key)?.values ?? [];
+              return (
+                <button key={f.key} type="button" onClick={() => setView(f.key)} className={row}>
+                  <Icon aria-hidden className="size-4 shrink-0 text-(--color-text-secondary)" />
+                  <span className="flex-1 text-body-md text-(--color-text-primary)">{f.label}</span>
+                  <span className={cn("max-w-[50%] truncate text-body-md", values.length ? "text-(--color-text-clickable)" : "text-(--color-text-tertiary)")}>{values.length ? pickText(f.key, values) : "All"}</span>
+                  <ChevronRight aria-hidden className="size-4 shrink-0 text-(--color-text-tertiary)" />
+                </button>
+              );
+            })}
+            <button type="button" onClick={() => setView("date")} className={row}>
+              <span className="flex-1 text-body-md text-(--color-text-primary)">Date range</span>
+              <span className="max-w-[50%] truncate text-body-md text-(--color-text-secondary)">{preset ? preset.label : "Custom"}</span>
+              <ChevronRight aria-hidden className="size-4 shrink-0 text-(--color-text-tertiary)" />
+            </button>
+          </div>
+        </>
+      )}
+      {field && (
+        <OptionList
+          key={field.key}
+          sheet
+          field={field.key}
+          options={optionsFor(field.key, scope, pillRule(filter, field.key))}
+          value={pillRule(filter, field.key)?.values ?? []}
+          onChange={(v) => setFilter((f) => setPill(f, field.key, v))}
+          stats={scope.stats}
+        />
+      )}
+      {view === "date" && (
+        <ul role="radiogroup" aria-label="Date range">
+          {presets.map((p) => {
+            const on = preset === p;
+            return (
+              <li key={p.label}>
+                <button type="button" role="radio" aria-checked={on} onClick={() => onRange(p.range)} className={row}>
+                  <span className="flex-1 text-body-md text-(--color-text-primary)">{p.label}</span>
+                  {on && <Check aria-hidden className="size-4 text-(--color-primary-solid)" />}
+                </button>
+              </li>
+            );
+          })}
+          {!preset && (
+            <li className="px-4 py-3 text-body-sm text-(--color-text-tertiary)">A custom range is set from a computer. Pick one above to replace it.</li>
+          )}
+        </ul>
+      )}
+    </BottomSheet>
   );
 }

@@ -39,11 +39,11 @@ import { usd } from "./parts";
 // Grubhub and their total under its name, then All outlets the same way (no in store, so its own lines drop
 // out). Staff and profit show in every column, each app carrying its share of its outlet's sales.
 
-type Only = "apps" | "instore";
-type Part = { label: string; get: (v: Col) => number; cost?: boolean; back?: boolean; only?: Only };
-type Line = { key: keyof typeof REPORT_FIELDS; label: string; sub?: string; get: (v: Col) => number; cost?: boolean; only?: Only; parts?: Part[] };
+export type Only = "apps" | "instore";
+export type Part = { label: string; get: (v: Col) => number; cost?: boolean; back?: boolean; only?: Only };
+export type Line = { key: keyof typeof REPORT_FIELDS; label: string; sub?: string; get: (v: Col) => number; cost?: boolean; only?: Only; parts?: Part[] };
 
-const SALES: Line = {
+export const SALES: Line = {
   key: "sales",
   label: "Sales",
   sub: "In store: from your POS. Apps: from each app’s report, checked against your POS.",
@@ -56,7 +56,7 @@ const SALES: Line = {
   ],
 };
 // What it cost to get paid, between Sales and Net revenue.
-const SELLING: Line[] = [
+export const SELLING: Line[] = [
   { key: "cardFees", label: "Card fees", get: (v) => v.cardFees, cost: true, only: "instore" },
   {
     key: "commission",
@@ -194,13 +194,13 @@ const TIP_W = 288;
 
 /** How the figures read: dollars with their share of sales beside them, or the share alone. */
 export type PnlView = "amount" | "percent";
-const ViewContext = createContext<PnlView>("amount");
+export const ViewContext = createContext<PnlView>("amount");
 
 const Dash = () => <span className="text-(--gray-600)">—</span>;
 
 /** A figure with its share of that column's sales before it, small and grey; estimates carry ≈. Costs read −,
  *  money back + in green, and a negative cost (more won back than charged) reads as money in. */
-function Amount({ n, sales, cost, back, est, muted, strong, tone }: { n: number; sales: number; cost?: boolean; back?: boolean; est?: boolean; muted?: boolean; strong?: boolean; tone?: string }) {
+export function Amount({ n, sales, cost, back, est, muted, strong, tone }: { n: number; sales: number; cost?: boolean; back?: boolean; est?: boolean; muted?: boolean; strong?: boolean; tone?: string }) {
   n = Math.round(n) || 0; // whole dollars, so a few cents either side of zero read $0, not −$0
   const text = cost ? (n < 0 ? `+${usd(-n)}` : `−${usd(n)}`) : back ? `+${usd(n)}` : usd(n);
   const green = back || (cost && n < 0);
@@ -225,7 +225,9 @@ function Amount({ n, sales, cost, back, est, muted, strong, tone }: { n: number;
   );
 }
 
-type Props = { t: Totals; recon: Record<AppKey, Recon>; edit: CostEdit; query?: string; sticky?: boolean; outlets?: Outlet[]; scrolled?: { x: boolean; y: boolean }; view?: PnlView };
+/** `broken` names the outlet groups (an outlet's store, or "all") showing their DoorDash / Uber Eats / Grubhub columns;
+ *  the rest show their total alone. `onBreak` flips one group. Left out, every group shows its platforms. */
+type Props = { t: Totals; recon: Record<AppKey, Recon>; edit: CostEdit; query?: string; sticky?: boolean; outlets?: Outlet[]; scrolled?: { x: boolean; y: boolean }; view?: PnlView; broken?: Set<string>; onBreak?: (group: string) => void };
 /** A figure column: a channel, or one of an outlet's apps or their total. `app` columns leave in-store-only lines
  *  empty; `total` closes an outlet's group with a heavier line. */
 type Column = { key: string; head: React.ReactNode; title?: string; name: string; v: Col & Partial<Pick<OutletCol, "staff" | "profit">>; app: boolean; check: ReconSummary | null; total?: boolean };
@@ -238,7 +240,7 @@ export function PnlTable({ view = "amount", ...props }: Props) {
   );
 }
 
-function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled }: Omit<Props, "view">) {
+function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled, broken, onBreak }: Omit<Props, "view">) {
   const view = useContext(ViewContext);
   const [open, setOpen] = useState<Set<string>>(new Set());
   // Read here, not at the top: PnlStory and this file import each other, so CHANNELS isn't ready at load.
@@ -248,13 +250,14 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
   /** An outlet's (or all outlets') apps, one column each. */
   const appCols = (key: string, label: string, tt: Totals, rc: Record<AppKey, Recon>): Column[] =>
     APPS.map((c) => ({ key: `${key}:${c.key}`, head: <AppName source={c.source} name={c.label} />, title: SOURCE.app, name: `${label} · ${c.label}`, v: appCol(tt, c.key as AppKey), app: true, check: summarize([rc[c.key as AppKey]]) }));
+  const split = (group: string) => !broken || broken.has(group);
   const columns: Column[] = outlets
     ? [
         ...outlets.flatMap((o) => [
-          ...appCols(o.store, short(o.store), o.t, o.recon),
+          ...(split(o.store) ? appCols(o.store, short(o.store), o.t, o.recon) : []),
           { key: o.store, head: "Total", title: `${o.store}: DoorDash, Uber Eats and Grubhub`, name: short(o.store), v: appsOnly(o.t), app: true, check: summarize(Object.values(o.recon)), total: true },
         ]),
-        ...appCols("all", "All outlets", t, recon),
+        ...(split("all") ? appCols("all", "All outlets", t, recon) : []),
       ]
     : CHANNELS.map((c) => ({
         key: c.key,
@@ -315,9 +318,9 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
   const bad = "bg-(--red-200) group-hover/row:bg-(--red-300)";
 
   /** A line's name: the expand chevron (or its space), the name and its ⓘ, then anything at the end (a cost's chip). */
-  const name = (label: string, opts: { info?: string; formula?: string; from?: string; strong?: boolean; toggle?: { open: boolean; key: string }; end?: React.ReactNode } = {}) => (
+  const name = (label: string, opts: { info?: string; formula?: string; from?: string; strong?: boolean; child?: boolean; toggle?: { open: boolean; key: string }; end?: React.ReactNode } = {}) => (
     <div className="flex items-center gap-1">
-      {opts.toggle ? (
+      {opts.child ? null : opts.toggle ? (
         <button
           type="button"
           aria-expanded={opts.toggle.open}
@@ -330,7 +333,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
       ) : (
         <span aria-hidden className="-ml-1 w-5 shrink-0" />
       )}
-      <span className={cn("min-w-0 flex-1 truncate", opts.strong && "font-medium")}>
+      <span className={cn("min-w-0 flex-1 truncate", opts.strong && "font-medium", opts.child && "text-(--color-text-secondary)")}>
         {label}
         {opts.info && <InfoTip name={label} text={opts.info} formula={opts.formula} from={opts.from} />}
       </span>
@@ -370,11 +373,11 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
         {opened &&
           l.parts!.map((p, k) => (
             <tr key={p.label} className={cn(rowCls, "text-body-sm")}>
-              <th scope="row" className={cn(nameCell, "h-8 pl-[30px]")}>
+              <th scope="row" className={cn(nameCell, "h-8 pl-[48px]")}>
                 {/* A tree guide down from the parent's chevron: the cell's full height and across the row line, so it
                     runs unbroken; the last part's stops at its middle, with a tick into it */}
                 <span aria-hidden className={cn("absolute -top-px left-[17px] w-px bg-(--gray-600)", k === l.parts!.length - 1 ? "h-[calc(50%+1px)]" : "-bottom-px")} />
-                <span aria-hidden className="absolute top-1/2 left-[17px] h-px w-2 bg-(--gray-600)" />
+                <span aria-hidden className="absolute top-1/2 left-[17px] h-px w-4 bg-(--gray-600)" />
                 <span className="text-(--color-text-secondary)">{p.label}</span>
               </th>
               {columns.map((c) => (
@@ -392,21 +395,28 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
   };
 
   /** A line of single figures. `once` gives the channels one empty cell, for a figure that's only in All; `tint` colours All's cell. */
-  const figureRow = (key: string, label: React.ReactNode, title: string | undefined, figure: (v: Column["v"]) => React.ReactNode, opts: { once?: boolean; tint?: string; editing?: boolean; strong?: boolean } = {}) => (
-    <tr key={key} className={cn(rowCls, opts.strong && strongRow)}>
-      <th scope="row" className={cn(nameCell, opts.editing && "shadow-[inset_2px_0_0_var(--amber-700)]")} title={title}>
+  const figureRow = (key: string, label: React.ReactNode, title: string | undefined, figure: (v: Column["v"]) => React.ReactNode, opts: { once?: boolean; tint?: string; editing?: boolean; strong?: boolean; child?: "mid" | "last" } = {}) => (
+    <tr key={key} className={cn(rowCls, opts.strong && strongRow, opts.child && "text-body-sm")}>
+      <th scope="row" className={cn(nameCell, opts.child && "h-8 pl-[48px]", opts.editing && "shadow-[inset_2px_0_0_var(--amber-700)]")} title={title}>
+        {opts.child && (
+          <>
+            {/* the same tree guide as a reported line's parts */}
+            <span aria-hidden className={cn("absolute -top-px left-[17px] w-px bg-(--gray-600)", opts.child === "last" ? "h-[calc(50%+1px)]" : "-bottom-px")} />
+            <span aria-hidden className="absolute top-1/2 left-[17px] h-px w-4 bg-(--gray-600)" />
+          </>
+        )}
         {label}
       </th>
       {opts.once ? (
-        <td colSpan={columns.length} className={cn(grid, "h-11")} />
+        <td colSpan={columns.length} className={cn(grid, opts.child ? "h-8" : "h-11")} />
       ) : (
         columns.map((c) => (
-          <td key={c.key} className={cellOf(c)}>
+          <td key={c.key} className={cellOf(c, opts.child && "h-8")}>
             {figure(c.v)}
           </td>
         ))
       )}
-      <td className={cn(num, opts.tint)}>{figure(all)}</td>
+      <td className={cn(num, opts.child && "h-8", opts.tint)}>{figure(all)}</td>
     </tr>
   );
   const profitTone = (n: number) => (Math.round(n) < 0 ? "text-(--color-text-danger)" : "text-(--color-text-success)");
@@ -419,11 +429,23 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
           <tr className={cn("text-body-sm [&>th]:h-[34px] [&>th]:bg-(--gray-200)", sticky && "[&>th]:sticky [&>th]:top-0 [&>th]:z-[2]")}>
             <th aria-hidden className={cn(grid, "left-0 z-[3]!", !sticky && "sticky", edge)} />
             {[...outlets.map((o) => ({ key: o.store, label: short(o.store), title: o.store })), { key: "all", label: "All outlets", title: undefined }].map((g) => (
-              <th key={g.key} scope="colgroup" colSpan={APPS.length + 1} title={g.title} className={cn(grid, groupEnd, "px-3 text-left font-medium text-(--color-text-primary)")}>
+              <th key={g.key} scope="colgroup" colSpan={split(g.key) ? APPS.length + 1 : 1} title={g.title} className={cn(grid, groupEnd, "px-3 text-left font-medium text-(--color-text-primary)")}>
                 {/* Stays beside the pinned Line column (280px) while any of its group is in view */}
-                <span className="sticky left-[292px] flex w-fit items-center gap-1.5 whitespace-nowrap">
-                  <StoreIcon aria-hidden className="size-3.5 text-(--color-text-secondary)" />
-                  {g.label}
+                <span className="sticky left-[292px] flex w-fit max-w-full items-center gap-1.5 whitespace-nowrap">
+                  <StoreIcon aria-hidden className="size-3.5 shrink-0 text-(--color-text-secondary)" />
+                  <span className="min-w-0 truncate">{g.label}</span>
+                  {onBreak && (
+                    <button
+                      type="button"
+                      aria-expanded={split(g.key)}
+                      aria-label={`${split(g.key) ? "Hide" : "Show"} platform breakdown for ${g.label}`}
+                      title={split(g.key) ? "Hide platform breakdown" : "Platform breakdown"}
+                      onClick={() => onBreak(g.key)}
+                      className="grid size-5 shrink-0 place-items-center rounded-small text-(--color-text-tertiary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+                    >
+                      <ChevronRight aria-hidden className={cn("size-3.5 transition-transform duration-150", split(g.key) && "rotate-90")} />
+                    </button>
+                  )}
                 </span>
               </th>
             ))}
@@ -489,16 +511,16 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
             ? section(
                 "costs",
                 <div className="text-body-md text-(--color-text-primary)">
-                  {name("Cost", { strong: true, toggle: { open: true, key: "costs" } })}
+                  {name("Prime cost", { strong: true, toggle: { open: true, key: "costs" } })}
                 </div>,
               )
             : figureRow(
                 "costs",
-                name("Cost", {
+                name("Prime cost", {
                   strong: true,
                   toggle: { open: false, key: "costs" },
                   info: outlets ? "Food & drink and staff." : "Food & drink and staff. Staff is shared, so the channels show food only and All shows both.",
-                  formula: "Cost = Food & drink + Staff",
+                  formula: "Prime cost = Food & drink + Staff",
                 }),
                 undefined,
                 (v) => <Amount n={v.food + (v.staff ?? 0)} sales={v.sales} cost />,
@@ -507,14 +529,14 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
           shows("Food & drink") &&
           figureRow(
             "food",
-            name("Food & drink", { end: <CostPopover costKey="food" edit={edit} amount={all.food} /> }),
+            name("Food & drink", { child: true, end: <CostPopover costKey="food" edit={edit} amount={all.food} /> }),
             undefined,
-            (v) => <Amount n={v.food} sales={v.sales} cost />,
-            { editing: edit.draft?.key === "food" },
+            (v) => <Amount n={v.food} sales={v.sales} cost muted />,
+            { editing: edit.draft?.key === "food", child: shared.length ? "mid" : "last" },
           )}
         {costOpen &&
           shared.map((l) =>
-            figureRow(l.key, name(l.label, { end: <CostPopover costKey={l.key} edit={edit} amount={all[l.key]} /> }), undefined, (v) => <Amount n={v[l.key] ?? 0} sales={v.sales} cost />, { once: !outlets, editing: edit.draft?.key === l.key }),
+            figureRow(l.key, name(l.label, { child: true, end: <CostPopover costKey={l.key} edit={edit} amount={all[l.key]} /> }), undefined, (v) => <Amount n={v[l.key] ?? 0} sales={v.sales} cost muted />, { once: !outlets, editing: edit.draft?.key === l.key, child: "last" }),
           )}
         {(shows("Profit") || shows("Prime cost")) &&
           figureRow(
