@@ -15,23 +15,23 @@ import { usd } from "./parts";
 
 // The P&L by channel, shared by /mvp2's P&L Summary and /mvp/profit's P&L tab, one line per row:
 //   reported     Orders, Sales, Card fees, App commission, Your app promos, Chargebacks after money
-//                back, Net revenue. Sales and the three app lines open into their parts (Sales: gross,
+//                back, Net after fees. Sales and the three app lines open into their parts (Sales: gross,
 //                discounts and comps, refunds, service charges; commission: commission, processing fee;
 //                promos: discounts you funded, ads; chargebacks: charged, won back).
 //   estimates    below the striped band: food per channel, then staff once, in
 //                All, and the estimated profit. Each cost's chip opens its editor (CostPopover).
-// Each column header names its source on hover, POS (In store & website) or 3PD (the apps). Sales, Net revenue,
+// Each column header names its source on hover, POS (In store & website) or 3PD (the apps). Sales, Net after fees,
 // and Profit sit on faint grey rows. Each app's Sales figure (and All's) carries the POS ⇄ 3PD check
 // on hover: its delivery orders against Square, both ways (ReconHover). Hover a line's name for the report
 // columns behind it (REPORT_FIELDS).
 // Laid out like a CRM records table (Attio): a dense grid with a line between every row and column, one-line
 // rows, a grey header with each column's icon, and the line names pinned on the left while the figures scroll.
 // What a line means sits behind an ⓘ, not under its name. Two thin section rows split it: Reported (from the
-// uploaded reports) and Cost. Below Net revenue it stays bare, since owners know food and staff are their own
+// uploaded reports) and Cost. Below Net after fees it stays bare, since owners know food and staff are their own
 // estimates: no ≈, no "typical" tags, no notes in the empty channel cells; just each cost's pencil, which opens
 // its editor and Profit (each with an ⓘ). Lines with parts open into indented child
 // rows on a tree guide; Expand all opens them all. Each figure has its % of that column's sales beside it, small
-// and grey. Each app's Sales carries an alert icon when its POS ⇄ 3PD check finds orders that differ. Net revenue and profit are bold, and
+// and grey. Each app's Sales carries an alert icon when its POS ⇄ 3PD check finds orders that differ. Net after fees and profit are bold, and
 // in All they sit in a green-tinted cell (red at a loss). A line that doesn't apply leaves its cell empty.
 // `query` narrows the lines (and opens the ones whose parts match); `sticky` pins the header rows to the
 // nearest scroll box; `scrolled` says which way that box has scrolled, for a soft shadow off the pinned
@@ -55,7 +55,7 @@ export const SALES: Line = {
     { label: "Service charges", get: (v) => v.serviceCharges, only: "instore" },
   ],
 };
-// What it cost to get paid, between Sales and Net revenue.
+// What it cost to get paid, between Sales and Net after fees.
 export const SELLING: Line[] = [
   { key: "cardFees", label: "Card fees", get: (v) => v.cardFees, cost: true, only: "instore" },
   {
@@ -289,7 +289,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
     });
   const shared = SHARED.filter((l) => shows(l.label));
   const estimates = shows("Food & drink") || shared.length > 0 || (shows("Profit") || shows("Prime cost"));
-  const nothing = !shows("Orders") && !shows("Net revenue") && !lines.some(visible) && !estimates;
+  const nothing = !shows("Orders") && !shows("Net after fees") && !lines.some(visible) && !estimates;
   const applies = (only: Only | undefined, app: boolean) => !only || (only === "apps") === app;
   const expandable = lines.filter((l) => l.parts && visible(l));
   // Cost opens like a line: closed, one row of each column's total cost; open, its lines and no total.
@@ -311,9 +311,9 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
   const groupEnd = "border-r-(--gray-700)";
   const cellOf = (c: Column, extra?: string) => cn(num, c.total && groupEnd, extra);
   const rowCls = "group/row transition-colors hover:bg-(--gray-200)";
-  // Sales and the subtotals (Net revenue, Profit) sit on a faint grey row.
+  // Sales and the subtotals (Net after fees, Profit) sit on a faint grey row.
   const strongRow = "bg-(--gray-200) [&>th]:bg-(--gray-200) hover:bg-(--gray-300) [&>th]:group-hover/row:bg-(--gray-300)";
-  // Net revenue and profit, in All: a tinted cell, green (red at a loss).
+  // Net after fees and profit, in All: a tinted cell, green (red at a loss).
   const good = "bg-(--green-200) group-hover/row:bg-(--green-300)";
   const bad = "bg-(--red-200) group-hover/row:bg-(--red-300)";
 
@@ -503,8 +503,8 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
         )}
         {visible(sales) && lineRows(sales)}
         {selling.filter(visible).map(lineRows)}
-        {shows("Net revenue") &&
-          figureRow("moneyIn", name("Net revenue", { strong: true }), sources("moneyIn"), (v) => <Amount n={v.moneyIn} sales={v.sales} strong tone={v === all ? "text-(--color-text-success)" : undefined} />, { tint: good, strong: true })}
+        {shows("Net after fees") &&
+          figureRow("moneyIn", name("Net after fees", { strong: true }), sources("moneyIn"), (v) => <Amount n={v.moneyIn} sales={v.sales} strong tone={v === all ? "text-(--color-text-success)" : undefined} />, { tint: good, strong: true })}
 
         {estimates &&
           (costOpen
@@ -543,7 +543,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
             "profit",
             name("Profit after prime cost", {
               info: outlets ? "Before loans and tax. Each outlet's staff is split by sales, and its delivery apps carry their share." : "Before loans and tax. Staff is shared, so profit is counted once, for all channels.",
-              formula: "Profit after prime cost = Net revenue − Food & drink − Staff",
+              formula: "Profit after prime cost = Net after fees − Food & drink − Staff",
               strong: true,
             }),
             undefined,

@@ -56,7 +56,7 @@ const TablePreview = () => {
     ["Sales", ["$73.9k", "$19.8k", "$13.5k", "$5.6k"]],
     ["Commission", ["—", "−$4.6k", "−$3.6k", "−$1.1k"]],
     ["Promos", ["—", "−$226", "−$85", "−$16"]],
-    ["Net revenue", ["$72.0k", "$14.9k", "$9.7k", "$4.4k"], true],
+    ["Net after fees", ["$72.0k", "$14.9k", "$9.7k", "$4.4k"], true],
   ];
   return (
     <Canvas className="p-0">
@@ -121,7 +121,7 @@ export function PnlLaunch({ restaurant }: { restaurant: string }) {
       features={[
         { title: "Profit after prime cost, at a glance", body: "What you kept from everything you sold, and how it moved against the weeks before.", preview: <ProfitPreview /> },
         { title: "What each app keeps", body: "Fees taken from every $1 sold, side by side, so the costliest channel stands out.", preview: <FeesPreview /> },
-        { title: "P&L by channel", body: "Sales, commission, promos and chargebacks for in store and each app, down to Net revenue.", preview: <TablePreview /> },
+        { title: "P&L by channel", body: "Sales, commission, promos and chargebacks for in store and each app, down to Net after fees.", preview: <TablePreview /> },
         { title: "Money the apps owe you", body: "Orders your POS rang up that an app hasn't paid for. KoreFi claims them back for you.", preview: <ClaimPreview /> },
       ]}
     />

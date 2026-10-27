@@ -14,7 +14,7 @@ import { CostPopover } from "./CostPopover";
 // The P&L Summary table, laid out for a phone (built for 390pt wide, an iPhone 13). The same lines and figures as
 // PnlTable, read down instead of across:
 //   one channel at a time   tabs for All / In store / each app, then the lines as one statement. Sales, the app
-//                           fees and Prime cost open into their parts (as the table's chevrons do); Net revenue and
+//                           fees and Prime cost open into their parts (as the table's chevrons do); Net after fees and
 //                           Profit sit on tinted rows.
 //   Compare outlets         one card per outlet, All outlets first. Closed, a card shows the outlet's total: Sales, Net
 //                           revenue, Prime cost and Profit. "Platform breakdown" (per card, or all at once from the page's
@@ -136,7 +136,7 @@ function ChannelTable({ t, edit }: { t: Totals; edit: CostEdit }) {
             }
             return out;
           })}
-          {row("moneyIn", "Net revenue", (c) => <Amount n={c.v.moneyIn} sales={c.v.sales} strong tone={c.all ? "text-(--color-text-success)" : undefined} />, { strong: true, bg: tint.grey, allBg: tint.good })}
+          {row("moneyIn", "Net after fees", (c) => <Amount n={c.v.moneyIn} sales={c.v.sales} strong tone={c.all ? "text-(--color-text-success)" : undefined} />, { strong: true, bg: tint.grey, allBg: tint.good })}
 
           {costOpen ? (
             <>
@@ -192,7 +192,7 @@ const OUTLET_LINES: { key: string; label: string; get: (c: OutletCol) => number;
   { key: "commission", label: "Commission", get: (c) => c.commission, cost: true, detail: true },
   { key: "promos", label: "Promos", get: (c) => c.promos, cost: true, detail: true },
   { key: "chargebacks", label: "Chargebacks", get: (c) => c.chargebacksNet, cost: true, detail: true },
-  { key: "moneyIn", label: "Net revenue", get: (c) => c.moneyIn, strong: true },
+  { key: "moneyIn", label: "Net after fees", get: (c) => c.moneyIn, strong: true },
   { key: "prime", label: "Prime cost", get: (c) => c.food + c.staff, cost: true },
   { key: "profit", label: "Profit", get: (c) => c.profit, strong: true, tone: (c) => (Math.round(c.profit) < 0 ? "text-(--color-text-danger)" : "text-(--color-text-success)") },
 ];

@@ -16,7 +16,7 @@ import { PnlTable } from "./PnlTable";
 // MVP / Profit / P&L, the A/B partner to the Statement tab. Built on what KoreFi actually receives:
 // the reports ops uploads (Square, DoorDash, Uber Eats, Grubhub) give sales, card fees, app commission,
 // app promos and chargebacks after money back. Food and staff never arrive, so:
-//   facts        sales down to Net revenue, per channel, shown plainly
+//   facts        sales down to Net after fees, per channel, shown plainly
 //   estimates    below a band that says so: food and staff from the owner's cost settings (typical
 //                restaurant figures until they set theirs), every figure marked ≈, profit "estimated".
 //                Each cost's setting sits under its label and edits in place; the figures follow as you type.
@@ -251,7 +251,7 @@ export function PnlStory() {
       row("App commission", (v) => -v.commission),
       row("Your app promos", (v) => -v.promos),
       row("Chargebacks, after money back", (v) => -v.chargebacksNet),
-      row("Net revenue", (v) => v.moneyIn),
+      row("Net after fees", (v) => v.moneyIn),
       row("Food & drink (estimate)", (v) => -v.food),
       totalOnly("Staff (estimate)", -all.staff),
       totalOnly("Profit after prime cost (estimate)", all.profit),
@@ -304,7 +304,7 @@ export function PnlStory() {
       <p className="hidden items-start gap-2 px-1 text-body-sm text-(--color-text-tertiary) md:flex">
         <FileCheck2 aria-hidden className="mt-0.5 size-3.5 shrink-0" />
         <span>
-          Sales down to Net revenue: from reports uploaded by KoreFi, last on {REPORTS_UPLOADED} ({REPORT_SOURCES.map((r) => `${r.provider} ${r.report}`).join(", ")}). Food and staff: estimates from {typical ? "typical restaurant costs" : "your cost settings"}.
+          Sales down to Net after fees: from reports uploaded by KoreFi, last on {REPORTS_UPLOADED} ({REPORT_SOURCES.map((r) => `${r.provider} ${r.report}`).join(", ")}). Food and staff: estimates from {typical ? "typical restaurant costs" : "your cost settings"}.
         </span>
       </p>
 
@@ -572,7 +572,7 @@ const REPORTED: Line[] = [
   { key: "commission", label: "App commission", get: (v) => v.commission, cost: true, only: "apps" },
   { key: "promos", label: "Your app promos", hint: "Discounts you funded", get: (v) => v.promos, cost: true, only: "apps" },
   { key: "chargebacks", label: "Chargebacks, after money back", hint: "Refunded orders, less what KoreFi won back", get: (v) => v.chargebacksNet, cost: true, only: "apps" },
-  { key: "moneyIn", label: "Net revenue", hint: "What reached you", get: (v) => v.moneyIn, strong: true },
+  { key: "moneyIn", label: "Net after fees", hint: "What reached you", get: (v) => v.moneyIn, strong: true },
 ];
 
 export type Reset = { label: string; run: () => void } | null;
