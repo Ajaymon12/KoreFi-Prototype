@@ -11,7 +11,7 @@ import { ThinkingOrb } from "thinking-orbs";
 import { AgentAvatar, StepOrb, type AvatarMood } from "./AgentAvatar";
 import { AgentFolders } from "./AgentFolders";
 import { useAccount } from "./AccountSwitcher";
-import { AgentDashboard, AutomationCard, DashboardCard, ScheduleControl } from "./AgentDashboard";
+import { AgentDashboard, AutomationCard, DashboardCard, SampleBanner, SampleTag, ScheduleControl } from "./AgentDashboard";
 import { REPORT_VIEW } from "./reportViews";
 import { Welcome, useOnboarding } from "./Onboarding";
 
@@ -27,7 +27,7 @@ const chip = "rounded-circle border border-(--color-border-default) bg-(--color-
 
 /** An agent's face (bot-avatars via AgentAvatar). Kept as AgentMark so every call site stays the same. */
 export function AgentMark({ agent, size = 28, mood, className }: { agent: AgentId; size?: number; mood?: AvatarMood; className?: string }) {
-  return <AgentAvatar agent={agent} size={size} mood={mood} className={className} />;
+  return <AgentAvatar agent={agent} size={size} mood={mood} className={className} animate />;
 }
 
 // ───────── Composer ─────────
@@ -155,7 +155,7 @@ export function Composer({ placeholder, onSend, intercept }: { placeholder?: str
 }
 
 /** The quiet line under the composer, where ChatGPT puts its disclaimer. */
-function ComposerNote() {
+export function ComposerNote() {
   return <p className="pt-2 text-center text-body-sm text-(--color-text-secondary)">Agents are read-only and never change your data.</p>;
 }
 
@@ -323,7 +323,7 @@ function Bubble({ m }: { m: Message }) {
 // ───────── Canvas ─────────
 
 function Canvas({ id }: { id: CanvasId }) {
-  const { setCanvas, expanded, setExpanded, dashboards, pinReport } = useAgents();
+  const { setCanvas, expanded, setExpanded, dashboards, pinReport, sample } = useAgents();
   const tools = (
     <>
       <button type="button" aria-label={expanded ? "Show chat" : "Full width"} title={expanded ? "Show chat" : "Full width"} onClick={() => setExpanded(!expanded)} className={iconBtn}>
@@ -351,14 +351,20 @@ function Canvas({ id }: { id: CanvasId }) {
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="absolute top-1.5 right-2 z-10 flex items-center gap-1 rounded-medium bg-(--color-background-secondary)">
           {/* Pin the report to the sidebar; once pinned it can go on a schedule too (like the Chargebacks dashboard). */}
-          {pinned?.pinned && <ScheduleControl d={pinned} />}
-          <button type="button" onClick={() => pinReport(report, !pinned?.pinned)} aria-pressed={!!pinned?.pinned} className="inline-flex h-8 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-3.5">
+          {sample && <SampleTag />}
+          {!sample && pinned?.pinned && <ScheduleControl d={pinned} />}
+          {!sample && <button type="button" onClick={() => pinReport(report, !pinned?.pinned)} aria-pressed={!!pinned?.pinned} className="inline-flex h-8 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-3.5">
             {pinned?.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />}
             {pinned?.pinned ? "Unpin" : "Pin to sidebar"}
-          </button>
+          </button>}
           {tools}
         </div>
-        <div className={cn("flex min-h-0 flex-1 flex-col", pinned?.pinned ? "[&>div:first-child]:pr-[380px]" : "[&>div:first-child]:pr-[200px]")}>{REPORT_VIEW[report]()}</div>
+        {sample && (
+          <div className="shrink-0 pt-2 pr-[200px] pb-1 pl-4">
+            <SampleBanner />
+          </div>
+        )}
+        <div className={cn("flex min-h-0 flex-1 flex-col", sample ? "" : pinned?.pinned ? "[&>div:first-child]:pr-[380px]" : "[&>div:first-child]:pr-[200px]")}>{REPORT_VIEW[report]()}</div>
       </div>
     </aside>
   );
@@ -383,7 +389,7 @@ function Home() {
           <h1 className="text-center text-page-title font-normal text-(--color-text-primary) sm:text-[28px]">
             {fresh ? `Welcome, ${user.firstName}. Your agents are getting to know ${account.name}.` : `${greeting()}, ${user.firstName}. What should we look into?`}
           </h1>
-          {fresh && <p className="-mt-4 text-center text-body-lg text-(--color-text-secondary)">Your first reports usually arrive 2 to 3 days after your apps are connected. Until then, try your agents on Taco Pros sample data.</p>}
+          {fresh && <p className="-mt-4 text-center text-body-lg text-(--color-text-secondary)">Your first reports usually arrive 2 to 3 days after your apps are connected. Your agents will post here when they do.</p>}
           <div>
             <div data-tour="composer">
               <Composer />
@@ -403,7 +409,7 @@ function Home() {
         </div>
 
         <section aria-labelledby="agents-h" data-tour="agents" className="space-y-2.5">
-          <h2 id="agents-h" className="text-body-sm text-(--color-text-secondary)">
+          <h2 id="agents-h" className="sr-only">
             Your agents
           </h2>
           <AgentFolders />

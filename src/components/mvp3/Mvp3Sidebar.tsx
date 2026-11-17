@@ -9,6 +9,7 @@ import { navItemClass } from "@/components/shell/navItem";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { ChatSearch, openChatSearch } from "./ChatSearch";
+import { useOnboarding } from "./Onboarding";
 
 // MVP 3's sidebar, built like MVP 2's (components/shell/Mvp2Sidebar.tsx) with MVP 3's pages:
 //  - "Workspace": New chat, Search chats (ChatGPT-style dialog, also ⌘K) and Agents (presets, drafts, New agent).
@@ -111,8 +112,21 @@ function useGo() {
   };
 }
 
-function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
+/** New chat, and whether the home's empty chat is showing. Once the welcome chat is in Recent chats,
+ *  New chat leaves it for a fresh home (before that, the welcome chat is the new chat). */
+function useNewChat(path: string) {
   const { active, newChat } = useAgents();
+  const { stage, welcomeChat, finish } = useOnboarding();
+  const inWelcome = stage === "welcome" && welcomeChat !== null;
+  const start = () => {
+    newChat();
+    if (welcomeChat) finish();
+  };
+  return { start, on: path === HOME && !active && !inWelcome };
+}
+
+function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
+  const fresh = useNewChat(path);
   const go = useGo();
   return (
     <ul data-tour="workspace" className="flex flex-col gap-1">
@@ -120,11 +134,11 @@ function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
         <button
           type="button"
           onClick={() => {
-            go(newChat);
+            go(fresh.start);
             onFollow?.();
           }}
-          aria-current={path === HOME && !active ? "page" : undefined}
-          className={cn(navItemClass(path === HOME && !active), "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)")}
+          aria-current={fresh.on ? "page" : undefined}
+          className={cn(navItemClass(fresh.on), "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)")}
         >
           <SquarePen aria-hidden />
           New chat
@@ -171,8 +185,17 @@ function BottomLinks({ path, onFollow }: { path: string; onFollow?: () => void }
 
 /** Every thread, newest first. Used in the wide sidebar, the narrow flyout and the phone drawer. */
 function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: () => void; big?: boolean }) {
-  const { threads, active, open } = useAgents();
+  const { threads, active, open, newChat } = useAgents();
+  const { stage, welcomeChat, openWelcome } = useOnboarding();
   const go = useGo();
+  const row = (on: boolean, bold = false) =>
+    cn(
+      "flex w-full items-center gap-2 rounded-(--module-radius) text-left outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
+      big ? "min-h-11 px-3 text-body-md" : "h-[30px] px-3 text-menu-md",
+      on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)",
+      bold && "font-medium text-(--color-text-primary)",
+    );
+  const welcomeOn = path === HOME && !active && stage === "welcome";
   return (
     <ul className="flex flex-col gap-0.5">
       {threads.map((t) => {
@@ -187,12 +210,7 @@ function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: ()
               }}
               aria-current={on ? "page" : undefined}
               title={t.title}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-(--module-radius) text-left outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
-                big ? "min-h-11 px-3 text-body-md" : "h-[30px] px-3 text-menu-md",
-                on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)",
-                t.unread && "font-medium text-(--color-text-primary)",
-              )}
+              className={row(on, t.unread)}
             >
               <AgentAvatar agent={t.agent} size={big ? 24 : 16} />
               <span className="min-w-0 flex-1 truncate">{t.title}</span>
@@ -201,6 +219,27 @@ function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: ()
           </li>
         );
       })}
+      {/* The welcome chat, once the owner has answered in it. It's the oldest chat, so it sits last. */}
+      {welcomeChat && (
+        <li>
+          <button
+            type="button"
+            onClick={() => {
+              go(() => {
+                newChat();
+                openWelcome();
+              });
+              onFollow?.();
+            }}
+            aria-current={welcomeOn ? "page" : undefined}
+            title={welcomeChat}
+            className={row(welcomeOn)}
+          >
+            <AgentAvatar agent="operations" size={big ? 24 : 16} />
+            <span className="min-w-0 flex-1 truncate">{welcomeChat}</span>
+          </button>
+        </li>
+      )}
     </ul>
   );
 }
@@ -243,7 +282,9 @@ type Flyout = { key: string; top: number; left: number; content: React.ReactNode
 
 /** Icon column with hover flyouts. Flyouts are `fixed` so the panel's overflow can't clip them. */
 function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
-  const { threads, active, newChat, dashboards } = useAgents();
+  const { threads, active, dashboards } = useAgents();
+  const { stage, welcomeChat } = useOnboarding();
+  const fresh = useNewChat(path);
   const go = useGo();
   const [fly, setFly] = useState<Flyout | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -269,7 +310,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
       current ? "bg-(--module-tint) text-(--module-strong)" : "text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)",
     );
   const label = (text: string) => <span className="block px-2.5 py-1.5 text-menu-md whitespace-nowrap text-(--color-text-primary)">{text}</span>;
-  const onChats = path === HOME && !!active;
+  const onChats = path === HOME && (!!active || (stage === "welcome" && welcomeChat !== null));
 
   return (
     <>
@@ -278,7 +319,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
       </button>
       <ul className="mt-2 flex flex-col items-center gap-1">
         <li>
-          <button type="button" onClick={() => go(newChat)} aria-label="New chat" className={icon(path === HOME && !active)} {...hover("new", label("New chat"))}>
+          <button type="button" onClick={() => go(fresh.start)} aria-label="New chat" className={icon(fresh.on)} {...hover("new", label("New chat"))}>
             <SquarePen aria-hidden />
           </button>
         </li>
@@ -381,12 +422,12 @@ export function Mvp3Sidebar() {
 /** The same pages in the top-bar drawer under lg, built for a thumb like MVP 2's drawer: 48px rows, the current
  *  page a tinted row. */
 function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => void }) {
-  const { active, newChat } = useAgents();
+  const fresh = useNewChat(path);
   const go = useGo();
   const row = "flex min-h-12 w-full items-center gap-3 rounded-medium px-3 text-left text-body-md outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
   const tile = (on: boolean) => cn("grid size-8 shrink-0 place-items-center rounded-(--module-radius) [&_svg]:size-4", on ? "bg-(--module-tint) text-(--module-strong)" : "bg-(--color-neutral-lightest) text-(--color-text-secondary)");
   const rowOn = (on: boolean) => cn(row, on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-primary) active:bg-(--color-neutral-light)");
-  const homeOn = path === HOME && !active;
+  const homeOn = fresh.on;
   // The drawer sits in the top bar, outside the page's data-module, so it carries the module's tints itself.
   return (
     <div data-module="mvp">
@@ -396,7 +437,7 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
           <button
             type="button"
             onClick={() => {
-              go(newChat);
+              go(fresh.start);
               onFollow();
             }}
             aria-current={homeOn ? "page" : undefined}

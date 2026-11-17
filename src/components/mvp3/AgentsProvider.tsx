@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { user } from "@/lib/mockData";
 import type { Account } from "@/lib/mvp3/accounts";
 import { useAccount } from "./AccountSwitcher";
-import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, setAccountStores, withSampleNote, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
+import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
 import { blankWorkflow, isSchedule, workflowOf, type Workflow } from "@/lib/mvp3/workflows";
 import { DEFAULT_CONFIG, customize, parseSchedule, scopeLabel, type Automation, type Dashboard } from "@/lib/mvp3/dashboards";
 
@@ -33,6 +33,8 @@ type Ctx = {
   saveWorkflow: (w: Workflow) => void;
   created: Workflow[];
   newAgent: () => string;
+  /** Copy an agent into a new draft ("Copy of …") and return its id; the original is untouched. */
+  duplicateAgent: (w: Workflow) => string;
   runAgent: (w: Workflow) => void;
   /** Open a past run's chat (the agent overview's history); a run without one gets a chat holding its reply. */
   openRun: (run: { id: string; thread?: string; week: string; reply: AgentReply }, w: Workflow) => void;
@@ -42,6 +44,8 @@ type Ctx = {
   /** Pin (or unpin) a report the agent opened, e.g. the P&L Summary. Pinned reports are dashboards with `report`. */
   pinReport: (report: ReportId, pinned: boolean) => void;
   setAutomation: (id: string, a: Automation | undefined) => void;
+  /** A restaurant with no reports yet: agents answer "no reports yet", never with another restaurant's figures. */
+  sample: boolean;
 };
 
 const AgentsContext = createContext<Ctx | null>(null);
@@ -57,6 +61,16 @@ const STEP_MS = 520;
 const now = () => new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
 /** The owner's words, shown back when they set a schedule. */
+/** A restaurant with no reports yet gets this instead of figures: never another restaurant's numbers. */
+function noReportsYet(agent: AgentReply["agent"], restaurant: string): AgentReply {
+  return {
+    agent,
+    title: `No ${restaurant} reports yet`,
+    lines: [`I answer from ${restaurant}'s own delivery-app reports, and none have come in yet. Once your apps are connected and the KoreFi team has verified them, the first reports usually arrive in 2 to 3 days. I'll post here as soon as they do.`],
+    work: ["Checked for your reports"],
+  };
+}
+
 const where = (a: Automation, title: string, report = false) => [a.email && `email the report to ${user.email}`, a.dashboard && (report ? `refresh the pinned ${title}` : `update the ${title} dashboard`)].filter(Boolean).join(" and ");
 
 /** The chats an account opens on: what its agents posted, or none for a restaurant that just joined. */
@@ -67,6 +81,7 @@ function seedFor(account: Account) {
 
 export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const { account } = useAccount();
+  const sample = account.stage === "new";
   const [threads, setThreads] = useState<Thread[]>(() => seedFor(account));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [canvas, setCanvasState] = useState<CanvasId | null>(null);
@@ -153,11 +168,26 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     return wid;
   }, []);
 
+  const duplicateAgent = useCallback((w: Workflow) => {
+    const wid = `new-${Date.now().toString(36)}`;
+    const copy: Workflow = { ...structuredClone(w), id: wid, title: `Copy of ${w.title}`, kind: "draft", state: "draft", thread: undefined };
+    setWorkflows((ws) => ({ ...ws, [wid]: copy }));
+    return wid;
+  }, []);
+
   const runAgent = useCallback(
     (w: Workflow) => {
       const steps = w.groups.flatMap((g) => g.steps).filter((s) => s.trim());
       const work = (steps.length ? steps : ["Read last week's data"]).slice(0, 6).map((s) => s.replace(/\.$/, ""));
       const agent = w.agent ?? "operations";
+      if (sample) {
+        const tid = id();
+        setThreads((ts) => [{ id: tid, title: `${w.title} · ${now()}`, agent, at: "Now", unread: false, messages: [], workflow: w.id }, ...ts]);
+        setActiveId(tid);
+        setCanvasState(null);
+        play(tid, `Run ${w.title}`, noReportsYet(agent, account.name));
+        return;
+      }
       let reply: AgentReply;
       let dashId: string | undefined;
       if (w.id === "chargebacks") {
@@ -195,7 +225,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       if (dashId) setDashboards((ds) => ds.map((x) => (x.id === dashId ? { ...x, thread: tid } : x)));
       play(tid, `Run ${w.title}`, reply);
     },
-    [dashboards, play],
+    [dashboards, play, sample, account.name],
   );
 
   const runChats = useRef<Record<string, string>>({});
@@ -266,6 +296,12 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       if (!q) return;
       const thread = threads.find((t) => t.id === activeId);
 
+      // No reports yet: say so. Never answer with another restaurant's numbers.
+      if (sample) {
+        play(activeId, q, noReportsYet(thread ? agentOf(thread.agent).id : answer(q).agent, account.name));
+        return;
+      }
+
       // In a chat that built a dashboard, a request about the dashboard reshapes it.
       const dash = thread?.dashboard ? dashboards.find((d) => d.id === thread.dashboard) : undefined;
       const c = dash ? customize(q, dash) : null;
@@ -322,16 +358,16 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         if (w) return runAgent(w);
       }
 
-      play(activeId, q, account.stage === "new" ? withSampleNote(answer(q)) : answer(q));
+      play(activeId, q, answer(q));
     },
-    [activeId, threads, dashboards, play, setAutomation, getWorkflow, runAgent, pinReport, account.stage],
+    [activeId, threads, dashboards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account.name],
   );
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const busy = !!active?.messages.some((m) => "pending" in m);
   const value = useMemo<Ctx>(
-    () => ({ threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, setExpanded, getWorkflow, saveWorkflow, created, newAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation }),
-    [threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, getWorkflow, saveWorkflow, created, newAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation],
+    () => ({ threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, setExpanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation, sample }),
+    [threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation, sample],
   );
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;
 }

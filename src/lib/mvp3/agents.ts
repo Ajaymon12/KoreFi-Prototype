@@ -220,7 +220,6 @@ export function growthLearning(): AgentReply {
 }
 
 /** A first-time account has no reports yet, so it's answered on the Taco Pros sample, and says so. */
-export const withSampleNote = (r: AgentReply): AgentReply => ({ ...r, lines: [...r.lines, "This is Taco Pros sample data. Your own numbers arrive with your first reports, usually 2 to 3 days after your apps are connected."] });
 
 /** A typed question → the agent and the reply that answers it. Prototype only: no model. */
 export function answer(q: string): AgentReply {

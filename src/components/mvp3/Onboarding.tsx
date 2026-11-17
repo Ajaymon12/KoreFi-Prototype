@@ -3,17 +3,18 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Check, ChevronRight, Clock, Copy, ExternalLink, Eye, EyeOff, MonitorSmartphone, UserRoundCog, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useDismiss } from "@/components/dashboard/useDismiss";
+import { Check, ChevronRight, CirclePlay, Clock, Copy, ExternalLink, Eye, EyeOff, Mail, MessageCircle, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
 import { ThinkingOrb } from "thinking-orbs";
 import { cn } from "@/lib/utils";
 import { asset } from "@/lib/asset";
-import { chargebackUpdate, payoutCheck, type AgentId } from "@/lib/mvp3/agents";
+import type { AgentId } from "@/lib/mvp3/agents";
 import { AppLogo } from "@/components/onboarding/marks";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
-import { Composer } from "./AgentChat";
+import { Composer, ComposerNote } from "./AgentChat";
 import { useAccount } from "./AccountSwitcher";
 import { DATA_ACCOUNT } from "@/lib/mvp3/accounts";
 
@@ -45,8 +46,25 @@ type Ctx = {
   isNew: boolean;
   /** Leave the welcome chat for the normal home. */
   finish: () => void;
+  /** Once the owner answers, the welcome chat is a chat like any other: listed in Recent chats under this title. */
+  welcomeChat: string | null;
+  /** Reopen the welcome chat where it was left. */
+  openWelcome: () => void;
+  /** The welcome chat's conversation, kept here so leaving and reopening it doesn't replay it. */
+  welcomeSnap: WelcomeSnap | null;
+  saveWelcome: (s: WelcomeSnap) => void;
   startTour: () => void;
+  /** Where SMS and WhatsApp updates go. Empty until a new owner adds it (welcome chat or Settings). */
+  phone: string;
+  setPhone: (p: string) => void;
 };
+
+/** "3125550148" → "(312) 555-0148"; null unless it's a 10-digit US number (a leading 1 is dropped). */
+export function formatPhone(raw: string): string | null {
+  const d = raw.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : null;
+}
+const DEMO_PHONE = "(312) 555-0148";
 
 const OnboardingContext = createContext<Ctx | null>(null);
 export function useOnboarding() {
@@ -70,6 +88,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [profile, setProfile] = useState<Profile>(account.stage === "new" ? NEW_OWNER : EMPTY_PROFILE);
   const [apps, setApps] = useState<Record<App, AppState>>(NO_APPS);
   const [isNew, setIsNew] = useState(account.stage === "new");
+  const [welcomeSnap, setWelcomeSnap] = useState<WelcomeSnap | null>(null);
+  const [phone, setPhone] = useState(account.stage === "new" ? "" : DEMO_PHONE);
   // Switching to the first-time account replays the welcome chat from the start; a restaurant with data skips it.
   const [flowFor, setFlowFor] = useState(account.id);
   if (flowFor !== account.id) {
@@ -79,6 +99,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     setProfile(fresh ? NEW_OWNER : EMPTY_PROFILE);
     setApps(NO_APPS);
     setIsNew(fresh);
+    setWelcomeSnap(null);
+    setPhone(fresh ? "" : DEMO_PHONE);
   }
   const setApp = useCallback((a: App, s: AppState) => setApps((x) => ({ ...x, [a]: s })), []);
   const [touring, setTouring] = useState(false);
@@ -93,6 +115,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, [setAccount]);
 
   const finish = useCallback(() => setStage("done"), []);
+  const openWelcome = useCallback(() => setStage("welcome"), []);
+  const saveWelcome = useCallback((x: WelcomeSnap) => setWelcomeSnap(x), []);
+  const welcomeChat = welcomeSnap?.log.some((e) => e.kind === "user") ? `Set up ${profile.restaurant}` : null;
   const startTour = useCallback(() => {
     setStage("done");
     // Let the home render first so the tour can find what it points at.
@@ -109,7 +134,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const value = useMemo(() => ({ stage, profile, apps, setApp, isNew, finish, startTour }), [stage, profile, apps, setApp, isNew, finish, startTour]);
+  const value = useMemo(
+    () => ({ stage, profile, apps, setApp, isNew, finish, startTour, welcomeChat, openWelcome, welcomeSnap, saveWelcome, phone, setPhone }),
+    [stage, profile, apps, setApp, isNew, finish, startTour, welcomeChat, openWelcome, welcomeSnap, saveWelcome, phone],
+  );
   return (
     <OnboardingContext.Provider value={value}>
       {children}
@@ -342,13 +370,16 @@ function Setup({ restaurant, onDone }: { restaurant: string; onDone: () => void 
 //  - Then the agents say what the KoreFi team does next (map stores, check the first reports) and offer
 //    sample data and the tour.
 
-export type Guide = { name: string; portal: string; portalLabel: string; steps: React.ReactNode[] };
+/** `video`: a short screen recording of the steps in /public/guides (shown from "Watch how" on the card). */
+export type Guide = { name: string; portal: string; portalLabel: string; steps: React.ReactNode[]; video: string; videoLength: string };
 
 export const GUIDE: Record<App, Guide> = {
   doordash: {
     name: "DoorDash",
     portal: "https://merchant-portal.doordash.com",
     portalLabel: "Open DoorDash Merchant Portal",
+    video: "/guides/doordash-add-user.mp4",
+    videoLength: "1 min",
     steps: [
       <>Choose <b>Manage users</b> in the left panel, then <b>Add user</b></>,
       <>Name: <b>KoreFi Reports</b>, email: the one above</>,
@@ -359,6 +390,8 @@ export const GUIDE: Record<App, Guide> = {
     name: "Uber Eats",
     portal: "https://merchants.ubereats.com/manager",
     portalLabel: "Open Uber Eats Manager",
+    video: "/guides/ubereats-add-user.mp4",
+    videoLength: "1 min",
     steps: [
       <>Go to <b>Users</b> in the left panel and pick a store</>,
       <>Click <b>Add user</b>: first name <b>KoreFi</b>, last name <b>Reports</b>, email: the one above</>,
@@ -369,6 +402,8 @@ export const GUIDE: Record<App, Guide> = {
     name: "Grubhub",
     portal: "https://restaurant.grubhub.com",
     portalLabel: "Open Grubhub for Restaurants",
+    video: "/guides/grubhub-add-user.mp4",
+    videoLength: "1 min",
     steps: [
       <>Open <b>Settings</b>, then <b>Users</b>, then <b>Add user</b></>,
       <>Name: <b>KoreFi Reports</b>, email: the one above</>,
@@ -390,25 +425,38 @@ export function emailsFor(restaurant: string) {
 }
 
 export type AppState = "todo" | "verifying";
-type Item = { pre: string; link: string; post: string; ask: string };
 type Entry =
   | { id: number; kind: "text"; text: string }
   | { id: number; kind: "user"; text: string }
   | { id: number; kind: "pick" }
   | { id: number; kind: "email" }
   | { id: number; kind: "guide"; app: App }
-  | { id: number; kind: "settings" }
-  | { id: number; kind: "list"; items: Item[] }
-  | { id: number; kind: "tour" };
+  | { id: number; kind: "settings"; label?: string }
+  | { id: number; kind: "phone"; channel: "text" | "WhatsApp" }
+  | { id: number; kind: "reach" }
+    | { id: number; kind: "tour" };
 type Draft = Entry extends infer E ? (E extends Entry ? Omit<E, "id"> : never) : never;
+type WelcomeSnap = { log: Entry[]; queue: Draft[]; picked: App[] | null; reach: Reach | null; email: string; tourDismissed: boolean; wrapped: boolean; nextId: number; time: string };
 
-const bubble = "w-fit max-w-full rounded-[22px] bg-(--color-neutral-lightest) px-4 py-2.5 text-body-lg text-(--color-text-primary) motion-safe:animate-[kf-pop_260ms_ease-out]";
-const card = "w-full max-w-[560px] rounded-[22px] border border-(--color-border-default) bg-(--color-background-secondary) p-4 motion-safe:animate-[kf-pop_260ms_ease-out]";
-const chipBubble = "inline-flex items-center gap-2.5 rounded-[22px] bg-(--brand-200) px-4 py-2.5 text-body-lg text-(--brand-1100) outline-none hover:bg-(--brand-300) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) motion-safe:animate-[kf-pop_260ms_ease-out]";
+/** One-tap answers to "how should we reach you?". */
+const REACH = [
+  { label: "Text", Icon: Smartphone },
+  { label: "WhatsApp", Icon: MessageCircle },
+  { label: "Email", Icon: Mail },
+  { label: "Just here", Icon: MessagesSquare },
+] as const;
+type Reach = (typeof REACH)[number]["label"];
+
+// Styles shared with AgentChat's replies, so the welcome chat reads like every other thread.
+const line = "text-body-md text-(--color-text-primary)";
+const card = "w-full max-w-[560px] rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-3.5 motion-safe:animate-page-in";
+const chipLink = "inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3 py-1.5 text-body-sm text-(--color-text-primary) outline-none transition-colors hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
+/** The welcome chat's face; the sidebar shows the same one beside "Set up …". */
+const SPEAKER: AgentId = "operations";
 
 function Typing() {
   return (
-    <span role="status" aria-label="Typing" className={cn(bubble, "inline-flex items-center gap-1 py-3.5")}>
+    <span role="status" aria-label="Typing" className="inline-flex items-center gap-1 py-2">
       {[0, 1, 2].map((i) => (
         <span key={i} className="size-1.5 rounded-circle bg-(--color-text-tertiary) motion-safe:animate-bounce" style={{ animationDelay: `${i * 120}ms` }} />
       ))}
@@ -416,35 +464,29 @@ function Typing() {
   );
 }
 
-function sampleItems(): Item[] {
-  const pay = payoutCheck().title; // "Uber Eats: 103 orders don't match Square"
-  const [app, mismatch] = pay.includes(": ") ? pay.split(": ") : ["Delivery app", pay];
-  return [
-    { pre: "Check ", link: `${app} payouts`, post: `. ${mismatch.charAt(0).toUpperCase()}${mismatch.slice(1)} over 4 weeks.`, ask: "Did every payout match Square?" },
-    { pre: "Follow the ", link: "chargeback disputes", post: ` the KoreFi team filed. ${chargebackUpdate().title} over 13 weeks.`, ask: "Run Chargeback recovery" },
-    { pre: "Find the ", link: "lowest-earning outlets", post: " after fees and food and staff estimates.", ask: "Which outlets earn the least?" },
-  ];
-}
-
 export function Welcome() {
-  const { send, busy } = useAgents();
-  const { profile, apps, setApp, finish, startTour } = useOnboarding();
+  const { profile, apps, setApp, finish, startTour, welcomeSnap: snap, saveWelcome, phone, setPhone } = useOnboarding();
   const emails = useMemo(() => emailsFor(profile.restaurant), [profile.restaurant]);
-  const [log, setLog] = useState<Entry[]>([]);
-  const [queue, setQueue] = useState<Draft[]>([]);
-  const [picked, setPicked] = useState<App[] | null>(null);
-  const [email, setEmail] = useState(emails[0]);
-  const [tourDismissed, setTourDismissed] = useState(false);
-  const wrapped = useRef(false);
-  const nextId = useRef(0);
+  // Reopened from Recent chats: pick up the conversation where it was left.
+  const [log, setLog] = useState<Entry[]>(snap?.log ?? []);
+  const [queue, setQueue] = useState<Draft[]>(snap?.queue ?? []);
+  const [picked, setPicked] = useState<App[] | null>(snap?.picked ?? null);
+  const [reach, setReach] = useState<Reach | null>(snap?.reach ?? null);
+  const [email, setEmail] = useState(snap?.email ?? emails[0]);
+  const [tourDismissed, setTourDismissed] = useState(snap?.tourDismissed ?? false);
+  const wrapped = useRef(snap?.wrapped ?? false);
+  const nextId = useRef(snap?.nextId ?? 0);
   const end = useRef<HTMLDivElement>(null);
-  const time = useMemo(() => new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }), []);
+  const [time] = useState(() => snap?.time ?? new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+  useEffect(() => {
+    saveWelcome({ log, queue, picked, reach, email, tourDismissed, wrapped: wrapped.current, nextId: nextId.current, time });
+  }, [log, queue, picked, reach, email, tourDismissed, time, saveWelcome]);
 
   const say = useCallback((...d: Draft[]) => setQueue((q) => [...q, ...d]), []);
   const post = useCallback((d: Draft) => setLog((l) => [...l, { ...d, id: nextId.current++ } as Entry]), []);
 
   // The agents' opening lines.
-  const opened = useRef(false);
+  const opened = useRef(snap !== null);
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
@@ -459,7 +501,7 @@ export function Welcome() {
   useEffect(() => {
     if (!queue.length) return;
     const [head, ...rest] = queue;
-    const wait = head.kind === "user" ? 0 : head.kind === "text" ? 800 : head.kind === "list" ? 1400 : 350;
+    const wait = head.kind === "user" ? 0 : head.kind === "text" ? 800 : 350;
     const t = window.setTimeout(() => {
       post(head);
       setQueue(rest);
@@ -476,9 +518,8 @@ export function Welcome() {
       wrapped.current = true;
       say(
         { kind: "text", text: lead },
-        { kind: "text", text: "Want to choose how we reach you? Text, WhatsApp, email or just here." },
-        { kind: "settings" },
-        { kind: "list", items: sampleItems() },
+        { kind: "text", text: "How should we reach you when something changes?" },
+        { kind: "reach" },
         { kind: "tour" },
       );
     },
@@ -497,6 +538,42 @@ export function Welcome() {
       );
     },
     [picked, post, say],
+  );
+
+  /** The owner picks where updates go. The tour offer moves below the answer so it stays last. */
+  const chooseReach = useCallback(
+    (r: Reach) => {
+      if (reach) return;
+      setReach(r);
+      setLog((l) => l.filter((e) => e.kind !== "tour"));
+      setQueue((q) => q.filter((d) => d.kind !== "tour"));
+      post({ kind: "user", text: r });
+      const after = " You can change this any time in Settings.";
+      say(
+        ...((r === "Text" || r === "WhatsApp"
+          ? [
+              { kind: "text", text: `Done. We'll ${r === "Text" ? "text you" : "message you on WhatsApp"} when something changes. What's your mobile number?` },
+              { kind: "phone", channel: r === "Text" ? "text" : "WhatsApp" },
+            ]
+          : r === "Email"
+            ? [{ kind: "text", text: `Done. We'll email ${profile.email} when something changes.${after}` }]
+            : [{ kind: "text", text: `Done. Updates will stay right here in your chats.${after}` }]) as Draft[]),
+        { kind: "tour" },
+      );
+    },
+    [reach, post, say, profile.email],
+  );
+
+  /** The number from the phone card: posted as the owner's answer, confirmed, and the tour offer kept last. */
+  const savePhone = useCallback(
+    (p: string, channel: "text" | "WhatsApp") => {
+      setPhone(p);
+      setLog((l) => l.filter((e) => e.kind !== "tour"));
+      setQueue((q) => q.filter((d) => d.kind !== "tour"));
+      post({ kind: "user", text: p });
+      say({ kind: "text", text: `Saved. We'll ${channel === "text" ? `text ${p}` : `message ${p} on WhatsApp`} when something changes. You can change it any time in Settings.` }, { kind: "tour" });
+    },
+    [setPhone, post, say],
   );
 
   const skip = useCallback(() => {
@@ -558,108 +635,132 @@ export function Welcome() {
     return false;
   };
 
-  const ask = (q: string) => {
-    if (busy) return;
-    finish();
-    send(q);
-  };
-
   const typing = queue.length > 0 && queue[0].kind !== "user";
   const verifying = APP_ORDER.some((a) => apps[a] === "verifying");
 
+  // Same layout as every agent thread (AgentChat's ThreadView): a header bar, agent turns as avatar + name +
+  // time over plain text, the owner's words in a grey bubble, the composer with its note underneath.
+  // Consecutive agent entries share one avatar row, like one reply.
+  const turns: { user: boolean; items: Entry[] }[] = [];
+  for (const e of log) {
+    const u = e.kind === "user";
+    const last = turns[turns.length - 1];
+    if (last && last.user === u && !u) last.items.push(e);
+    else turns.push({ user: u, items: [e] });
+  }
+  const status = typing ? "Typing…" : verifying ? "Waiting on your first reports" : "Waiting on your delivery apps";
+  const item = (e: Entry) => {
+    switch (e.kind) {
+      case "text":
+        return (
+          <p key={e.id} className={line}>
+            {e.text}
+          </p>
+        );
+      case "pick":
+        return <PickApps key={e.id} answered={picked} onPick={choose} onSkip={skip} />;
+      case "email":
+        return <EmailCard key={e.id} emails={emails} email={email} onUse={setEmail} />;
+      case "guide":
+        return <AppCard key={e.id} app={e.app} state={apps[e.app]} onAdded={() => added(e.app)} onStuck={() => stuck(e.app)} />;
+      case "settings":
+        return (
+          <Link key={e.id} href="/mvp3/settings" onClick={finish} className={chipLink}>
+            <UserRoundCog className="size-4 text-(--color-text-secondary)" aria-hidden />
+            {e.label ?? "Customize your agents"}
+            <ChevronRight className="size-3.5 text-(--color-text-secondary)" aria-hidden />
+          </Link>
+        );
+      case "phone":
+        return <PhoneCard key={e.id} saved={phone} onSave={(p) => savePhone(p, e.channel)} />;
+      case "reach":
+        return (
+          <div key={e.id} role="group" aria-label="How should we reach you?" className="flex flex-wrap gap-1.5 motion-safe:animate-page-in">
+            {REACH.map(({ label, Icon }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={reach !== null}
+                aria-pressed={reach === label}
+                onClick={() => chooseReach(label)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-circle border px-3 py-1.5 text-body-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
+                  reach === label ? "border-(--brand-900) bg-(--brand-200) text-(--brand-1100)" : "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary)",
+                  reach === null ? "hover:bg-(--color-neutral-lightest)" : reach !== label && "opacity-50",
+                )}
+              >
+                <Icon className="size-3.5" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        );
+      case "tour":
+        if (tourDismissed) return null;
+        return (
+          <div key={e.id} className={cn(card, "flex flex-wrap items-center gap-x-4 gap-y-2")}>
+            <span className="flex flex-1 items-center gap-2 text-body-md text-(--color-text-primary)">
+              <MonitorSmartphone className="size-4 text-(--color-text-secondary)" aria-hidden />
+              New here? We can show you around in under a minute.
+            </span>
+            <span className="flex gap-1.5">
+              <Button type="primary" size="small" onClick={startTour}>
+                Take the tour
+              </Button>
+              <Button type="text" size="small" onClick={() => setTourDismissed(true)}>
+                Not now
+              </Button>
+            </span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <section aria-label="Welcome" className="flex min-w-0 flex-1 flex-col">
+      <header className="flex min-h-11 shrink-0 items-center gap-2 border-b border-(--color-border-default) px-4 py-2">
+        <AgentAvatar agent={SPEAKER} size={24} mood={typing ? "working" : "default"} animate />
+        <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">Set up {profile.restaurant}</h1>
+        <span className="hidden shrink-0 text-body-sm text-(--color-text-secondary) sm:inline">· {status}</span>
+      </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[760px] px-4 pt-6 pb-8 sm:px-6">
-          <div className="flex flex-col items-center">
-            <div className="flex -space-x-3">
-              {(["finance", "operations", "growth"] as AgentId[]).map((a) => (
-                <span key={a} className="rounded-circle bg-(--color-background-secondary) p-1">
-                  <AgentAvatar agent={a} size={48} mood={typing ? "working" : verifying ? "default" : "sleeping"} />
-                </span>
-              ))}
+        <div className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-6 sm:px-6">
+          {turns.map((t, i) =>
+            t.user ? (
+              <div key={t.items[0].id} className="flex justify-end motion-safe:animate-page-in">
+                <p className="max-w-[80%] rounded-[18px] bg-(--color-neutral-light) px-3.5 py-2 text-body-md text-(--color-text-primary)">{(t.items[0] as { text: string }).text}</p>
+              </div>
+            ) : (
+              <div key={t.items[0].id} className="flex gap-3 motion-safe:animate-page-in">
+                <AgentAvatar agent={SPEAKER} size={32} animate />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <p className="flex items-center gap-2 pt-1 text-body-sm text-(--color-text-secondary)">
+                    <span className="font-medium text-(--color-text-primary)">Your agents</span>
+                    {i === 0 && <span>{time}</span>}
+                  </p>
+                  {t.items.map(item)}
+                  {typing && i === turns.length - 1 && <Typing />}
+                </div>
+              </div>
+            ),
+          )}
+          {typing && (turns.length === 0 || turns[turns.length - 1].user) && (
+            <div className="flex gap-3" role="status" aria-label="Your agents are typing">
+              <AgentAvatar agent={SPEAKER} size={32} mood="working" animate />
+              <div className="min-w-0 flex-1 space-y-3">
+                <p className="pt-1 text-body-sm font-medium text-(--color-text-primary)">Your agents</p>
+                <Typing />
+              </div>
             </div>
-            <div className="-mt-1 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) px-3 py-1 text-center shadow-[0_1px_4px_rgb(0_0_0/0.04)]">
-              <p className="text-subtitle-sm font-medium text-(--color-text-primary)">Your agents</p>
-              <p className="text-body-sm text-(--color-text-tertiary)">{typing ? "Typing" : verifying ? "Waiting on your first reports" : "Waiting on your delivery apps"}</p>
-            </div>
-          </div>
-
-          <p className="mt-10 mb-4 text-center text-body-sm text-(--color-text-tertiary)">Today {time}</p>
-
-          <div className="flex flex-col items-start gap-2">
-            {log.map((e) => {
-              switch (e.kind) {
-                case "text":
-                  return (
-                    <p key={e.id} className={bubble}>
-                      {e.text}
-                    </p>
-                  );
-                case "user":
-                  return (
-                    <p key={e.id} className="max-w-[80%] self-end rounded-[22px] bg-(--color-neutral-light) px-4 py-2.5 text-body-lg text-(--color-text-primary) motion-safe:animate-[kf-pop_200ms_ease-out]">
-                      {e.text}
-                    </p>
-                  );
-                case "pick":
-                  return <PickApps key={e.id} answered={picked} onPick={choose} onSkip={skip} />;
-                case "email":
-                  return <EmailCard key={e.id} emails={emails} email={email} onUse={setEmail} />;
-                case "guide":
-                  return <AppCard key={e.id} app={e.app} state={apps[e.app]} onAdded={() => added(e.app)} onStuck={() => stuck(e.app)} />;
-                case "settings":
-                  return (
-                    <Link key={e.id} href="/mvp3/settings" onClick={finish} className={chipBubble}>
-                      <UserRoundCog className="size-5" aria-hidden />
-                      Customize your agents
-                      <ChevronRight className="size-4" aria-hidden />
-                    </Link>
-                  );
-                case "list":
-                  return (
-                    <div key={e.id} className={cn(bubble, "space-y-2 py-3.5")}>
-                      <p>While you wait, try us on sample data from Taco Pros, a 34-outlet taco chain:</p>
-                      <ol className="list-decimal space-y-1.5 pl-6 marker:font-medium">
-                        {e.items.map((it) => (
-                          <li key={it.ask} className="pl-1">
-                            {it.pre}
-                            <button type="button" disabled={busy} onClick={() => ask(it.ask)} className="rounded-small underline decoration-1 underline-offset-[3px] outline-none hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
-                              {it.link}
-                            </button>
-                            {it.post}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  );
-                case "tour":
-                  if (tourDismissed) return null;
-                  return (
-                    <div key={e.id} className={cn(bubble, "flex flex-wrap items-center gap-x-4 gap-y-2 border border-(--color-border-default) bg-(--color-background-secondary)")}>
-                      <span className="flex items-center gap-2">
-                        <MonitorSmartphone className="size-5 text-(--brand-900)" aria-hidden />
-                        New here? We can show you around in under a minute.
-                      </span>
-                      <span className="flex gap-1.5">
-                        <Button type="primary" size="small" onClick={startTour}>
-                          Take the tour
-                        </Button>
-                        <Button type="text" size="small" onClick={() => setTourDismissed(true)}>
-                          Not now
-                        </Button>
-                      </span>
-                    </div>
-                  );
-              }
-            })}
-            {typing && log.length > 0 && <Typing />}
-          </div>
+          )}
           <div ref={end} />
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[760px] px-4 pb-4 sm:px-6">
+      <div className="mx-auto w-full max-w-[720px] shrink-0 px-4 pb-4 sm:px-6">
         <Composer placeholder={picked ? "Send a message" : "Or type them, like “DoorDash and Grubhub”"} onSend={finish} intercept={intercept} />
+        <ComposerNote />
       </div>
     </section>
   );
@@ -707,6 +808,47 @@ function PickApps({ answered, onPick, onSkip }: { answered: App[] | null; onPick
 }
 
 /** The one email to add, with a copy button. Two spares in case an app turns the first one down. */
+/** Asks for the owner's mobile number in the chat. Once saved it shows the number, done. */
+function PhoneCard({ saved, onSave }: { saved: string; onSave: (p: string) => void }) {
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  if (saved)
+    return (
+      <p className={cn(card, "flex items-center gap-2 text-body-md text-(--color-text-primary)")}>
+        <Check className="size-4 text-(--color-text-success)" aria-hidden />
+        {saved}
+      </p>
+    );
+  const submit = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const p = formatPhone(value);
+    if (!p) return setError("Enter a 10-digit US mobile number, like (312) 555-0148.");
+    onSave(p);
+  };
+  return (
+    <form onSubmit={submit} className={cn(card, "flex flex-wrap items-start gap-2")} noValidate>
+      <TextField
+        label="Mobile number"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        autoFocus
+        placeholder="(312) 555-0148"
+        value={value}
+        error={error ?? undefined}
+        onChange={(ev) => {
+          setValue(ev.target.value);
+          setError(null);
+        }}
+        containerClassName="min-w-[200px] flex-1"
+      />
+      <Button htmlType="submit" type="primary" size="medium" disabled={!value.trim()} className="mt-[22px]">
+        Save number
+      </Button>
+    </form>
+  );
+}
+
 export function EmailCard({ emails, email, onUse }: { emails: string[]; email: string; onUse: (e: string) => void }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [spares, setSpares] = useState(false);
@@ -746,8 +888,10 @@ export function EmailCard({ emails, email, onUse }: { emails: string[]; email: s
 export function AppCard({ app, state, onAdded, onStuck }: { app: App; state: AppState; onAdded: () => void; onStuck: () => void }) {
   const g = GUIDE[app];
   const done = state === "verifying";
+  const [watching, setWatching] = useState(false);
   return (
     <div className={card}>
+      {watching && <GuideVideo g={g} onClose={() => setWatching(false)} />}
       <div className="flex items-center gap-3">
         <AppLogo app={app} size={28} />
         <p className="min-w-0 flex-1 text-subtitle-sm font-medium text-(--color-text-primary)">{g.name}</p>
@@ -772,7 +916,17 @@ export function AppCard({ app, state, onAdded, onStuck }: { app: App; state: App
               </li>
             ))}
           </ol>
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
+          {/* "Watch how" sits in the button row's empty left side, so the card doesn't grow. */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setWatching(true)}
+              className="mr-auto inline-flex items-center gap-1.5 rounded-medium py-1 text-body-sm font-medium text-(--color-text-clickable) outline-none hover:underline focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+            >
+              <CirclePlay className="size-4" aria-hidden />
+              Watch how
+              <span className="font-normal text-(--color-text-secondary)">· {g.videoLength}</span>
+            </button>
             <Button type="text" size="small" onClick={onStuck}>
               I can&apos;t add users
             </Button>
@@ -783,6 +937,41 @@ export function AppCard({ app, state, onAdded, onStuck }: { app: App; state: App
         </>
       )}
     </div>
+  );
+}
+
+/** The guide's screen recording in a lightbox over everything (also over the Integrations dialog). If the
+ *  recording can't load, the steps are shown in its place so the owner is never left with a broken player. */
+function GuideVideo({ g, onClose }: { g: Guide; onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+  useDismiss(panel, true, onClose);
+  return createPortal(
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 p-4 motion-safe:animate-page-in">
+      <div ref={panel} role="dialog" aria-modal="true" aria-label={`How to add KoreFi in ${g.name}`} className="w-full max-w-[880px] overflow-hidden rounded-xlarge bg-(--color-background-secondary) shadow-[0_24px_64px_-12px_rgb(0_0_0/0.45)]">
+        <div className="flex items-center gap-3 border-b border-(--color-border-default) px-4 py-2.5">
+          <p className="min-w-0 flex-1 truncate text-body-md font-medium text-(--color-text-primary)">Add the KoreFi user in {g.name}</p>
+          <Button type="text" size="small" icon={<X aria-hidden />} aria-label="Close video" onClick={onClose} />
+        </div>
+        {failed ? (
+          <div className="grid aspect-video place-items-center bg-(--color-neutral-lightest) p-6">
+            <div className="max-w-[420px] space-y-3">
+              <p className="text-body-md text-(--color-text-secondary)">The video isn&apos;t available right now. These are the same steps:</p>
+              <ol className="list-decimal space-y-1.5 pl-5 text-body-md text-(--color-text-secondary) marker:text-(--color-text-primary) [&_b]:font-medium [&_b]:text-(--color-text-primary)">
+                {g.steps.map((s, i) => (
+                  <li key={i} className="pl-1">
+                    {s}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        ) : (
+          <video src={asset(g.video)} controls autoPlay playsInline onError={() => setFailed(true)} className="block aspect-video w-full bg-black" />
+        )}
+      </div>
+    </div>,
+    document.body,
   );
 }
 

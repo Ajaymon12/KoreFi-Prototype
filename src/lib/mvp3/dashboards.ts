@@ -37,6 +37,8 @@ export type Dashboard = {
   thread?: string;
   /** A pinned /mvp2 report (P&L Summary, Payouts…) instead of the agent's own blocks. */
   report?: ReportId;
+  /** Built on Taco Pros sample data for a restaurant with no reports yet. Labelled, and can't be pinned or scheduled. */
+  sample?: boolean;
 };
 
 export const DEFAULT_CONFIG: DashConfig = { weeks: 13, apps: [], widgets: ["kpis", "trend", "apps", "outlets"], topN: 5 };

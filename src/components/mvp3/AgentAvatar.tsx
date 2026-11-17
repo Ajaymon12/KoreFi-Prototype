@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { AgentId } from "@/lib/mvp3/agents";
 
 // Agent faces and "thinking" marks from Libraries.dev (bot-avatars, thinking-orbs; MIT, 2D canvas).
-// Each agent has its own body; it hops while it works and sleeps while it's still learning.
+// Each agent has its own body; it hops while it works and sleeps while it's still learning. Only chat animates.
 
 const LOOK: Record<AgentId, { type: BotAvatarType; color?: string }> = {
   finance: { type: "clover", color: "#F76808" }, // brand orange (--brand-900)
@@ -15,13 +15,14 @@ const LOOK: Record<AgentId, { type: BotAvatarType; color?: string }> = {
 
 export type AvatarMood = "default" | "working" | "sleeping";
 
-export function AgentAvatar({ agent, size = 28, mood = "default", className }: { agent: AgentId; size?: number; mood?: AvatarMood; className?: string }) {
+/** Avatars hold their resting pose everywhere; only chat passes `animate` (motion and pointer tracking). */
+export function AgentAvatar({ agent, size = 28, mood = "default", animate = false, className }: { agent: AgentId; size?: number; mood?: AvatarMood; animate?: boolean; className?: string }) {
   const look = LOOK[agent];
   // The Growth agent is still learning: asleep until its first report.
   const state = mood === "default" && agent === "growth" ? "sleeping" : mood;
   return (
     <span aria-hidden className={cn("inline-grid shrink-0 place-items-center", className)} style={{ width: size, height: size }}>
-      <BotAvatar type={look.type} color={look.color} state={state} size={size} shading="plastic" />
+      <BotAvatar type={look.type} color={look.color} state={state} size={size} shading="plastic" paused={!animate} interactive={animate} />
     </span>
   );
 }
