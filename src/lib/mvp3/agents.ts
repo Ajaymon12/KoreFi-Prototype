@@ -340,9 +340,8 @@ export const FOLDERS: Folder[] = [
     skills: [
       { id: "consumption", name: "Consumption tracking", blurb: "Turns sales into ingredients used, so you see where cost and waste go. Also checks every supplier bill.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", INV] },
       { id: "inventory-forecast", name: "Inventory forecast", blurb: "Tells you how much of each ingredient to have each week, based on sales and your recipes.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
-      { id: "inventory-forecast-plus", name: "Forecast with weather and events", blurb: "The same forecast, sharpened with weather and local events near each outlet.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
       { id: "auto-ordering", name: "Auto ordering", blurb: "Drafts supplier orders by comparing the forecast with what is on hand.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
-      { id: "price-variance", name: "Price discovery and variance", blurb: "Shows where you pay more than you should for an ingredient, and which suppliers offer better prices.", state: "idle", cadence: "Monthly, 1st at 8:00 AM", access: [INV] },
+      { id: "price-variance", name: "Price discovery", blurb: "Shows where you pay more than you should for an ingredient, and which suppliers offer better prices.", state: "idle", cadence: "Monthly, 1st at 8:00 AM", access: [INV] },
     ],
   },
   {

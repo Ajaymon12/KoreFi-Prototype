@@ -2,7 +2,7 @@
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, CalendarClock, FileText, LayoutDashboard, MessageSquare, Pin } from "lucide-react";
+import { ArrowUpRight, CalendarClock, ChevronRight, FileText, LayoutDashboard, MessageSquare, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Delta } from "@/components/mvp2/parts";
@@ -22,11 +22,15 @@ import { useOpenPinned } from "./Mvp3Sidebar";
 //  - Needs a look: what the agents flagged. Each asks its question in a chat.
 //  - Your dashboards: what the owner pinned (Taco Pros starts with three). Opens the dashboard beside the chat it
 //    was built in, sidebar folded to icons.
+// Layout: four stacked full-width sections, each the grey tray around a white panel; lists are divided rows of one
+// height, so the page stays even however many agents, flags or dashboards there are.
 // Home is fixed: it can't be customised, pinned or scheduled; that's what pinned dashboards are for.
 // Report only: the one action is asking (a chat), never a fix.
 
 const focus = "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
-const card = cn("group rounded-large border border-(--color-border-default) bg-(--color-background-secondary) text-left transition-colors hover:border-(--color-border-darker) hover:bg-(--color-neutral-lightest)", focus);
+// Every list row: one height, icon slot, title + subtitle, right-hand detail, chevron. Focus ring sits inside the panel.
+const inset = "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-focus-primary)";
+const row = cn("group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-(--color-neutral-lightest)", inset);
 const SOURCES = "DoorDash, Uber Eats, Grubhub and Square";
 
 /** "Ask →" on hover: says what a click does. */
@@ -127,22 +131,14 @@ export function AgentHome() {
     <>
       <PageHeader title="Home" />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1100px] space-y-8 px-4 py-6 sm:px-6">
-          {/* Pulse */}
-          <section aria-labelledby="pulse-h" className="space-y-2.5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 id="pulse-h" className="text-subtitle-md text-(--color-text-primary)">
-                Last week at a glance
-              </h2>
-              <p className="text-body-sm text-(--color-text-secondary)">
-                Week of {WEEK_LABEL} · from {SOURCES} reports
-              </p>
-            </div>
-            <div className="grid gap-1.5 rounded-large bg-(--gray-300) p-1.5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mx-auto w-full max-w-[960px] space-y-8 px-4 py-6 sm:px-6">
+          {/* Pulse: four figures in one panel, split by hairlines */}
+          <Section id="pulse" title="Last week at a glance" aside={<span className="text-body-sm text-(--color-text-secondary)">Week of {WEEK_LABEL} · from {SOURCES} reports</span>}>
+            <div className="grid gap-px bg-(--color-border-default) sm:grid-cols-2 xl:grid-cols-4">
               {tiles.map((t) => (
-                <button key={t.label} type="button" onClick={() => go(t.question)} title={`Ask: ${t.question}`} className={cn("group flex min-w-0 flex-col justify-between gap-3 rounded-medium bg-(--color-background-secondary) p-4 text-left transition-shadow hover:shadow-[inset_0_0_0_1px_var(--color-border-darker)]", focus)}>
+                <button key={t.label} type="button" onClick={() => go(t.question)} title={`Ask: ${t.question}`} className={cn("group flex min-w-0 flex-col gap-3 bg-(--color-background-secondary) px-5 py-4 text-left transition-colors hover:bg-(--color-neutral-lightest)", inset)}>
                   <span className="flex items-center justify-between gap-2">
-                    <span className="text-body-sm text-(--color-text-secondary)">{t.label}</span>
+                    <span className="truncate text-body-sm text-(--color-text-secondary)">{t.label}</span>
                     <AskHint />
                   </span>
                   <span>
@@ -155,119 +151,136 @@ export function AgentHome() {
                 </button>
               ))}
             </div>
-          </section>
+          </Section>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            {/* Agents */}
-            <section aria-labelledby="agents-h" className="space-y-2.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <h2 id="agents-h" className="text-subtitle-md text-(--color-text-primary)">
-                  Your agents
-                </h2>
-                <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focus)}>
-                  All agents <ArrowUpRight aria-hidden className="size-3.5" />
-                </Link>
-              </div>
-              <ul className="space-y-2">
-                {agents.map((a) => (
-                  <li key={a.id}>
-                    <button type="button" onClick={() => openLatest(a)} className={cn(card, "flex w-full items-center gap-3 p-4")}>
-                      <AgentAvatar agent={a.agent} size={32} />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="truncate text-body-md font-medium text-(--color-text-primary)">{a.name}</span>
-                          {a.latest && <span className="shrink-0 text-body-sm text-(--color-text-secondary)">Ran {when(a.latest.at)}</span>}
-                        </span>
-                        <span className="mt-0.5 block truncate text-body-sm text-(--color-text-secondary)">{a.latest?.headline ?? "No runs yet"}</span>
+          {/* Needs a look: what the agents flagged, first thing after the figures */}
+          <Section id="flags" title="Needs a look" aside={flags.length ? <span className="text-body-sm text-(--color-text-secondary)">{flags.length} this week</span> : undefined}>
+            {flags.length ? (
+              <ul className="divide-y divide-(--color-border-default)">
+                {flags.map((f) => (
+                  <li key={f.question}>
+                    <button type="button" onClick={() => go(f.question)} title={`Ask: ${f.question}`} className={row}>
+                      <span aria-hidden className="grid size-8 shrink-0 place-items-center">
+                        <span className="size-2 rounded-circle bg-(--color-warning-default)" />
                       </span>
-                      <span className="hidden flex-col items-end gap-1 sm:flex">
-                        <Spark values={a.spark} tone={a.tone} />
-                        <span className="text-[11px] text-(--color-text-tertiary)">
-                          {a.metric}, {a.spark.length} weeks
-                        </span>
-                      </span>
-                      <span className="sr-only">Open the latest run&rsquo;s chat</span>
+                      <Lines title={f.title} sub={f.sub} />
+                      <AskHint label="Ask why" />
+                      <Chevron />
                     </button>
                   </li>
                 ))}
               </ul>
-            </section>
+            ) : (
+              <p className="px-5 py-4 text-body-md text-(--color-text-secondary)">Nothing flagged this week. Your agents will post here when something changes.</p>
+            )}
+          </Section>
 
-            {/* Needs a look */}
-            <section aria-labelledby="flags-h" className="space-y-2.5">
-              <h2 id="flags-h" className="text-subtitle-md text-(--color-text-primary)">
-                Needs a look
-              </h2>
-              {flags.length ? (
-                <ul className="space-y-2">
-                  {flags.map((f) => (
-                    <li key={f.question}>
-                      <button type="button" onClick={() => go(f.question)} title={`Ask: ${f.question}`} className={cn(card, "flex w-full items-start gap-3 p-4")}>
-                        <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-circle bg-(--color-warning-default)" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-body-md font-medium text-(--color-text-primary)">{f.title}</span>
-                          <span className="mt-0.5 block text-body-sm text-(--color-text-secondary)">{f.sub}</span>
-                        </span>
-                        <AskHint label="Ask why" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="rounded-large border border-dashed border-(--color-border-default) p-4 text-body-md text-(--color-text-secondary)">Nothing flagged this week. Your agents will post here when something changes.</p>
-              )}
-            </section>
-          </div>
+          {/* Agents: each live agent's latest run */}
+          <Section
+            id="agents"
+            title="Your agents"
+            aside={
+              <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focus)}>
+                All agents <ArrowUpRight aria-hidden className="size-3.5" />
+              </Link>
+            }
+          >
+            <ul className="divide-y divide-(--color-border-default)">
+              {agents.map((a) => (
+                <li key={a.id}>
+                  <button type="button" onClick={() => openLatest(a)} className={row}>
+                    <AgentAvatar agent={a.agent} size={32} />
+                    <Lines title={a.name} sub={a.latest?.headline ?? "No runs yet"} />
+                    <span className="hidden w-36 shrink-0 flex-col items-end gap-1 sm:flex">
+                      <Spark values={a.spark} tone={a.tone} />
+                      <span className="text-[11px] text-(--color-text-tertiary)">
+                        {a.metric}, {a.spark.length} weeks
+                      </span>
+                    </span>
+                    {a.latest && <span className="hidden w-28 shrink-0 text-right text-body-sm text-(--color-text-secondary) md:block">Ran {when(a.latest.at)}</span>}
+                    <Chevron />
+                    <span className="sr-only">Open the latest run&rsquo;s chat</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Section>
 
-          {/* Your dashboards */}
-          <section aria-labelledby="dash-h" className="space-y-2.5">
-            <h2 id="dash-h" className="text-subtitle-md text-(--color-text-primary)">
-              Your dashboards
-            </h2>
+          {/* Your dashboards: what the owner pinned */}
+          <Section id="dash" title="Your dashboards">
             {pinned.length ? (
-              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="divide-y divide-(--color-border-default)">
                 {pinned.map((d) => (
                   <li key={d.id}>
-                    <DashCard d={d} />
+                    <DashRow d={d} />
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="flex items-center gap-2 rounded-large border border-dashed border-(--color-border-default) p-4 text-body-md text-(--color-text-secondary)">
+              <p className="flex items-center gap-2 px-5 py-4 text-body-md text-(--color-text-secondary)">
                 <Pin aria-hidden className="size-4 shrink-0" />
                 Pin anything from a chat to keep it here. Ask an agent, then say “pin it”.
               </p>
             )}
-          </section>
+          </Section>
         </div>
       </div>
     </>
   );
 }
 
-/** A pinned dashboard: title, one headline figure, its schedule. Opens it in its chat with the canvas. */
-function DashCard({ d }: { d: Dashboard }) {
+/** One home section: a title row, then the app's grey tray around a white panel (as on the Payout report). */
+function Section({ id, title, aside, children }: { id: string; title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={`${id}-h`} className="space-y-2.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id={`${id}-h`} className="text-subtitle-md text-(--color-text-primary)">
+          {title}
+        </h2>
+        {aside}
+      </div>
+      <div className="rounded-large bg-(--gray-300) p-1.5">
+        <div className="overflow-hidden rounded-medium bg-(--color-background-secondary)">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+/** A row's title and one-line subtitle; both truncate so every row stays one height. */
+function Lines({ title, sub }: { title: string; sub: string }) {
+  return (
+    <span className="min-w-0 flex-1">
+      <span className="block truncate text-body-md font-medium text-(--color-text-primary)">{title}</span>
+      <span className="mt-0.5 block truncate text-body-sm text-(--color-text-secondary)">{sub}</span>
+    </span>
+  );
+}
+
+const Chevron = () => <ChevronRight aria-hidden className="size-4 shrink-0 text-(--color-text-tertiary) transition-colors group-hover:text-(--color-text-secondary)" />;
+
+/** A pinned dashboard as a row: title and headline, scope, schedule. Opens it in its chat with the canvas. */
+function DashRow({ d }: { d: Dashboard }) {
   const headline = d.report ? REPORTS[d.report].sub : `${usd(dashData(d.config).kpis.won)} won back`;
   const sub = d.report ? "Pinned report" : scopeLabel(d.config);
   const openPinned = useOpenPinned();
+  const Icon = d.report ? FileText : LayoutDashboard;
   return (
-    <Link href={`/mvp3/dashboard?id=${d.id}`} onClick={(e) => openPinned(d.id) && e.preventDefault()} className={cn(card, "flex h-full flex-col gap-2 p-4")}>
-      <span className="flex items-center gap-2 text-body-md font-medium text-(--color-text-primary)">
-        {d.report ? <FileText aria-hidden className="size-4 shrink-0 text-(--color-text-secondary)" /> : <LayoutDashboard aria-hidden className="size-4 shrink-0 text-(--color-text-secondary)" />}
-        <span className="truncate">{d.title}</span>
+    <Link href={`/mvp3/dashboard?id=${d.id}`} onClick={(e) => openPinned(d.id) && e.preventDefault()} className={row}>
+      <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-medium bg-(--color-neutral-lightest) text-(--color-text-secondary)">
+        <Icon className="size-4" />
       </span>
-      <span className="text-subtitle-md tabular-nums text-(--color-text-primary)">{headline}</span>
-      <span className="mt-auto flex flex-wrap items-center gap-x-2 text-body-sm text-(--color-text-secondary)">
-        <span>{sub}</span>
+      <Lines title={d.title} sub={`${headline} · ${sub}`} />
+      <span className="hidden shrink-0 items-center gap-1 text-body-sm text-(--color-text-secondary) md:inline-flex">
         {d.automation ? (
-          <span className="inline-flex items-center gap-1">
+          <>
             <CalendarClock aria-hidden className="size-3.5" />
             {d.automation.schedule}
-          </span>
+          </>
         ) : (
-          <span>Updated {d.updated}</span>
+          <>Updated {d.updated}</>
         )}
       </span>
+      <Chevron />
     </Link>
   );
 }
