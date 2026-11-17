@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { user } from "@/lib/mockData";
 import type { Account } from "@/lib/mvp3/accounts";
 import { useAccount } from "./AccountSwitcher";
-import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, firstReportsPending, payoutCheck, seedThreads, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
+import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, setAccountStores, withSampleNote, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
 import { blankWorkflow, isSchedule, workflowOf, type Workflow } from "@/lib/mvp3/workflows";
 import { DEFAULT_CONFIG, customize, parseSchedule, scopeLabel, type Automation, type Dashboard } from "@/lib/mvp3/dashboards";
 
@@ -322,7 +322,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         if (w) return runAgent(w);
       }
 
-      play(activeId, q, account.stage === "new" ? firstReportsPending() : answer(q));
+      play(activeId, q, account.stage === "new" ? withSampleNote(answer(q)) : answer(q));
     },
     [activeId, threads, dashboards, play, setAutomation, getWorkflow, runAgent, pinReport, account.stage],
   );

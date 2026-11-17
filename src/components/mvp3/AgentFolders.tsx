@@ -11,6 +11,7 @@ import { IntegrationMark } from "./WorkflowEditor";
 import { useAgents } from "./AgentsProvider";
 import { AgentMark } from "./AgentChat";
 import { StatusDot } from "./Mvp3Sidebar";
+import { useAccount } from "./AccountSwitcher";
 
 // Home: one neutral card per agent (Operations, Finance, Growth), like ChatGPT's GPT list: the agent's
 // face, its status, and the skills inside with their state. Click opens the agent's skills.
@@ -24,8 +25,14 @@ const STATE: Record<SkillState, { label: string; cls: string }> = {
 
 const PEEK = 3;
 
-function AgentCard({ f }: { f: Folder }) {
+/** A restaurant that just joined has no reports yet, so nothing is live: its live skills are still learning. */
+function forStage(f: Folder, fresh: boolean): Folder {
+  return fresh ? { ...f, skills: f.skills.map((s) => (s.state === "live" ? { ...s, state: "learning" as const, thread: undefined } : s)) } : f;
+}
+
+function AgentCard({ f, fresh }: { f: Folder; fresh: boolean }) {
   const a = agentOf(f.agent);
+  const status = fresh ? "learning" : a.status;
   const live = f.skills.filter((s) => s.state === "live").length;
   const more = f.skills.length - PEEK;
   return (
@@ -35,7 +42,7 @@ function AgentCard({ f }: { f: Folder }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-subtitle-md font-medium text-(--color-text-primary)">{f.label}</span>
           <span className="flex items-center gap-1.5 text-body-sm text-(--color-text-secondary)">
-            <StatusDot status={a.status} />
+            <StatusDot status={status} />
             <span aria-hidden>·</span>
             {live} of {f.skills.length} live
           </span>
@@ -228,23 +235,26 @@ function FolderDialog({ folder, agentName, status, onClose }: { folder: Folder; 
 }
 
 export function AgentFolders() {
+  const { account } = useAccount();
+  const fresh = account.stage === "new";
+  const folders = FOLDERS.map((f) => forStage(f, fresh));
   const [sel, setSel] = useState<AgentId | null>(null);
-  const folder = FOLDERS.find((f) => f.agent === sel);
+  const folder = folders.find((f) => f.agent === sel);
   const agent = sel ? agentOf(sel) : null;
 
   return (
     <div className="space-y-4">
       <ul className="grid gap-3 sm:grid-cols-3">
-        {FOLDERS.map((f) => (
+        {folders.map((f) => (
           <li key={f.agent}>
             <button type="button" aria-haspopup="dialog" onClick={() => setSel(f.agent)} className="group block h-full w-full rounded-xlarge outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-focus-primary)">
-              <AgentCard f={f} />
+              <AgentCard f={f} fresh={fresh} />
             </button>
           </li>
         ))}
       </ul>
 
-      {folder && agent && <FolderDialog folder={folder} agentName={agent.name} status={agent.status} onClose={() => setSel(null)} />}
+      {folder && agent && <FolderDialog folder={folder} agentName={agent.name} status={fresh ? "learning" : agent.status} onClose={() => setSel(null)} />}
     </div>
   );
 }

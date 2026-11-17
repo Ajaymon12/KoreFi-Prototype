@@ -14,6 +14,8 @@ import { TextField } from "@/components/ui/TextField";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { Composer } from "./AgentChat";
+import { useAccount } from "./AccountSwitcher";
+import { DATA_ACCOUNT } from "@/lib/mvp3/accounts";
 
 // MVP 3's first visit, from sign-up. KoreFi knows nothing about the restaurant yet, and no delivery app is connected:
 //  1. Sign up (email + password, or Google). "Log in" skips straight to the app.
@@ -24,7 +26,10 @@ import { Composer } from "./AgentChat";
 //     conversation): pick apps → copy one email → add it in each portal → "I've added it". Then what the KoreFi
 //     team does next, sample data to try, and the tour.
 //  5. The tour: a spotlight over the composer, the agents, the sidebar and Integrations/Settings.
-// Prototype: in memory on purpose, so every refresh starts at sign-up again. A ?chat= deep link skips it.
+// Prototype: in memory on purpose. The flow belongs to the first-time account (Little Pho, lib/mvp3/accounts):
+// every refresh, and switching to it in the top bar, opens straight on the welcome chat (steps 1–3 are kept but
+// skipped for the demo). "Log in", a ?chat= deep link, or
+// switching to a restaurant with data (Taco Pros, Saffron Grill) skips it.
 
 type Stage = "signup" | "about" | "setup" | "welcome" | "done";
 export type App = "doordash" | "ubereats" | "grubhub";
@@ -54,21 +59,38 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || "there";
 /** "Taco Pros" → "Taco Pros'", "Casa Alvarez" → "Casa Alvarez's". */
 const possessive = (n: string) => (/s$/i.test(n) ? `${n}'` : `${n}'s`);
 
+const EMPTY_PROFILE: Profile = { email: "", name: "", restaurant: "" };
+/** The first-time account opens already signed up, straight on the welcome chat (sign-up isn't part of the demo). */
+const NEW_OWNER: Profile = { email: "jane@littlepho.com", name: "Jane Nguyen", restaurant: "Little Pho" };
+const NO_APPS: Record<App, AppState> = { doordash: "todo", ubereats: "todo", grubhub: "todo" };
+
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
-  const [stage, setStage] = useState<Stage>("signup");
-  const [profile, setProfile] = useState<Profile>({ email: "", name: "", restaurant: "" });
-  const [apps, setApps] = useState<Record<App, AppState>>({ doordash: "todo", ubereats: "todo", grubhub: "todo" });
-  const [isNew, setIsNew] = useState(false);
+  const { account, setAccount } = useAccount();
+  const [stage, setStage] = useState<Stage>(account.stage === "new" ? "welcome" : "done");
+  const [profile, setProfile] = useState<Profile>(account.stage === "new" ? NEW_OWNER : EMPTY_PROFILE);
+  const [apps, setApps] = useState<Record<App, AppState>>(NO_APPS);
+  const [isNew, setIsNew] = useState(account.stage === "new");
+  // Switching to the first-time account replays the welcome chat from the start; a restaurant with data skips it.
+  const [flowFor, setFlowFor] = useState(account.id);
+  if (flowFor !== account.id) {
+    setFlowFor(account.id);
+    const fresh = account.stage === "new";
+    setStage(fresh ? "welcome" : "done");
+    setProfile(fresh ? NEW_OWNER : EMPTY_PROFILE);
+    setApps(NO_APPS);
+    setIsNew(fresh);
+  }
   const setApp = useCallback((a: App, s: AppState) => setApps((x) => ({ ...x, [a]: s })), []);
   const [touring, setTouring] = useState(false);
   const path = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    // Seeded chats belong to the restaurant with data.
     if (!new URLSearchParams(window.location.search).has("chat")) return;
-    const t = window.setTimeout(() => setStage("done"), 0);
+    const t = window.setTimeout(() => setAccount(DATA_ACCOUNT.id), 0);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [setAccount]);
 
   const finish = useCallback(() => setStage("done"), []);
   const startTour = useCallback(() => {
@@ -82,6 +104,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     setStage("welcome");
   }, [path, router]);
 
+  useEffect(() => {
+    if (account.stage === "new" && path !== "/mvp3") router.push("/mvp3");
+    // Only when the account changes, not on every navigation.
+  }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const value = useMemo(() => ({ stage, profile, apps, setApp, isNew, finish, startTour }), [stage, profile, apps, setApp, isNew, finish, startTour]);
   return (
     <OnboardingContext.Provider value={value}>
@@ -93,7 +120,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
             setIsNew(true);
             setStage("about");
           }}
-          onLogin={finish}
+          onLogin={() => setAccount(DATA_ACCOUNT.id)}
         />
       )}
       {stage === "about" && (
@@ -180,7 +207,7 @@ function SignUp({ onDone, onLogin }: { onDone: (a: { email: string; name: string
         </>
       }
     >
-      <Button size="medium" block iconLeft={<GoogleMark />} loading={busy === "google"} disabled={busy !== null} onClick={() => wait("google", { email: "jane@tacopros.com", name: "Jane Alvarez" })}>
+      <Button size="medium" block iconLeft={<GoogleMark />} loading={busy === "google"} disabled={busy !== null} onClick={() => wait("google", { email: "jane@littlepho.com", name: "Jane Nguyen" })}>
         Continue with Google
       </Button>
       <div className="my-5 flex items-center gap-3 text-body-sm text-(--color-text-tertiary)">
@@ -225,7 +252,7 @@ function SignUp({ onDone, onLogin }: { onDone: (a: { email: string; name: string
 // The one thing KoreFi asks after the account: who's signing up and the restaurant's name (it names the KoreFi
 // emails the owner adds to each delivery app). Locations aren't asked: the team reads them from the apps.
 const FREE_MAIL = /^(gmail|googlemail|yahoo|ymail|outlook|hotmail|live|msn|icloud|me|aol|proton|protonmail|gmx|zoho)$/;
-const KNOWN: Record<string, string> = { tacopros: "Taco Pros" };
+const KNOWN: Record<string, string> = { tacopros: "Taco Pros", littlepho: "Little Pho" };
 
 /** "jane@tacopros.com" → "Taco Pros"; a personal address (gmail…) gives nothing. */
 export function guessRestaurant(email: string) {

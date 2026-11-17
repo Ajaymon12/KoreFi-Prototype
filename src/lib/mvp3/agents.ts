@@ -219,18 +219,8 @@ export function growthLearning(): AgentReply {
   };
 }
 
-/** A first-time account: nothing to read yet, so every question gets the same honest answer. */
-export function firstReportsPending(): AgentReply {
-  return {
-    agent: "finance",
-    title: "Your first reports haven't arrived yet",
-    lines: [
-      "KoreFi starts reading as soon as your delivery apps and Square send their first reports. That usually takes 2 to 3 days after they're connected.",
-      "I'll post your first weekly P&L here, and the Operations agent will start checking chargebacks the same day.",
-    ],
-    work: ["Checked for delivery-app reports", "Checked for Square sales summaries"],
-  };
-}
+/** A first-time account has no reports yet, so it's answered on the Taco Pros sample, and says so. */
+export const withSampleNote = (r: AgentReply): AgentReply => ({ ...r, lines: [...r.lines, "This is Taco Pros sample data. Your own numbers arrive with your first reports, usually 2 to 3 days after your apps are connected."] });
 
 /** A typed question → the agent and the reply that answers it. Prototype only: no model. */
 export function answer(q: string): AgentReply {

@@ -10,6 +10,7 @@ import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { AgentAvatar, StepOrb, type AvatarMood } from "./AgentAvatar";
 import { AgentFolders } from "./AgentFolders";
+import { useAccount } from "./AccountSwitcher";
 import { AgentDashboard, AutomationCard, DashboardCard, ScheduleControl } from "./AgentDashboard";
 import { REPORT_VIEW } from "./reportViews";
 import { Welcome, useOnboarding } from "./Onboarding";
@@ -372,14 +373,17 @@ function greeting() {
 
 function Home() {
   const { threads, open, send, busy } = useAgents();
+  const { account } = useAccount();
+  const fresh = account.stage === "new";
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-10 px-4 pb-10 sm:px-6">
         {/* The hero sits in the optical centre of the first screen, like ChatGPT's empty chat. */}
         <div className="flex min-h-[62vh] flex-col justify-end gap-7 pb-2">
           <h1 className="text-center text-page-title font-normal text-(--color-text-primary) sm:text-[28px]">
-            {greeting()}, {user.firstName}. What should we look into?
+            {fresh ? `Welcome, ${user.firstName}. Your agents are getting to know ${account.name}.` : `${greeting()}, ${user.firstName}. What should we look into?`}
           </h1>
+          {fresh && <p className="-mt-4 text-center text-body-lg text-(--color-text-secondary)">Your first reports usually arrive 2 to 3 days after your apps are connected. Until then, try your agents on Taco Pros sample data.</p>}
           <div>
             <div data-tour="composer">
               <Composer />
