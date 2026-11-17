@@ -9,7 +9,7 @@ import { ACCOUNTS, DEFAULT_ACCOUNT, type Account } from "@/lib/mvp3/accounts";
 
 // /mvp3's top-bar switcher: which restaurant account is open (lib/mvp3/accounts). Just the restaurant name,
 // no branch step: agents always look across every outlet. Switching resets the chats to that account's.
-// Prototype: in memory, Taco Pros on every refresh.
+// Prototype: in memory; every refresh opens Little Pho at sign-up (DEFAULT_ACCOUNT).
 
 type Ctx = { account: Account; setAccount: (id: string) => void };
 const AccountContext = createContext<Ctx | null>(null);

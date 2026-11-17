@@ -1,8 +1,11 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Check, ChevronRight, CircleCheck, Clock, Loader2, Lock, Search, Settings, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronRight, Clock, Lock, Search, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { CountTabs } from "@/components/ui/CountTabs";
+import { Toast } from "@/components/ui/Toast";
 import { FreshnessStamp } from "@/components/dashboard/primitives";
 import { useDismiss } from "@/components/dashboard/useDismiss";
 import { ConnectDialog } from "@/components/integrations/ConnectDialog";
@@ -76,7 +79,7 @@ function examples(c: SourceConnection): string[] {
 
 function KoreFiMark({ size = 48 }: { size?: number }) {
   return (
-    <span aria-hidden className="grid shrink-0 place-items-center rounded-large bg-(--color-primary) font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.46 }}>
+    <span aria-hidden className="grid shrink-0 place-items-center rounded-large bg-(--color-primary) font-semibold text-(--color-text-inverse-primary)" style={{ width: size, height: size, fontSize: size * 0.46 }}>
       K
     </span>
   );
@@ -118,13 +121,8 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
   const [step, setStep] = useState<Step>(null);
   const [leaving, setLeaving] = useState<SourceId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const dismissToast = useCallback(() => setToast(null), []);
   const { ready, state } = useOnboarding();
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const items = useMemo<Item[]>(
     () =>
@@ -176,18 +174,7 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
       {selected && step === "authorize" && <Authorize c={selected} onCancel={() => setStep(null)} onAuthorize={() => finish(selected)} />}
       {selected && leaving === selected.id && <ConnectDialog source={selected} mode="disconnect" onClose={() => setLeaving(null)} onDisconnect={() => disconnect(selected)} />}
 
-      {/* ChatGPT's confirmation: a green pill dropping in at the top centre */}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-14 z-[70] flex justify-center px-4">
-        {toast && (
-          <div role="status" className="pointer-events-auto flex items-center gap-2 rounded-medium bg-(--color-success-default) py-2 pr-2 pl-3 text-body-md font-medium text-white shadow-[0_8px_24px_rgb(0_0_0/0.18)] motion-safe:animate-page-in">
-            <CircleCheck className="size-4" aria-hidden />
-            {toast}
-            <button type="button" aria-label="Dismiss" onClick={() => setToast(null)} className="grid size-6 place-items-center rounded-small hover:bg-white/15">
-              <X className="size-3.5" aria-hidden />
-            </button>
-          </div>
-        )}
-      </div>
+      <Toast message={toast} onDismiss={dismissToast} />
     </div>
   );
 }
@@ -208,29 +195,23 @@ function Directory({ items, onOpen }: { items: Item[]; onOpen: (id: SourceId) =>
         <div>
           <h1 className="flex items-center gap-2 text-page-title font-medium text-(--color-text-primary)">
             Integrations
-            <span className="rounded-small border border-(--color-border-default) px-1.5 py-px text-[10px] font-medium tracking-wide text-(--color-text-secondary) uppercase">Read-only</span>
+            <span className="rounded-small border border-(--color-border-default) px-1.5 py-px text-subtitle-xs font-medium tracking-wide text-(--color-text-secondary) uppercase">Read-only</span>
           </h1>
           <p className="mt-1 text-body-md text-(--color-text-secondary)">Connect your delivery apps, POS and books so your agents can read them.</p>
         </div>
-        <label className="flex h-9 w-full items-center gap-2 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3.5 text-(--color-text-secondary) focus-within:border-(--color-focus-primary) sm:w-64">
+        <label className="flex h-[34px] w-full items-center gap-2 rounded-medium border border-(--color-border-input) bg-(--color-background-secondary) px-3 text-(--color-text-secondary) focus-within:border-(--color-focus-primary) sm:w-64">
           <Search className="size-4 shrink-0" aria-hidden />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search integrations" aria-label="Search integrations" className="min-w-0 flex-1 bg-transparent text-body-md text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search integrations" aria-label="Search integrations" className="min-w-0 flex-1 bg-transparent text-field-md text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)" />
         </label>
       </div>
 
-      <div role="tablist" aria-label="Categories" className="mt-6 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none]">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={!query && tab === t.id}
-            onClick={() => (setTab(t.id), setQ(""))}
-            className={cn("h-9 shrink-0 rounded-circle px-4 text-body-md outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)", !query && tab === t.id ? "bg-(--color-neutral-light) font-medium text-(--color-text-primary)" : "text-(--color-text-secondary) hover:text-(--color-text-primary)")}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="mt-6">
+        <CountTabs
+          label="Categories"
+          tabs={TABS.map((t) => ({ key: t.id, label: t.label, count: t.id === "connected" ? items.filter((c) => c.connected).length : undefined }))}
+          value={tab}
+          onChange={(k) => (setTab(k), setQ(""))}
+        />
       </div>
 
       {list.length ? (
@@ -271,8 +252,6 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
     send(text);
     router.push("/mvp3");
   };
-  const hues = FOLDERS.map((f) => f.hue);
-  const dark = "inline-flex h-9 items-center gap-1.5 rounded-circle bg-(--gray-1200) px-5 text-body-md font-medium text-white outline-none hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-focus-primary) [.dark_&]:bg-white [.dark_&]:text-(--gray-1200)";
 
   return (
     <div className="mx-auto w-full max-w-[880px] px-4 pt-4 pb-14 sm:px-8">
@@ -292,27 +271,25 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
         </div>
         <div className="flex items-center gap-2">
           {busy ? (
-            <span className="inline-flex h-9 items-center gap-1.5 rounded-circle bg-(--color-neutral-light) px-5 text-body-md text-(--color-text-secondary)">
-              Loading <Loader2 className="size-3.5 motion-safe:animate-spin" aria-hidden />
-            </span>
+            <Button type="primary" size="small" loading>
+              Connecting
+            </Button>
           ) : c.connected ? (
             <>
-              <button
-                type="button"
+              <Button
+                type="primary"
+                size="small"
                 onClick={() => {
                   newChat();
                   router.push("/mvp3");
                 }}
-                className={dark}
               >
                 Start chat
-              </button>
+              </Button>
               <div ref={menuRef} className="relative">
-                <button type="button" aria-label={`${c.name} settings`} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="grid size-9 place-items-center rounded-circle border border-(--color-border-default) text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-lightest) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
-                  <Settings className="size-4" aria-hidden />
-                </button>
+                <Button size="small" icon={<Settings aria-hidden />} aria-label={`${c.name} settings`} title="Settings" aria-expanded={menu} onClick={() => setMenu((m) => !m)} />
                 {menu && (
-                  <div role="menu" className="absolute top-11 right-0 z-30 w-56 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
+                  <div role="menu" className="absolute top-10 right-0 z-30 w-56 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
                     <p className="px-2.5 pt-1 pb-2 text-body-sm text-(--color-text-secondary)">
                       <StatusLine c={c} />
                       {c.lastSyncedAt && (
@@ -338,14 +315,14 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
               </div>
             </>
           ) : c.pending ? (
-            <span className="inline-flex h-9 items-center gap-1.5 rounded-circle bg-(--color-neutral-light) px-4 text-body-md text-(--color-text-secondary)">
+            <span className="inline-flex h-[34px] items-center gap-1.5 rounded-medium bg-(--color-neutral-lightest) px-3 text-body-md text-(--color-text-secondary)">
               <Clock className="size-4" aria-hidden />
               KoreFi is verifying
             </span>
           ) : (
-            <button type="button" onClick={onConnect} className={dark}>
+            <Button type="primary" size="small" onClick={onConnect}>
               Connect
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -359,10 +336,9 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
             <button
               type="button"
               onClick={() => ask(e)}
-              style={{ ["--hue" as string]: hues[i % hues.length] }}
-              className="group flex h-full min-h-[168px] w-full flex-col justify-between rounded-xlarge bg-[linear-gradient(160deg,color-mix(in_srgb,var(--hue)_30%,var(--color-background-secondary)),color-mix(in_srgb,var(--hue)_8%,var(--color-background-secondary)))] p-4 text-left outline-none transition-shadow hover:shadow-[0_10px_28px_-14px_rgb(0_0_0/0.35)] focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+              className="group flex h-full min-h-[148px] w-full flex-col justify-between gap-4 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-(--color-border-darker) hover:shadow-[0_6px_20px_-12px_rgb(0_0_0/0.2)] focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
             >
-              <span className="w-fit rounded-large bg-(--color-background-secondary) px-3 py-2 text-body-sm text-(--color-text-primary) shadow-[0_1px_2px_rgb(0_0_0/0.06)]">
+              <span className="text-body-md text-(--color-text-primary)">
                 <span className="font-medium text-(--color-text-clickable)">@{agentOf(skills[i % Math.max(skills.length, 1)]?.agent ?? "finance").name.replace(" agent", "")}</span> {e}
               </span>
               <span className="inline-flex items-center gap-1 self-end text-body-sm text-(--color-text-secondary) group-hover:text-(--color-text-primary)">
@@ -433,9 +409,7 @@ function AddUser({ c, app, restaurant, onClose, onAdded }: { c: Item; app: App; 
             <h2 className="text-subtitle-lg font-medium text-(--color-text-primary)">Add KoreFi to {c.name}</h2>
             <p className="mt-1 text-body-md text-(--color-text-secondary)">Add this email as a user in {c.name}. It&apos;s a KoreFi inbox that can only read reports.</p>
           </div>
-          <button type="button" aria-label="Close" onClick={onClose} className="grid size-8 shrink-0 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
-            <X className="size-4" aria-hidden />
-          </button>
+          <Button type="text" size="small" icon={<X aria-hidden />} aria-label="Close" onClick={onClose} />
         </div>
         <EmailCard emails={emails} email={email} onUse={setEmail} />
         <AppCard app={app} state="todo" onAdded={onAdded} onStuck={() => setStuck(true)} />
@@ -471,26 +445,22 @@ function Consent({ c, onClose, onContinue }: { c: Item; onClose: () => void; onC
   return (
     <Overlay onClose={onClose} label={`Use ${c.name} in KoreFi`}>
       <div className="overflow-hidden rounded-xlarge bg-(--color-background-secondary) shadow-[0_24px_64px_-12px_rgb(0_0_0/0.35)]">
-        <div className="relative bg-[radial-gradient(120%_120%_at_0%_0%,#ffb27a_0%,#ff7a3d_28%,#5aa9ff_70%,#3b82f6_100%)] px-6 pt-8 pb-7 text-center">
-          <button type="button" aria-label="Close" onClick={onClose} className="absolute top-3 right-3 grid size-8 place-items-center rounded-circle text-white/80 outline-none hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white">
-            <X className="size-4" aria-hidden />
-          </button>
+        <div className="relative border-b border-(--color-border-default) bg-(--color-background-primary) px-6 pt-8 pb-6 text-center">
+          <Button type="text" size="small" icon={<X aria-hidden />} aria-label="Close" onClick={onClose} className="absolute top-3 right-3" />
           <div className="flex items-center justify-center gap-3">
-            <span className="grid size-12 place-items-center rounded-large bg-white shadow-[0_2px_8px_rgb(0_0_0/0.12)] [&>span]:border-0">
-              <BrandMark id={c.id} name={c.name} size={40} />
-            </span>
-            <span aria-hidden className="h-6 w-px bg-white/50" />
+            <BrandMark id={c.id} name={c.name} size={48} />
+            <span aria-hidden className="h-6 w-px bg-(--color-border-darker)" />
             <KoreFiMark />
           </div>
-          <h2 className="mt-5 text-subtitle-lg font-medium text-white">Use {c.name} in KoreFi</h2>
-          <p className="mt-1 text-body-md text-white/85">{info(c).blurb}</p>
+          <h2 className="mt-5 text-subtitle-lg font-medium text-(--color-text-primary)">Use {c.name} in KoreFi</h2>
+          <p className="mt-1 text-body-md text-(--color-text-secondary)">{info(c).blurb}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <button type="button" onClick={onContinue} className="inline-flex h-9 items-center gap-1.5 rounded-circle bg-white px-4 text-body-md font-medium text-(--gray-1200) outline-none hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-              Connect {c.name} <ArrowUpRight className="size-4" aria-hidden />
-            </button>
-            <button type="button" onClick={onClose} className="h-9 rounded-circle bg-(--gray-1200)/85 px-4 text-body-md font-medium text-white outline-none hover:bg-(--gray-1200) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <Button type="primary" size="small" iconRight={<ArrowUpRight aria-hidden />} onClick={onContinue}>
+              Connect {c.name}
+            </Button>
+            <Button size="small" onClick={onClose}>
               Not now
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -500,7 +470,7 @@ function Consent({ c, onClose, onContinue }: { c: Item; onClose: () => void; onC
               <span className="font-medium text-(--color-text-primary)">Use past chats.</span> Let your agents look back at earlier chats when they read {c.name}, for more helpful answers.
             </p>
             <button type="button" role="switch" aria-checked={memory} aria-label="Use past chats" onClick={() => setMemory((m) => !m)} className={cn("relative mt-0.5 h-5 w-9 shrink-0 rounded-circle outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-focus-primary)", memory ? "bg-(--color-primary)" : "bg-(--color-border-darker)")}>
-              <span className={cn("absolute top-0.5 size-4 rounded-circle bg-white shadow-sm transition-[left]", memory ? "left-[18px]" : "left-0.5")} />
+              <span className={cn("absolute top-0.5 size-4 rounded-circle bg-(--color-background-secondary) shadow-sm transition-[left]", memory ? "left-[18px]" : "left-0.5")} />
             </button>
           </div>
           <p>
