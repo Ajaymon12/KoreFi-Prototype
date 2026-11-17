@@ -8,7 +8,8 @@ import type { AgentId } from "@/lib/mvp3/agents";
 // Each agent has its own body; it hops while it works and sleeps while it's still learning. Only chat animates.
 
 const LOOK: Record<AgentId, { type: BotAvatarType; color?: string }> = {
-  finance: { type: "clover", color: "#F76808" }, // brand orange (--brand-900)
+  // Finance is indigo, the hue of its folders, so it never reads as Operations' coral at avatar size.
+  finance: { type: "clover", color: "#6C74E6" },
   operations: { type: "hexagon" }, // coral
   growth: { type: "flower" }, // green
 };
