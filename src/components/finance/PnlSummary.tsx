@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 // Compare outlets (a switch at the bar's end) swaps the cards and the channel table for the same lines with one
 // column per outlet, its delivery apps only (PnlTable's `outlets`).
 
-export function PnlSummary() {
+/** `title`: /mvp3 shows it as "Daily P&L" (its Daily operational P&L agent keeps it updated); /mvp2 keeps "P&L Summary". */
+export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
   const [query, setQuery] = useState("");
   // Last 4 weeks by default; a preset or any custom run of weeks.
   const [range, setRange] = useState<[number, number]>(PRESETS[0].range);
@@ -50,7 +51,7 @@ export function PnlSummary() {
 
   return (
     <>
-      <PageHeader title="P&L Summary" />
+      <PageHeader title={title} />
       {/* One scroll box for both axes, so the table's header rows can stick to its top. contain-paint keeps a
           wide table's overflow inside it; without it the page took the width too and scrolled away sideways. */}
       <div onScroll={onScroll} className="min-h-0 flex-1 overflow-auto contain-paint">

@@ -19,6 +19,8 @@ export type Workflow = {
   integrations: string[];
   /** Where each run's result goes, besides the chat: an email to the owner, and the dashboard it builds. */
   deliver: { email: boolean; dashboard: boolean };
+  /** Files the agent reads alongside the reports (policies, handbooks, contract templates). Prototype: name and size only. */
+  knowledge?: { name: string; size: number }[];
   thread?: string;
   /** The agent it belongs to and that agent's folder colour (drafts have neither). */
   agent?: AgentId;
@@ -49,9 +51,21 @@ const PRESET: Record<string, Partial<Workflow>> = {
     groups: [
       { title: "Load the week", steps: ["Read the week's Square delivery orders.", "Read the payout report from each app."] },
       { title: "Match orders", steps: ["Match every order to its payout line.", "Flag orders found on only one side or paid short."] },
-      { title: "Report", steps: ["Email the owner the mismatches after the week's payouts."] },
+      { title: "Report", steps: ["Compare DoorDash, Uber Eats and Grubhub side by side.", "Email the owner the weekly comparison every Thursday."] },
     ],
-    triggers: ["Every Friday, after the week's payouts"],
+    triggers: ["Every Thursday, 8:00 AM"],
+    deliver: { email: true, dashboard: false },
+  },
+  "channel-pnl": {
+    overview: "Shows yesterday's P&L every morning, by channel, item and store, so you see what made money and what didn't. It reads the day's Square sales and every delivery app's orders, takes off commission, promotions, card fees and chargebacks, applies your food and staff cost settings, and emails the owner the day's P&L at 8 AM.",
+    inputs: [OUTLETS, { name: "compare with", type: "text", desc: "What each day is measured against. Default: the same day last week." }],
+    groups: [
+      { title: "Load yesterday", steps: ["Read yesterday's Square sales for in-store and website orders, by item and outlet.", "Read yesterday's orders from DoorDash, Uber Eats and Grubhub."] },
+      { title: "Build the P&L", steps: ["Subtract commission, promotions, card fees and chargebacks for each channel.", "Apply the owner's food and staff cost settings.", "Rank items and outlets by what they kept, and compare with the same day last week."] },
+      { title: "Report", steps: ["Email the owner yesterday's P&L by channel, item and store.", "Update the Daily P&L dashboard."] },
+    ],
+    triggers: ["Daily, 8:00 AM"],
+    deliver: { email: true, dashboard: false },
   },
 };
 
@@ -68,9 +82,9 @@ export function workflowOf(id: string): Workflow | null {
       overview: p.overview ?? s.blurb,
       inputs: p.inputs ?? [PERIOD, OUTLETS],
       groups: p.groups ?? [{ title: "Outline", steps: [`Read ${s.access.join(", ") || "your menu"} data for the review period.`, "Work out the result for each outlet.", "Email the owner what changed."] }],
-      triggers: p.triggers ?? (s.state === "soon" ? [] : [s.cadence]),
+      triggers: p.triggers ?? [s.cadence],
       integrations: s.access.filter((a) => ALL_INTEGRATIONS.includes(a)),
-      deliver: p.deliver ?? { email: s.state !== "soon", dashboard: false },
+      deliver: p.deliver ?? { email: true, dashboard: false },
       thread: s.thread,
       agent: f.agent,
       hue: f.hue,

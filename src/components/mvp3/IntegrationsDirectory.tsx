@@ -13,20 +13,20 @@ import { CATALOG } from "@/lib/sources/catalog";
 import type { SourceConnection, SourceGroup, SourceId } from "@/lib/sources/types";
 import { update, useOnboarding } from "@/lib/org/store";
 import { user } from "@/lib/mockData";
-import { FOLDERS, agentOf } from "@/lib/mvp3/agents";
-import { useAgents } from "./AgentsProvider";
+import { FOLDERS } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
+import { useAgents } from "./AgentsProvider";
 import { BrandMark } from "./BrandMark";
 import { AppCard, EmailCard, GUIDE, emailsFor, useOnboarding as useFirstVisit, type App } from "./Onboarding";
 
 // MVP 3 / Integrations, after ChatGPT's Apps directory and its "Connecting to Figma" flow (Mobbin):
 //  list   — title, search, category pills (Featured first: QuickBooks and the POS systems), two-column rows;
-//  detail — ?app=quickbooks: breadcrumb, logo, name, example questions, description, Information table;
+//  detail — ?app=quickbooks: breadcrumb, logo, name, description, Information table;
 //  connect— Connect → the page button turns to "Loading" while a consent dialog opens ("Use QuickBooks in KoreFi":
 //           gradient header with both logos, Connect ↗ / Not now, a toggle and three short disclosures) →
 //           Connect ↗ opens the provider's authorize window (account, which locations, read-only permissions,
 //           Authorize / Cancel) → back on the page a green "QuickBooks is now connected" toast drops in at the top
-//           and the button becomes Start chat plus a settings gear (Disconnect lives there).
+//           and the button becomes a settings gear (Disconnect lives there). Chats start from the chat, not here.
 // Delivery apps (DoorDash, Uber Eats, Grubhub) are listed too, but they have no sign-in: Connect opens the same steps as
 // the welcome chat (copy the KoreFi email → add it as a user in the merchant portal → "I've added it"), then the app shows
 // "KoreFi is verifying" until the team confirms access. A new sign-up sees what it did in the welcome chat; "Log in"
@@ -68,14 +68,6 @@ const info = (c: SourceConnection) => CATALOG[c.id] ?? { blurb: "", reads: [] as
 /** The name an agent's skill uses for this source (skills list access as "POS", "Payroll", …). */
 const accessKey = (c: SourceConnection) => (c.group === "pos" ? "POS" : c.group === "accounting" ? "Inventory and supplier bills" : c.name);
 const skillsUsing = (c: SourceConnection) => FOLDERS.flatMap((f) => f.skills.filter((s) => s.access.includes(accessKey(c))).map((s) => ({ ...s, agent: f.agent })));
-
-/** Questions the agents can answer once this is in, shown as cards on the detail page. */
-function examples(c: SourceConnection): string[] {
-  if (c.group === "pos") return [`Did every delivery payout match ${c.name}?`, `Which items sold out most at each outlet last week?`, `How did in-store sales compare with last month?`];
-  if (c.group === "marketplace") return [`Did ${c.name} pay for every order last week?`, `Which ${c.name} orders were charged back, and why?`, `How much did ${c.name} take in fees and promos this month?`];
-  if (c.group === "accounting") return [`Which supplier bills are due this week?`, `Has any supplier raised prices this month?`, `What did we spend on food last month?`];
-  return [`Did every delivery payout land in ${c.name}?`, `How much came in from DoorDash, Uber Eats and Grubhub this week?`, `Any deposits that look short?`];
-}
 
 function KoreFiMark({ size = 48 }: { size?: number }) {
   return (
@@ -241,17 +233,12 @@ function Directory({ items, onOpen }: { items: Item[]; onOpen: (id: SourceId) =>
 
 function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: boolean; onBack: () => void; onConnect: () => void; onDisconnect: () => void }) {
   const router = useRouter();
-  const { newChat, send } = useAgents();
-  const skills = skillsUsing(c);
+  const { getWorkflow } = useAgents();
+  const skills = skillsUsing(c).map((s) => ({ ...s, state: getWorkflow(s.id)?.state ?? s.state }));
   const { blurb, reads } = info(c);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useDismiss(menuRef, menu, () => setMenu(false));
-  const ask = (text: string) => {
-    newChat();
-    send(text);
-    router.push("/mvp3");
-  };
 
   return (
     <div className="mx-auto w-full max-w-[880px] px-4 pt-4 pb-14 sm:px-8">
@@ -276,16 +263,6 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
             </Button>
           ) : c.connected ? (
             <>
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => {
-                  newChat();
-                  router.push("/mvp3");
-                }}
-              >
-                Start chat
-              </Button>
               <div ref={menuRef} className="relative">
                 <Button size="small" icon={<Settings aria-hidden />} aria-label={`${c.name} settings`} title="Settings" aria-expanded={menu} onClick={() => setMenu((m) => !m)} />
                 {menu && (
@@ -329,26 +306,6 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
 
       {c.status === "error" && c.detail && <p className="mt-4 rounded-large bg-(--color-danger-lightest) px-4 py-3 text-body-md text-(--color-text-danger)">{c.detail}</p>}
 
-      {/* What the agents can answer with it; a click asks it in a new chat. */}
-      <ul className="mt-8 grid gap-3 sm:grid-cols-3">
-        {examples(c).map((e, i) => (
-          <li key={e}>
-            <button
-              type="button"
-              onClick={() => ask(e)}
-              className="group flex h-full min-h-[148px] w-full flex-col justify-between gap-4 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-(--color-border-darker) hover:shadow-[0_6px_20px_-12px_rgb(0_0_0/0.2)] focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
-            >
-              <span className="text-body-md text-(--color-text-primary)">
-                <span className="font-medium text-(--color-text-clickable)">@{agentOf(skills[i % Math.max(skills.length, 1)]?.agent ?? "finance").name.replace(" agent", "")}</span> {e}
-              </span>
-              <span className="inline-flex items-center gap-1 self-end text-body-sm text-(--color-text-secondary) group-hover:text-(--color-text-primary)">
-                Ask this <ArrowUpRight className="size-3.5" aria-hidden />
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-
       <p className="mt-8 max-w-[68ch] text-body-md leading-relaxed text-(--color-text-secondary)">{c.group === "marketplace" ? (c.pending ? `You added the KoreFi Reports user in ${c.name}. The KoreFi team is accepting the invite and checking it can see every store, which usually takes about 1 business day. Your agents will message you when the first reports are in.` : `KoreFi reads ${c.name} through a reports-only user you add in its merchant portal. It can't change orders, menus or payouts, and you can remove it from ${c.name} at any time.`) : null}{c.group === "marketplace" ? null : c.connected ? `Your agents read ${c.name} alongside your delivery-app reports.` : `Connect ${c.name} and your agents read it alongside your delivery-app reports.`}{c.group === "marketplace" ? "" : ` KoreFi only reads: it never edits, posts or deletes anything in ${c.name}, and you can disconnect at any time.`}</p>
 
       <section className="mt-10">
@@ -375,11 +332,13 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
                 <ul className="flex flex-wrap gap-1.5">
                   {skills.map((s) => (
                     <li key={s.id}>
-                      <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
-                        <AgentAvatar agent={s.agent} size={20} />
-                        {s.name}
-                        {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "soon" ? "soon" : "learning"}</span>}
-                      </button>
+                      {(
+                        <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+                          <AgentAvatar agent={s.agent} size={20} />
+                          {s.name}
+                          {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not live" : "learning"}</span>}
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>

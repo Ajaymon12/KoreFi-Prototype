@@ -6,7 +6,7 @@ import { AgentOverview } from "./AgentOverview";
 import { WorkflowEditor } from "./WorkflowEditor";
 
 // /mvp3/agent?id=…: a live agent opens on its overview (summary and run history); &edit=1, drafts and
-// agents that aren't live yet open the workflow editor.
+// learning agents open the workflow editor.
 export function AgentEditorRoute() {
   const params = useSearchParams();
   const id = params.get("id") ?? "";

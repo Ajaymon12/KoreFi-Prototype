@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { user } from "@/lib/mockData";
 import { AGENTS, type AgentId } from "@/lib/mvp3/agents";
-import { AgentMark } from "./AgentChat";
+import { AgentAvatar } from "./AgentAvatar";
 import { StatusDot } from "./Mvp3Sidebar";
+import { formatPhone, useOnboarding } from "./Onboarding";
 
 // MVP 3 / Settings: how each agent reaches the owner. Dots' lesson for restaurants is that a text
 // ("3 disputes won, $412 back") beats another dashboard, so each agent picks where and how often it pings.
@@ -31,6 +32,21 @@ export function AgentSettings() {
     growth: { on: true, channels: ["In app"], cadence: "weekly" },
   });
   const [saved, setSaved] = useState(false);
+  // The signed-in owner: a new restaurant's own details, not the demo account's.
+  const { isNew, profile, phone, setPhone } = useOnboarding();
+  const name = isNew && profile.name ? profile.name : `${user.firstName} ${user.lastName}`;
+  const email = isNew && profile.email ? profile.email : user.email;
+  const [phoneDraft, setPhoneDraft] = useState(phone);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const save = () => {
+    if (phoneDraft.trim()) {
+      const p = formatPhone(phoneDraft);
+      if (!p) return setPhoneError("Enter a 10-digit US mobile number, like (312) 555-0148.");
+      setPhone(p);
+      setPhoneDraft(p);
+    } else setPhone("");
+    setSaved(true);
+  };
   const dismiss = useCallback(() => setSaved(false), []);
   const patch = (id: AgentId, p: Partial<Pref>) => setPrefs((x) => ({ ...x, [id]: { ...x[id], ...p } }));
 
@@ -50,7 +66,7 @@ export function AgentSettings() {
               return (
                 <li key={a.id} className="space-y-4 p-4">
                   <div className="flex items-start gap-3">
-                    <AgentMark agent={a.id} />
+                    <AgentAvatar agent={a.id} />
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 text-body-md font-medium text-(--color-text-primary)">
                         {a.name}
@@ -82,20 +98,48 @@ export function AgentSettings() {
             <h2 className="text-subtitle-md font-medium text-(--color-text-primary)">Where to reach you</h2>
             <dl className="divide-y divide-(--color-border-default) rounded-large border border-(--color-border-default) text-body-md">
               {[
-                ["Name", `${user.firstName} ${user.lastName}`],
-                ["Email", user.email],
-                ["Phone (SMS, WhatsApp)", "(312) 555-0148"],
+                ["Name", name],
+                ["Email", email],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-3 px-4 py-3">
                   <dt className="text-(--color-text-secondary)">{k}</dt>
                   <dd className="truncate text-(--color-text-primary)">{v}</dd>
                 </div>
               ))}
+              <div id="phone" className="flex scroll-mt-6 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2">
+                <dt>
+                  <label htmlFor="phone-input" className="text-(--color-text-secondary)">
+                    Phone (SMS, WhatsApp)
+                  </label>
+                </dt>
+                <dd className="min-w-0">
+                  <input
+                    id="phone-input"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="Add your mobile number"
+                    value={phoneDraft}
+                    aria-invalid={phoneError ? true : undefined}
+                    aria-describedby={phoneError ? "phone-error" : undefined}
+                    onChange={(e) => {
+                      setPhoneDraft(e.target.value);
+                      setPhoneError(null);
+                    }}
+                    className="h-9 w-56 max-w-full rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-3 text-right text-body-md text-(--color-text-primary) outline-none placeholder:text-(--color-text-tertiary) hover:border-(--color-border-darker) focus-visible:border-(--color-focus-primary) aria-invalid:border-(--color-danger-default)"
+                  />
+                </dd>
+                {phoneError && (
+                  <p id="phone-error" className="w-full text-right text-body-sm text-(--color-text-danger)">
+                    {phoneError}
+                  </p>
+                )}
+              </div>
             </dl>
           </section>
 
           <div className="flex justify-end">
-            <Button type="primary" size="small" onClick={() => setSaved(true)}>
+            <Button type="primary" size="small" onClick={save}>
               Save changes
             </Button>
           </div>

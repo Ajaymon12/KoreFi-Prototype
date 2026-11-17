@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageSquare, PinOff } from "lucide-react";
+import { PinOff } from "lucide-react";
 import { useAgents } from "./AgentsProvider";
 import { AgentDashboard, ScheduleControl } from "./AgentDashboard";
 import { REPORT_VIEW } from "./reportViews";
+import { AgentChatButton } from "./AgentChatButton";
 
 // A pinned dashboard, full page. "Customise in chat" goes back to the chat it was built in.
 export function DashboardPage() {
@@ -37,32 +38,26 @@ export function DashboardPage() {
             Unpin
           </button>
           {d.thread && (
-            <button
-              type="button"
-              className={btnCls}
+            <AgentChatButton
+              agent={d.agent}
               onClick={() => {
                 open(d.thread!);
                 setCanvas(report);
                 router.push("/mvp3");
               }}
-            >
-              <MessageSquare aria-hidden />
-              Open chat
-            </button>
+            />
           )}
         </div>
         <div className="flex min-h-0 flex-1 flex-col [&>div:first-child]:pr-[460px]">{REPORT_VIEW[report]()}</div>
       </div>
     );
   }
-  const btn = "inline-flex h-8 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-3.5";
   return (
     <AgentDashboard
       d={d}
       actions={
-        <button
-          type="button"
-          className={btn}
+        <AgentChatButton
+          agent={d.agent}
           onClick={() => {
             if (d.thread) {
               open(d.thread);
@@ -73,10 +68,7 @@ export function DashboardPage() {
             }
             router.push("/mvp3");
           }}
-        >
-          <MessageSquare aria-hidden />
-          Customise in chat
-        </button>
+        />
       }
     />
   );

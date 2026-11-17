@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
-import { CalendarClock, Check, Mail, Pin, PinOff } from "lucide-react";
+import { CalendarClock, Check, FlaskConical, Mail, Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { StatusBadge } from "@/components/dashboard/primitives";
@@ -208,16 +208,20 @@ export function ScheduleControl({ d }: { d: Dashboard }) {
               ))}
             </select>
           </label>
-          <fieldset className="space-y-1.5">
+          {/* min-w-0: a fieldset otherwise refuses to shrink below its content, so a long email overflowed the popover. */}
+          <fieldset className="min-w-0 space-y-1.5">
             <legend className="pb-1 text-body-sm text-(--color-text-secondary)">Then</legend>
             {[
-              { k: "email" as const, label: `Email the report to ${user.email}`, Icon: Mail },
-              { k: "dashboard" as const, label: d.report ? "Refresh this report" : "Update this dashboard", Icon: Pin },
-            ].map(({ k, label, Icon }) => (
-              <label key={k} className="flex cursor-pointer items-center gap-2 text-body-sm text-(--color-text-primary)">
-                <input type="checkbox" checked={draft[k]} onChange={(e) => setDraft({ ...draft, [k]: e.target.checked })} className="size-4 accent-(--color-primary)" />
-                <Icon className="size-3.5 text-(--color-text-secondary)" aria-hidden />
-                <span className="min-w-0 truncate">{label}</span>
+              { k: "email" as const, label: "Email the report", sub: user.email, Icon: Mail },
+              { k: "dashboard" as const, label: d.report ? "Refresh this report" : "Update this dashboard", sub: undefined, Icon: Pin },
+            ].map(({ k, label, sub, Icon }) => (
+              <label key={k} className="flex cursor-pointer items-start gap-2 text-body-sm text-(--color-text-primary)">
+                <input type="checkbox" checked={draft[k]} onChange={(e) => setDraft({ ...draft, [k]: e.target.checked })} className="mt-0.5 size-4 shrink-0 accent-(--color-primary)" />
+                <Icon className="mt-[3px] size-3.5 shrink-0 text-(--color-text-secondary)" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  {label}
+                  {sub && <span className="block break-all text-(--color-text-secondary)">to {sub}</span>}
+                </span>
               </label>
             ))}
           </fieldset>
@@ -264,6 +268,28 @@ export function PinButton({ d }: { d: Dashboard }) {
   );
 }
 
+// ───────── Sample data ─────────
+
+/** A restaurant with no reports yet sees Taco Pros sample data. Every sample surface says so, plainly. */
+export function SampleTag() {
+  return (
+    <span className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-(--color-neutral-lightest) px-2 text-body-sm font-medium text-(--color-text-secondary) [&_svg]:size-3">
+      <FlaskConical aria-hidden /> Sample data
+    </span>
+  );
+}
+
+export function SampleBanner({ what = "numbers" }: { what?: string }) {
+  return (
+    <p className="flex items-start gap-2 rounded-medium border border-(--color-border-default) bg-(--color-neutral-lightest) px-3 py-2 text-body-sm text-(--color-text-primary)">
+      <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-(--color-text-secondary)" aria-hidden />
+      <span>
+        This is <b className="font-medium">Taco Pros sample data</b>, not yours. Your own {what} show here once your first reports arrive, usually 2 to 3 days after your apps are connected. Pinning and schedules turn on then.
+      </span>
+    </p>
+  );
+}
+
 // ───────── The dashboard ─────────
 
 /** `actions` sit at the end of the header (the canvas's expand and close, or the page's Customise). */
@@ -272,16 +298,17 @@ export function AgentDashboard({ d, actions, padRight = false }: { d: Dashboard;
   const a = d.automation;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className={cn("flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border-default) bg-(--color-background-secondary) py-2 pl-4", padRight ? "pr-2" : "pr-4")}>
+      <header className={cn("flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border-default) bg-(--color-background-secondary) py-1 pl-4", padRight ? "pr-2" : "pr-4")}>
         <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{d.title}</h1>
+        {d.sample && <SampleTag />}
         {d.pinned && (
           <span className="inline-flex items-center gap-1 text-body-sm text-(--color-text-secondary)">
             <Pin className="size-3" aria-hidden /> Pinned
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          <ScheduleControl d={d} />
-          <PinButton d={d} />
+          {!d.sample && <ScheduleControl d={d} />}
+          {!d.sample && <PinButton d={d} />}
           {actions}
         </div>
       </header>
@@ -295,8 +322,9 @@ export function AgentDashboard({ d, actions, padRight = false }: { d: Dashboard;
             <span>·</span>
             <span>{scopeLabel(d.config)}</span>
             <span>·</span>
-            <span>Updated {d.updated}</span>
+            <span>{d.sample ? "Taco Pros, 34 outlets" : `Updated ${d.updated}`}</span>
           </div>
+          {d.sample && <SampleBanner what="chargebacks" />}
           {a && (
             <p className="flex items-center gap-2 rounded-medium bg-(--color-neutral-lightest) px-3 py-2 text-body-sm text-(--color-text-primary)">
               <Check className="size-3.5 shrink-0 text-(--color-text-success)" aria-hidden />
@@ -341,7 +369,7 @@ export function DashboardCard({ d }: { d: Dashboard }) {
           {d.pinned && <Pin className="size-3 text-(--color-text-secondary)" aria-label="Pinned" />}
         </span>
         <span className="block truncate text-body-sm text-(--color-text-secondary)">
-          Dashboard · {d.config.widgets.length} {d.config.widgets.length === 1 ? "block" : "blocks"} · {scopeLabel(d.config)}
+          {d.sample ? "Sample · " : ""}Dashboard · {d.config.widgets.length} {d.config.widgets.length === 1 ? "block" : "blocks"} · {scopeLabel(d.config)}
         </span>
       </span>
       <span className="shrink-0 pr-1 text-body-sm text-(--color-text-clickable)">{on ? "Open" : "View"}</span>
