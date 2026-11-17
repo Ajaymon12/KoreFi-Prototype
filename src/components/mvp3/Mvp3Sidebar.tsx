@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Blocks, Bot, CalendarClock, FileText, LayoutDashboard, MessagesSquare, PanelLeftClose, PanelLeftOpen, Search, Settings, SquarePen } from "lucide-react";
+import { Blocks, Bot, CalendarClock, FileText, House, LayoutDashboard, MessagesSquare, PanelLeftClose, PanelLeftOpen, Search, Settings, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavDrawer } from "@/components/shell/NavDrawer";
 import { navItemClass } from "@/components/shell/navItem";
@@ -10,15 +10,33 @@ import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { ChatSearch, openChatSearch } from "./ChatSearch";
 import { useOnboarding } from "./Onboarding";
+import { useAccount } from "./AccountSwitcher";
 
 // MVP 3's sidebar, built like MVP 2's (components/shell/Mvp2Sidebar.tsx) with MVP 3's pages:
-//  - "Workspace": New chat, Search chats (ChatGPT-style dialog, also ⌘K) and Agents (presets, drafts, New agent).
+//  - "Workspace": Home (Taco Pros only), New chat, Search chats (ChatGPT-style dialog, also ⌘K) and Agents (presets, drafts, New agent).
 //  - "Dashboards": what the owner pinned from a chat (shown once there is one).
 //  - "Recent chats": every thread, unread ones bold with a dot. Picking one opens it on /mvp3.
 //  - Integrations and Settings pinned to the bottom.
 //  - Narrow mode: an icon column (button or "[", remembered per browser) with hover flyouts.
 
 const HOME = "/mvp3";
+/** The live summary page, above New chat. Only accounts with `home` (Taco Pros) get it. */
+const HOME_PAGE = "/mvp3/home";
+const useHasHome = () => !!useAccount().account.home;
+
+/** Open a pinned dashboard in its chat, with the dashboard in the canvas, and fold the sidebar to icons so the
+ *  chat and dashboard get the room. False (do nothing) when the dashboard has no chat; the caller falls back to its page. */
+export function useOpenPinned() {
+  const { openDashboard } = useAgents();
+  const router = useRouter();
+  const path = usePathname();
+  return (id: string) => {
+    if (!openDashboard(id)) return false;
+    setNarrow(true);
+    if (path !== HOME) router.push(HOME);
+    return true;
+  };
+}
 const AGENTS_HREF = "/mvp3/agents";
 /** Agents stays lit in the editor and on the old Drafts link. */
 const onAgents = (path: string) => /^\/mvp3\/(agents|agent|drafts)\b/.test(path);
@@ -33,19 +51,25 @@ function PinnedList(props: { path: string; onFollow?: () => void; big?: boolean 
   );
 }
 function PinnedRows({ path, onFollow, big = false }: { path: string; onFollow?: () => void; big?: boolean }) {
-  const { dashboards } = useAgents();
+  const { dashboards, active, canvas } = useAgents();
   const id = useSearchParams().get("id");
+  const openPinned = useOpenPinned();
+  const hasHome = useHasHome();
   const pinned = dashboards.filter((d) => d.pinned);
   if (!pinned.length) return null;
   return (
     <ul className="flex flex-col gap-0.5">
       {pinned.map((d) => {
-        const on = path.startsWith("/mvp3/dashboard") && id === d.id;
+        const on = (path.startsWith("/mvp3/dashboard") && id === d.id) || (path === HOME && !!d.thread && active?.id === d.thread && canvas === (d.report ?? `dash:${d.id}`));
         return (
           <li key={d.id}>
             <Link
               href={dashHref(d.id)}
-              onClick={onFollow}
+              onClick={(e) => {
+                // Taco Pros: open the dashboard in its chat (chat left, dashboard right) with the sidebar folded.
+                if (hasHome && openPinned(d.id)) e.preventDefault();
+                onFollow?.();
+              }}
               aria-current={on ? "page" : undefined}
               className={cn(
                 "flex w-full items-center gap-2 rounded-(--module-radius) outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-4",
@@ -128,8 +152,17 @@ function useNewChat(path: string) {
 function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
   const fresh = useNewChat(path);
   const go = useGo();
+  const hasHome = useHasHome();
   return (
     <ul data-tour="workspace" className="flex flex-col gap-1">
+      {hasHome && (
+        <li>
+          <Link href={HOME_PAGE} onClick={onFollow} aria-current={path === HOME_PAGE ? "page" : undefined} className={navItemClass(path === HOME_PAGE)}>
+            <House aria-hidden />
+            Home
+          </Link>
+        </li>
+      )}
       <li>
         <button
           type="button"
@@ -185,7 +218,8 @@ function BottomLinks({ path, onFollow }: { path: string; onFollow?: () => void }
 
 /** Every thread, newest first. Used in the wide sidebar, the narrow flyout and the phone drawer. */
 function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: () => void; big?: boolean }) {
-  const { threads, active, open, newChat } = useAgents();
+  const { threads: all, active, open, newChat } = useAgents();
+  const threads = all.filter((t) => !t.hidden);
   const { stage, welcomeChat, openWelcome } = useOnboarding();
   const go = useGo();
   const row = (on: boolean, bold = false) =>
@@ -282,10 +316,11 @@ type Flyout = { key: string; top: number; left: number; content: React.ReactNode
 
 /** Icon column with hover flyouts. Flyouts are `fixed` so the panel's overflow can't clip them. */
 function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
-  const { threads, active, dashboards } = useAgents();
+  const { threads, active, dashboards, canvas } = useAgents();
   const { stage, welcomeChat } = useOnboarding();
   const fresh = useNewChat(path);
   const go = useGo();
+  const hasHome = useHasHome();
   const [fly, setFly] = useState<Flyout | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keep = () => {
@@ -302,7 +337,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
     setFly({ key, top: r.top, left: r.right + 8, content });
   };
   const hover = (key: string, content: React.ReactNode) => ({ onMouseEnter: show(key, content), onFocus: show(key, content), onMouseLeave: close, onBlur: close });
-  const unread = threads.filter((t) => t.unread).length;
+  const unread = threads.filter((t) => t.unread && !t.hidden).length;
 
   const icon = (current: boolean) =>
     cn(
@@ -310,7 +345,9 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
       current ? "bg-(--module-tint) text-(--module-strong)" : "text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)",
     );
   const label = (text: string) => <span className="block px-2.5 py-1.5 text-menu-md whitespace-nowrap text-(--color-text-primary)">{text}</span>;
-  const onChats = path === HOME && (!!active || (stage === "welcome" && welcomeChat !== null));
+  // A pinned dashboard open in its chat lights Dashboards, not Recent chats.
+  const dashOpen = hasHome && path === HOME && dashboards.some((d) => d.pinned && d.thread === active?.id && canvas === (d.report ?? `dash:${d.id}`));
+  const onChats = path === HOME && !dashOpen && (!!active || (stage === "welcome" && welcomeChat !== null));
 
   return (
     <>
@@ -318,6 +355,13 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
         <PanelLeftOpen aria-hidden />
       </button>
       <ul className="mt-2 flex flex-col items-center gap-1">
+        {hasHome && (
+          <li>
+            <Link href={HOME_PAGE} aria-label="Home" aria-current={path === HOME_PAGE ? "page" : undefined} className={icon(path === HOME_PAGE)} {...hover("home", label("Home"))}>
+              <House aria-hidden />
+            </Link>
+          </li>
+        )}
         <li>
           <button type="button" onClick={() => go(fresh.start)} aria-label="New chat" className={icon(fresh.on)} {...hover("new", label("New chat"))}>
             <SquarePen aria-hidden />
@@ -338,7 +382,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
             <button
               type="button"
               aria-label="Dashboards"
-              className={icon(path.startsWith("/mvp3/dashboard"))}
+              className={icon(path.startsWith("/mvp3/dashboard") || dashOpen)}
               {...hover(
                 "dashboards",
                 <div className="w-60 p-1.5">
@@ -428,11 +472,22 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
   const tile = (on: boolean) => cn("grid size-8 shrink-0 place-items-center rounded-(--module-radius) [&_svg]:size-4", on ? "bg-(--module-tint) text-(--module-strong)" : "bg-(--color-neutral-lightest) text-(--color-text-secondary)");
   const rowOn = (on: boolean) => cn(row, on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-primary) active:bg-(--color-neutral-light)");
   const homeOn = fresh.on;
+  const hasHome = useHasHome();
   // The drawer sits in the top bar, outside the page's data-module, so it carries the module's tints itself.
   return (
     <div data-module="mvp">
       <p className="px-3 pt-1 pb-1.5 text-body-sm text-(--color-text-secondary)">Workspace</p>
       <ul>
+        {hasHome && (
+          <li>
+            <Link href={HOME_PAGE} onClick={onFollow} aria-current={path === HOME_PAGE ? "page" : undefined} className={rowOn(path === HOME_PAGE)}>
+              <span className={tile(path === HOME_PAGE)}>
+                <House aria-hidden />
+              </span>
+              Home
+            </Link>
+          </li>
+        )}
         <li>
           <button
             type="button"

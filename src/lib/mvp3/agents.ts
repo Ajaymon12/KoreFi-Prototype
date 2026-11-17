@@ -3,7 +3,7 @@ import { LAST, WEEKS, totals, type Totals } from "@/components/finance/PnlStory"
 import { TYPICAL } from "@/lib/finance/costSettings";
 import { STORES, shortStore, type Store } from "@/lib/finance/outlets";
 import { APPS, appLabel, chargebacks, type AppKey } from "@/lib/finance/chargebacks";
-import { reconcile } from "@/lib/finance/reconcile";
+import { reconcile, type Recon } from "@/lib/finance/reconcile";
 import type { Automation } from "./dashboards";
 
 // MVP 3: KoreFi as always-on agents (after ChatGPT Dots, docs/chatgpt-dots-market-research.md).
@@ -24,14 +24,14 @@ export type Agent = {
 };
 
 export const AGENTS: Agent[] = [
-  { id: "finance", name: "Finance agent", Icon: Coins, watches: "P&L, payouts and deposits across your outlets", schedule: "Checks daily · weekly P&L on Mondays", status: "watching" },
+  { id: "finance", name: "Finance agent", Icon: Coins, watches: "P&L, payouts and deposits across your outlets", schedule: "Checks daily · P&L every morning", status: "watching" },
   { id: "operations", name: "Operations agent", Icon: ShieldCheck, watches: "Chargebacks and the disputes the KoreFi team files", schedule: "Checks every new delivery-app report", status: "watching" },
   { id: "growth", name: "Growth agent", Icon: WandSparkles, watches: "Menu prices against nearby restaurants", schedule: "First report in about 2 weeks", status: "learning" },
 ];
 export const agentOf = (id: AgentId) => AGENTS.find((a) => a.id === id)!;
 
 export const REPORTS: Record<ReportId, { title: string; sub: string }> = {
-  pnl: { title: "P&L Summary", sub: "Last 4 weeks · all outlets" },
+  pnl: { title: "Daily P&L", sub: "Last 4 weeks · all outlets" },
   payouts: { title: "3PD Payouts", sub: "DoorDash, Uber Eats, Grubhub" },
   chargebacks: { title: "Chargeback Overview", sub: "Last 13 weeks · all apps" },
   overview: { title: "Overview", sub: "Revenue by outlet" },
@@ -157,25 +157,41 @@ export function chargebackOutlets(): AgentReply {
   };
 }
 
-export function payoutCheck(): AgentReply {
-  const { worstRecon: r } = snapshot();
-  const app = appLabel(r.app as AppKey);
+/** The Thursday payout update: one week, every app side by side (matched, in Square only, in the app only). */
+export function payoutReply(recons: Recon[], week: string): AgentReply {
+  const sum = (f: (r: Recon) => number) => recons.reduce((n, r) => n + f(r), 0);
+  const off = (r: Recon) => r.posOnly.orders + r.appOnly.orders;
+  const offAmt = (r: Recon) => r.posOnly.amount + r.appOnly.amount;
+  const orders = sum(off);
+  const worst = [...recons].sort((a, b) => offAmt(b) - offAmt(a))[0];
   return {
     agent: "finance",
-    title: `${app}: ${r.appOnly.orders + r.posOnly.orders} orders don't match Square`,
+    title: orders ? `${orders} delivery orders don't match Square` : "Every payout matched Square",
     lines: [
-      `${r.posOnly.orders} orders were rung up in Square but aren't in ${app}'s payout (${usd(r.posOnly.amount)}), and ${r.appOnly.orders} were paid by ${app} but never recorded in Square (${usd(r.appOnly.amount)}).`,
-      "The KoreFi team is checking these with the app.",
+      orders
+        ? `Week of ${week}, all 3 apps compared with Square. ${appLabel(worst.app as AppKey)} had the most orders on only one side (${off(worst)} orders, ${usd(offAmt(worst))}). The KoreFi team is checking these with the apps.`
+        : `Week of ${week}: every DoorDash, Uber Eats and Grubhub order matched its Square record and payout.`,
     ],
     stats: [
-      { label: "Matched", value: usd(r.matched), tone: "success" },
-      { label: "In Square only", value: usd(r.posOnly.amount), tone: "danger" },
-      { label: `In ${app} only`, value: usd(r.appOnly.amount) },
+      { label: "Matched", value: usd(sum((r) => r.matched)), tone: "success" },
+      { label: "In Square only", value: usd(sum((r) => r.posOnly.amount)), tone: "danger" },
+      { label: "In app only", value: usd(sum((r) => r.appOnly.amount)) },
     ],
-    work: [`Read ${app} payout reports for 4 weeks`, "Matched every order to Square", "Flagged orders found on only one side"],
+    // Platform by platform: what matched, and what's on only one side.
+    rows: recons.map((r) => ({
+      label: appLabel(r.app as AppKey),
+      sub: off(r) ? `${usd(r.matched)} matched · ${r.posOnly.orders} in Square only (${usd(r.posOnly.amount)}) · ${r.appOnly.orders} in app only (${usd(r.appOnly.amount)})` : `${usd(r.matched)} matched · nothing off`,
+      value: off(r) ? `${off(r)} off` : "All matched",
+      tone: off(r) ? "danger" : "success",
+    })),
+    work: ["Read the week's Square delivery orders", "Read the payout report from DoorDash, Uber Eats and Grubhub", "Matched every order to its payout line", "Compared the 3 apps"],
     report: "payouts",
     followUps: ["How did we do last week?", "Which delivery app pays me more?"],
   };
+}
+
+export function payoutCheck(): AgentReply {
+  return payoutReply(APPS.map((a) => reconcile(a.key, stores, [WEEKS[LAST]])), WEEK_LABEL);
 }
 
 export function worstOutlets(): AgentReply {
@@ -183,7 +199,7 @@ export function worstOutlets(): AgentReply {
   return {
     agent: "finance",
     title: "Your 4 lowest-earning outlets",
-    lines: ["Profit as a share of sales over the last 4 weeks, after fees and your food and staff estimates. Same ranking as the P&L Summary."],
+    lines: ["Profit as a share of sales over the last 4 weeks, after fees and your food and staff estimates. Same ranking as the Daily P&L dashboard."],
     rows: outlets.slice(0, 4).map((o) => ({ label: shortStore(o.store), sub: `${usd(o.all.profit)} profit on ${usd(o.all.sales)}`, value: `${(o.all.profit / (o.all.sales || 1) * 100).toFixed(1)}%`, tone: o.all.profit < 0 ? "danger" : undefined })),
     work: [`Built a P&L for each of ${n()} outlets`, "Ranked them by profit"],
     report: "pnl",
@@ -241,7 +257,8 @@ export type Message =
   | { id: string; role: "agent"; reply: AgentReply; at?: string }
   | { id: string; role: "agent"; pending: true; agent: AgentId; work: string[]; done: number };
 
-export type Thread = { id: string; title: string; agent: AgentId; at: string; unread: boolean; messages: Message[]; workflow?: string; dashboard?: string };
+/** `hidden`: kept out of Recent chats (Taco Pros' seeded chats back its pinned dashboards); joins the list once the owner replies. */
+export type Thread = { id: string; title: string; agent: AgentId; at: string; unread: boolean; messages: Message[]; workflow?: string; dashboard?: string; hidden?: boolean };
 
 export function seedThreads(): Thread[] {
   const pnl = weeklyPnl();
@@ -261,18 +278,22 @@ export function seedThreads(): Thread[] {
         { id: "c3", role: "agent", reply: chargebackOutlets() },
       ],
     },
-    { id: "payout", title: pay.title.split(":")[0] + " payout check", agent: "finance", at: "Mon", unread: false, messages: [{ id: "p1", role: "agent", reply: pay, at: "Mon" }] },
+    { id: "payout", title: `Payouts by app · ${WEEK_LABEL}`, agent: "finance", at: "Thu", unread: false, messages: [{ id: "p1", role: "agent", reply: pay, at: "Thu 8:00 AM" }] },
   ];
 }
 
 // ───────── Folders (the home groups what each agent does) ─────────
 
-export type SkillState = "live" | "learning" | "soon";
+/** live: running on your reports. idle: set up but not live yet; the first Run makes it live. */
+export type SkillState = "live" | "learning" | "idle";
 export type Skill = { id: string; name: string; blurb: string; state: SkillState; cadence: string; access: string[]; thread?: string };
 export type Folder = { agent: AgentId; label: string; hue: string; skills: Skill[] };
 
 const APPS_3PD = ["DoorDash", "Uber Eats", "Grubhub"];
+const INV = "Inventory and supplier bills";
 
+// Chargebacks, payouts and channel P&L are live; every other agent is idle (not live) until someone runs it. The Reconciliation, Labor and Inventory lists follow the founders' priority workbook
+// (Book.pdf), in its priority order; the cross-module views (daily P&L, benchmark, budget vs actual) sit in Finance.
 export const FOLDERS: Folder[] = [
   {
     agent: "operations",
@@ -282,13 +303,46 @@ export const FOLDERS: Folder[] = [
   },
   {
     agent: "finance",
-    label: "Finance",
+    label: "Reconciliation",
     hue: "#6C74E6",
     skills: [
-      { id: "payouts", name: "Payout reconciliation", blurb: "Matches every delivery order in your POS with the app's record and its payout. Flags orders that are missing or paid short.", state: "live", cadence: "Email every Friday, after the week's payouts", access: [...APPS_3PD, "POS"], thread: "payout" },
-      { id: "channel-pnl", name: "Channel P&L", blurb: "What you keep from in-store and each app, after fees and promos.", state: "soon", cadence: "Shows profit", access: [...APPS_3PD, "POS"] },
-      { id: "labor", name: "Labor cost", blurb: "Labor as a % of sales by location, against your target.", state: "soon", cadence: "Cuts cost", access: ["POS", "Payroll"] },
-      { id: "food", name: "Food cost", blurb: "Actual food cost % by location, with a check on every supplier bill.", state: "soon", cadence: "Cuts cost", access: ["POS", "Inventory and supplier bills"] },
+      { id: "payouts", name: "Payout reconciliation", blurb: "Checks every order the delivery apps report against your POS. Flags orders that are missing, wrong in amount or paid short.", state: "live", cadence: "Email every Thursday", access: [...APPS_3PD, "POS"], thread: "payout" },
+      { id: "journal-entries", name: "Auto journal entries", blurb: "Turns matched orders into accounting entries automatically and shows where the gaps are.", state: "idle", cadence: "Daily, 8:00 AM", access: [...APPS_3PD, "POS", "QuickBooks"] },
+      { id: "three-way-recon", name: "3-way reconciliation", blurb: "Adds the bank: confirms the money the apps owe you for delivered orders actually reached your account.", state: "idle", cadence: "Every Friday, after the week's payouts", access: [...APPS_3PD, "POS", "Bank account"] },
+    ],
+  },
+  {
+    agent: "finance",
+    label: "Finance",
+    hue: "#8E6CE6",
+    skills: [
+      // Id kept as "channel-pnl": its runs, the Daily P&L dashboard (REPORTS.pnl) and the seeded chat are wired to it.
+      { id: "channel-pnl", name: "Daily operational P&L", blurb: "Each day's P&L by channel, item and store, so you see what made money yesterday.", state: "idle", cadence: "Email daily, 8:00 AM", access: [...APPS_3PD, "POS"], thread: "weekly" },
+      { id: "benchmark", name: "Store benchmark", blurb: "Compares your stores on the same measures, from sales kept to labor and food cost.", state: "idle", cadence: "Every Monday, 8:00 AM", access: [...APPS_3PD, "POS"] },
+      { id: "budget-actual", name: "Budget vs actual", blurb: "Compares what you planned to spend with what you actually spent, for every cost.", state: "idle", cadence: "Monthly, 1st at 8:00 AM", access: ["POS", "QuickBooks"] },
+    ],
+  },
+  {
+    agent: "operations",
+    label: "Labor",
+    hue: "#E6A23C",
+    skills: [
+      { id: "labor-forecast", name: "Labor forecast", blurb: "Tells you how many staff to have each day and shift, based on past sales and past staffing.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", "Payroll"] },
+      { id: "labor-leakage", name: "Labor leakage", blurb: "Shows which days or weeks you were overstaffed for your sales, and what the extra hours cost.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", "Payroll"] },
+      { id: "schedule", name: "Schedule generation", blurb: "Builds the weekly shift schedule from the forecast, your labor target and compliance rules.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", "Payroll"] },
+      { id: "payroll", name: "Payroll disbursement", blurb: "Works out staff pay from approved hours, including leave and overtime, ready to release.", state: "idle", cadence: "Every Friday, after the week's payouts", access: ["Payroll", "Bank account"] },
+    ],
+  },
+  {
+    agent: "operations",
+    label: "Inventory",
+    hue: "#3CA6C2",
+    skills: [
+      { id: "consumption", name: "Consumption tracking", blurb: "Turns sales into ingredients used, so you see where cost and waste go. Also checks every supplier bill.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", INV] },
+      { id: "inventory-forecast", name: "Inventory forecast", blurb: "Tells you how much of each ingredient to have each week, based on sales and your recipes.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
+      { id: "inventory-forecast-plus", name: "Forecast with weather and events", blurb: "The same forecast, sharpened with weather and local events near each outlet.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
+      { id: "auto-ordering", name: "Auto ordering", blurb: "Drafts supplier orders by comparing the forecast with what is on hand.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
+      { id: "price-variance", name: "Price discovery and variance", blurb: "Shows where you pay more than you should for an ingredient, and which suppliers offer better prices.", state: "idle", cadence: "Monthly, 1st at 8:00 AM", access: [INV] },
     ],
   },
   {
@@ -296,8 +350,8 @@ export const FOLDERS: Folder[] = [
     label: "Growth",
     hue: "#4CC27A",
     skills: [
-      { id: "pricing", name: "Pricing intelligence", blurb: "Compares your menu and prices with nearby restaurants. Useful before a price change or a new location.", state: "learning", cadence: "Report every 3 months", access: [] },
-      { id: "promo", name: "Promo analysis", blurb: "Shows which delivery-app promotions brought in new orders and which only cost you margin.", state: "soon", cadence: "Report every month", access: [...APPS_3PD, "POS"] },
+      { id: "pricing", name: "Pricing intelligence", blurb: "Compares your menu and prices with nearby restaurants. Useful before a price change or a new location.", state: "idle", cadence: "Report every 3 months", access: [] },
+      { id: "promo", name: "Promo analysis", blurb: "Shows which delivery-app promotions brought in new orders and which only cost you margin.", state: "idle", cadence: "Report every month", access: [...APPS_3PD, "POS"] },
     ],
   },
 ];

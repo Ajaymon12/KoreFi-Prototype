@@ -9,6 +9,8 @@ import type { AppKey } from "@/lib/finance/chargebacks";
 import { REPORT_THROUGH } from "@/lib/finance/reports";
 import { TAX_RATE, addPayout, commissionOf, depositOf, marketingOf, moneyInOf, otherOf, payout, refundsOf, zeroPayout, type Payout } from "@/lib/finance/payouts";
 import { CHANNELS, PRESETS, WEEKS, pct0, pctOf } from "@/components/finance/PnlStory";
+import type { Preset } from "@/components/finance/TimelineRange";
+import { reconcile, type Recon } from "@/lib/finance/reconcile";
 import { DateRangeFilter } from "@/components/finance/DateRangeFilter";
 import { usd } from "@/components/finance/parts";
 
@@ -25,6 +27,9 @@ import { usd } from "@/components/finance/parts";
 //                       payout sits below it, so the deposit is explained without inflating "your" money
 //   no fake profit      no COGS/Net margin at $0: food and profit live on the P&L Summary, with estimates
 // Above the table, "where each $1 went" per app: one bar each, to compare apps before reading lines.
+// First of all, "Matched with Square": every app's orders against Square (matched, in Square only, in the app
+// only), the same comparison the /mvp3 Payout reconciliation agent posts every Thursday, so the chat's figures
+// are on the report it opens. `presets` lets /mvp3 open on the agent's week; /mvp2 keeps Last 4 weeks.
 
 const APPS = CHANNELS.filter((c) => c.app);
 type Sign = "−" | "+";
@@ -121,8 +126,70 @@ function Amount({ n, sales, sign, strong, muted, share = true }: { n: number; sa
   );
 }
 
-export function PayoutReport() {
-  const [range, setRange] = useState<[number, number]>(PRESETS[0].range);
+/** Every app's orders against Square for the chosen weeks and outlets: totals, then one row per app. */
+function MatchedWithSquare({ recons }: { recons: Recon[] }) {
+  const sum = (f: (r: Recon) => number) => recons.reduce((n, r) => n + f(r), 0);
+  const off = (r: Recon) => r.posOnly.orders + r.appOnly.orders;
+  const orders = sum(off);
+  const gap = (g: { orders: number; amount: number }) => (g.orders ? `${g.orders} · ${usd(g.amount)}` : "—");
+  const stats = [
+    { label: "Matched", value: usd(sum((r) => r.matched)), cls: "text-(--color-text-success)" },
+    { label: "In Square only", value: usd(sum((r) => r.posOnly.amount)), cls: "text-(--color-text-danger)" },
+    { label: "In app only", value: usd(sum((r) => r.appOnly.amount)), cls: "text-(--color-text-primary)" },
+  ];
+  const th = "px-3 py-2 text-right font-normal";
+  const td = "px-3 py-2.5 text-right tabular-nums";
+  return (
+    <section aria-label="Matched with Square" className="mx-4 mt-3 rounded-large bg-(--gray-300) p-1.5">
+      <div className="rounded-medium bg-(--color-background-secondary) px-5 py-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <p className="text-body-md font-medium text-(--color-text-primary)">{orders ? `${orders.toLocaleString("en-US")} delivery orders don't match Square` : "Every delivery order matched Square"}</p>
+          <p className="text-body-sm text-(--color-text-secondary)">{orders ? "The KoreFi team is checking these with the apps." : "Nothing to chase."}</p>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 divide-x divide-(--color-border-default) rounded-medium border border-(--color-border-default)">
+          {stats.map((s) => (
+            <div key={s.label} className="min-w-0 px-3 py-2">
+              <dt className="truncate text-body-sm text-(--color-text-secondary)">{s.label}</dt>
+              <dd className={cn("text-subtitle-md font-medium tabular-nums", s.cls)}>{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-body-md">
+            <thead>
+              <tr className="border-b border-(--gray-300) text-body-sm text-(--color-text-secondary)">
+                <th scope="col" className="py-2 pr-3 text-left font-normal">App</th>
+                <th scope="col" className={th}>Matched</th>
+                <th scope="col" className={th}>In Square only</th>
+                <th scope="col" className={th}>In app only</th>
+                <th scope="col" className={cn(th, "pr-0")}>Orders off</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recons.map((r) => {
+                const c = APPS.find((a) => a.key === r.app)!;
+                return (
+                  <tr key={r.app} className="border-b border-(--gray-300) last:border-0">
+                    <th scope="row" className="py-2.5 pr-3 text-left font-normal text-(--color-text-primary)">
+                      <AppName source={c.source} name={c.label} />
+                    </th>
+                    <td className={td}>{usd(r.matched)}</td>
+                    <td className={td}>{gap(r.posOnly)}</td>
+                    <td className={td}>{gap(r.appOnly)}</td>
+                    <td className={cn(td, "pr-0 font-medium", off(r) ? "text-(--color-text-danger)" : "text-(--color-text-success)")}>{off(r) ? `${off(r)} off` : "All matched"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function PayoutReport({ presets = PRESETS }: { presets?: Preset[] } = {}) {
+  const [range, setRange] = useState<[number, number]>(presets[0].range);
   const outlets = useOutletFilter(range);
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [showZero, setShowZero] = useState(false);
@@ -160,7 +227,7 @@ export function PayoutReport() {
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
           <OutletFilters scope={outlets} />
-          <DateRangeFilter weeks={WEEKS} presets={PRESETS} value={range} onChange={setRange} />
+          <DateRangeFilter weeks={WEEKS} presets={presets} value={range} onChange={setRange} />
           <span className="ml-auto flex items-center gap-2 text-body-sm text-(--color-text-tertiary) tabular-nums">
             <OutletCount scope={outlets} />
             {label}
@@ -171,6 +238,8 @@ export function PayoutReport() {
           <NoOutlets scope={outlets} />
         ) : (
           <>
+            <MatchedWithSquare recons={cols.map((c) => reconcile(c.key as AppKey, stores, weeks))} />
+
             {/* Where each $1 went, per app: compare before reading lines */}
             <section aria-label="Where each dollar of app sales went" className="mx-4 mt-3 rounded-large bg-(--gray-300) p-1.5">
               <div className="rounded-medium bg-(--color-background-secondary) px-5 py-4">

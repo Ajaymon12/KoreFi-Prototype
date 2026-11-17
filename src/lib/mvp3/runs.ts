@@ -1,8 +1,9 @@
-import { LAST, WEEKS } from "@/components/finance/PnlStory";
-import { APPS, appLabel, chargebacks, type AppKey } from "@/lib/finance/chargebacks";
+import { CHANNELS, LAST, WEEKS, totals } from "@/components/finance/PnlStory";
+import { TYPICAL } from "@/lib/finance/costSettings";
+import { APPS, chargebacks } from "@/lib/finance/chargebacks";
 import { STORES } from "@/lib/finance/outlets";
 import { reconcile } from "@/lib/finance/reconcile";
-import type { AgentReply } from "./agents";
+import { payoutReply, type AgentReply } from "./agents";
 
 // MVP 3: the run history of a live agent, for its overview page (components/mvp3/AgentOverview).
 // One scheduled run per closed week, on the morning after the week ends (the week's reports are in by then).
@@ -64,7 +65,6 @@ function payoutRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" | "t
   const posOnly = recons.reduce((n, r) => n + r.posOnly.amount, 0);
   const appOnly = recons.reduce((n, r) => n + r.appOnly.amount, 0);
   const orders = recons.reduce((n, r) => n + r.posOnly.orders + r.appOnly.orders, 0);
-  const worst = [...recons].sort((a, b) => b.posOnly.amount + b.appOnly.amount - (a.posOnly.amount + a.appOnly.amount))[0];
   const headline = orders ? `${orders} orders don't match Square` : "Every payout matched Square";
   const metrics: Metric[] = [
     { label: "Matched", value: matched, tone: "success", money: true },
@@ -75,18 +75,38 @@ function payoutRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" | "t
     week: WEEKS[i].label,
     headline,
     metrics,
+    // Same platform-by-platform comparison as the Thursday chat update.
+    reply: payoutReply(recons, WEEKS[i].label),
+  };
+}
+
+function pnlRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" | "trigger"> {
+  const t = totals(STORES, i, i, () => TYPICAL);
+  const fees = t.all.commission + t.all.promos + t.all.cardFees;
+  // The channel that keeps the biggest share of its sales.
+  const best = [...CHANNELS].sort((a, b) => t.cols[b.key].moneyIn / (t.cols[b.key].sales || 1) - t.cols[a.key].moneyIn / (t.cols[a.key].sales || 1))[0];
+  const headline = `You kept ${usd(t.all.moneyIn)} after fees`;
+  const metrics: Metric[] = [
+    { label: "Sales", value: t.all.sales, money: true },
+    { label: "Net after fees", value: t.all.moneyIn, tone: "success", money: true },
+    { label: "Fees", value: fees, tone: "danger", money: true },
+  ];
+  return {
+    week: WEEKS[i].label,
+    headline,
+    metrics,
     reply: {
       agent: "finance",
       title: headline,
-      lines: [`For the week of ${WEEKS[i].label}, ${appLabel(worst.app as AppKey)} had the most orders on only one side. The KoreFi team is checking these with the apps.`],
+      lines: [`Sales were ${usd(t.all.sales)} in the week of ${WEEKS[i].label}, and the apps and card processors took ${usd(fees)}. ${best.label} kept the biggest share of its sales.`],
       stats: metrics.map((m) => ({ label: m.label, value: usd(m.value), tone: m.tone })),
-      work: ["Read the week's Square delivery orders", "Read the payout report from each app", "Matched every order to its payout line", "Emailed you the mismatches"],
-      report: "payouts",
+      work: ["Read the week's Square sales", "Read the payout report from each app", "Applied your food and staff cost settings", "Emailed you the P&L by channel"],
+      report: "pnl",
     },
   };
 }
 
-const BUILD: Record<string, (i: number) => Omit<Run, "id" | "at" | "minutes" | "status" | "trigger">> = { chargebacks: chargebackRun, payouts: payoutRun };
+const BUILD: Record<string, (i: number) => Omit<Run, "id" | "at" | "minutes" | "status" | "trigger">> = { chargebacks: chargebackRun, payouts: payoutRun, "channel-pnl": pnlRun };
 export const hasRuns = (id: string) => id in BUILD;
 
 const cache = new Map<string, Run[]>();
@@ -97,11 +117,15 @@ export function runHistory(id: string, thread?: string): Run[] {
   if (!build) return [];
   const hit = cache.get(id);
   if (hit) return hit;
-  // Chargebacks run Thursday 8 AM, when the week (Thu–Wed) closes; payouts the next morning, after the week's payouts.
-  const hour = id === "payouts" ? 24 + 9 : 8;
+  // Chargebacks and payouts run Thursday 8 AM, when the week (Thu–Wed) closes.
+  // Daily operational P&L runs every morning; the history shows its Monday runs, which roll up the closed week
+  // (the reports are weekly, so those are the figures that match the Daily P&L dashboard).
+  const hour = 8;
   const runs: Run[] = [];
   for (let i = LAST; i > LAST - HISTORY && i >= 0; i--) {
-    const at = WEEKS[i].start.getTime() + 7 * DAY + hour * 3_600_000;
+    const close = WEEKS[i].start.getTime() + 7 * DAY;
+    const toMonday = id === "channel-pnl" ? ((8 - new Date(close).getUTCDay()) % 7) * DAY : 0;
+    const at = close + toMonday + hour * 3_600_000;
     runs.push({ id: `${id}-${i}`, at, minutes: 2 + ((i * 7) % 5), status: "completed", trigger: "scheduled", ...build(i), thread: i === LAST ? thread : undefined });
   }
   cache.set(id, runs);

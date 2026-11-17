@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { useDismiss } from "@/components/dashboard/useDismiss";
-import { DRAFTS, FOLDERS, type AgentId } from "@/lib/mvp3/agents";
+import { AGENTS, DRAFTS, FOLDERS, type AgentId } from "@/lib/mvp3/agents";
 import { isSchedule } from "@/lib/mvp3/workflows";
 import { runHistory } from "@/lib/mvp3/runs";
 import { useAgents } from "./AgentsProvider";
@@ -16,30 +16,43 @@ import { AgentAvatar } from "./AgentAvatar";
 
 // MVP 3 / Agents, laid out as a grid of compact cards: each agent's face and name on top, two lines of what it
 // does, and its status with the last run (or team) underneath. The whole card opens the agent.
-// Search and a filter (All / Running / Available / Drafts) sit above the grid. Report-only: no fix buttons.
+// Search and a filter (All / Running / Available / Drafts) sit above the grid. Agents that aren't live show a
+// Run button; the first run makes them live. Report-only: no fix buttons.
 
 const fmtDay = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const focus = "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
 
-type Kind = "live" | "learning" | "soon" | "draft";
+type Kind = "live" | "learning" | "idle" | "draft";
 export type Card = { id: string; title: string; blurb: string; kind: Kind; agent?: AgentId; team?: string; hue?: string; meta: string };
 type Filter = "all" | "running" | "available" | "drafts";
 const FILTERS: { id: Filter; label: string; match: (k: Kind) => boolean }[] = [
   { id: "all", label: "All", match: () => true },
   { id: "running", label: "Running", match: (k) => k === "live" },
-  { id: "available", label: "Available", match: (k) => k === "learning" || k === "soon" },
+  { id: "available", label: "Available", match: (k) => k === "learning" || k === "idle" },
   { id: "drafts", label: "Drafts", match: (k) => k === "draft" },
 ];
-/** One line under each group's heading in the "All" view. */
-const GROUP_NOTE: Record<Exclude<Filter, "all">, string> = {
-  running: "Live on your reports. Each run posts a dashboard in a chat.",
-  available: "Still learning your data, or coming soon. They start once the KoreFi team sets them up.",
-  drafts: "Agents being written. Publish one to start it.",
+/** The page puts live agents on top, then the rest by category (the agent behind them), then drafts. The filter pills narrow by status. */
+type Group = { id: string; label: string; note: string; agent?: AgentId; match: (c: Card) => boolean };
+const CATEGORY_NOTE: Record<AgentId, string> = {
+  operations: "Chargebacks, labor and inventory across your outlets.",
+  finance: "Payouts, reconciliation and P&L.",
+  growth: "Menu prices and how you compare with nearby restaurants.",
 };
+const GROUPS: Group[] = [
+  { id: "live", label: "Live", note: "Running on your reports. Each run posts a dashboard in a chat.", match: (c) => c.kind === "live" },
+  ...(["operations", "finance", "growth"] as const).map((id): Group => ({
+    id,
+    label: AGENTS.find((a) => a.id === id)!.name.replace(/ agent$/, ""),
+    note: CATEGORY_NOTE[id],
+    agent: id,
+    match: (c) => c.kind !== "draft" && c.kind !== "live" && c.agent === id,
+  })),
+  { id: "drafts", label: "Drafts", note: "Agents being written. Publish one to start it.", match: (c) => c.kind === "draft" },
+];
 const BADGE: Record<Kind,{ label: string; cls: string }> = {
   live: { label: "Live", cls: "bg-(--color-success-lightest) text-(--color-text-success)" },
   learning: { label: "Learning", cls: "bg-(--color-background-secondary) text-(--color-text-primary)" },
-  soon: { label: "Coming soon", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
+  idle: { label: "Not live", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
   draft: { label: "Draft", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
 };
 
@@ -88,13 +101,11 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
   const { getWorkflow, runAgent, duplicateAgent } = useAgents();
   const w = getWorkflow(c.id);
   const b = BADGE[c.kind];
-  // Coming-soon agents aren't set up yet, so there's nothing to open or edit: the card is information only.
-  const locked = c.kind === "soon";
   return (
     <li
       className={cn(
         "group relative flex flex-col rounded-xlarge border border-(--color-border-default) bg-(--color-background-secondary) p-5",
-        !locked && "transition-[border-color,box-shadow] hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
+        "transition-[border-color,box-shadow] hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
         c.kind === "draft" && "border-dashed",
       )}
     >
@@ -107,18 +118,14 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
           </span>
         )}
         {/* The whole card opens the agent; the menu sits above the link. */}
-        {locked ? (
-          <h3 className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary)">{c.title}</h3>
-        ) : (
-          <Link href={`/mvp3/agent?id=${c.id}`} className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary) outline-none after:absolute after:inset-0 after:rounded-xlarge focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-(--color-focus-primary)">
+        <Link href={`/mvp3/agent?id=${c.id}`} className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary) outline-none after:absolute after:inset-0 after:rounded-xlarge focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-(--color-focus-primary)">
             {c.title}
           </Link>
-        )}
-        {w && !locked && (
+        {w && (
           <CardMenu
             c={c}
             onRun={
-              c.kind === "live" && real
+              (c.kind === "live" || c.kind === "idle") && real
                 ? () => {
                     runAgent(w);
                     router.push("/mvp3");
@@ -136,6 +143,20 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
           {b.label}
         </span>
         <span className="truncate">{c.meta}</span>
+        {/* Not live yet: a Run button right on the card. The first run makes the agent live. */}
+        {c.kind === "idle" && real && w && (
+          <button
+            type="button"
+            onClick={() => {
+              runAgent(w);
+              router.push("/mvp3");
+            }}
+            className={cn("relative z-10 ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-medium border border-(--color-border-default) px-2.5 text-body-sm font-medium text-(--color-text-primary) hover:bg-(--color-neutral-lightest)", focus)}
+          >
+            <Play className="size-3.5" aria-hidden />
+            Run
+          </button>
+        )}
       </div>
     </li>
   );
@@ -151,8 +172,9 @@ export function useAgentCards(): Card[] {
       f.skills.map((s): Card => {
         const w = getWorkflow(s.id);
         // A restaurant that just joined has no reports, so its live agents are still learning.
-        const kind: Kind = s.state === "live" ? (isNew ? "learning" : "live") : s.state;
-        const last = kind === "live" ? runHistory(s.id, s.thread)[0] : undefined;
+        const state = w?.state ?? s.state;
+        const kind: Kind = state === "idle" ? "idle" : state === "live" && !isNew ? "live" : "learning";
+        const last = kind === "live" && !account.agentsOff ? runHistory(s.id, s.thread)[0] : undefined;
         const next = w?.triggers.find(isSchedule);
         const meta = last ? `Last run ${fmtDay(last.at)}${next ? ` · ${next}` : ""}` : f.label;
         return { id: s.id, title: w?.title ?? s.name, blurb: w?.overview ?? s.blurb, kind, agent: f.agent, team: f.label, hue: f.hue, meta };
@@ -166,7 +188,7 @@ export function useAgentCards(): Card[] {
       }),
     ];
     return [...skills.sort((a, b) => Number(b.kind === "live") - Number(a.kind === "live")), ...drafts];
-  }, [getWorkflow, created, isNew]);
+  }, [getWorkflow, created, isNew, account.agentsOff]);
 }
 
 // ───────── Page ─────────
@@ -236,23 +258,24 @@ export function AgentsPage() {
           </div>
 
           {shown.length ? (
-            // "All" splits the grid into Running, Available and Drafts, each with a heading and a line of what it
-            // means; a single filter shows just its grid.
+            // Live agents on top, then the rest by category (Operations, Finance, Growth), then Drafts, each with a
+            // heading and a line of what it covers; the filter pills narrow every group by status.
             <div className="space-y-12">
-              {FILTERS.filter((f) => f.id !== "all" && (filter === "all" || filter === f.id)).map((f) => {
-                const group = shown.filter((c) => f.match(c.kind));
+              {GROUPS.map((g) => {
+                const group = shown.filter(g.match);
                 if (!group.length) return null;
                 return (
-                  <section key={f.id} aria-labelledby={`group-${f.id}`} className="space-y-4">
-                    {filter === "all" && (
-                      <div className="border-b border-(--color-border-default) pb-2">
-                        <h2 id={`group-${f.id}`} className="flex items-baseline gap-2 text-subtitle-md font-medium text-(--color-text-primary)">
-                          {f.label}
+                  <section key={g.id} aria-labelledby={`group-${g.id}`} className="space-y-4">
+                    <div className="flex items-center gap-3 border-b border-(--color-border-default) pb-2">
+                      {g.agent && <AgentAvatar agent={g.agent} size={28} />}
+                      <div className="min-w-0">
+                        <h2 id={`group-${g.id}`} className="flex items-baseline gap-2 text-subtitle-md font-medium text-(--color-text-primary)">
+                          {g.label}
                           <span className="text-body-md font-normal text-(--color-text-secondary)">{group.length}</span>
                         </h2>
-                        <p className="text-body-sm text-(--color-text-secondary)">{GROUP_NOTE[f.id as Exclude<Filter, "all">]}</p>
+                        <p className="text-body-sm text-(--color-text-secondary)">{g.note}</p>
                       </div>
-                    )}
+                    </div>
                     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {group.map((c) => (
                         <AgentCard key={c.id} c={c} real={!isNew} />

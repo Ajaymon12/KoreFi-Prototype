@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock,
   Download,
+  FileText,
   GitCompareArrows,
   Landmark,
   LayoutDashboard,
@@ -24,6 +25,7 @@ import {
   Sparkles,
   Undo2,
   Users,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -44,7 +46,7 @@ import { AgentAvatar } from "./AgentAvatar";
 //    "Remove step 2", "Also read QuickBooks", "Rename it to …"). Every change saves straight away, the changed
 //    part of the page flashes, and the reply offers Undo. A vague message gets examples instead of a guess.
 //  - right, on the page grey: a read-only preview in the Foundation system: header (avatar, name, status, Run),
-//    How it runs, Overview, Steps, Inputs and Setup (when it runs, what it reads, where results go).
+//    How it runs, Overview, Steps, Inputs, Knowledge (files it reads) and Setup (when it runs, what it reads, where results go).
 // No Test or Save: changes apply from the next run. Drafts still get Publish.
 // Edits are kept in AgentsProvider, so a schedule set in the main chat shows up here and the other way round.
 // Brand orange only (module tokens); icons sit on neutral tiles. Workflows only read, match and report.
@@ -274,6 +276,77 @@ function examples(w: Workflow) {
 
 // ───────── Editor ─────────
 
+const kb = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+
+/** Files the agent reads alongside the reports: drop them on the box or attach, then remove any from the list. */
+function Knowledge({ files, onChange }: { files: { name: string; size: number }[]; onChange: (f: { name: string; size: number }[]) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const add = (list: FileList | null) => {
+    if (!list?.length) return;
+    const have = new Set(files.map((f) => f.name));
+    const fresh = [...list].filter((f) => !have.has(f.name)).map((f) => ({ name: f.name, size: f.size }));
+    if (fresh.length) onChange([...files, ...fresh]);
+  };
+  return (
+    <Section title="Knowledge" sub="Files the agent reads alongside your reports.">
+      <div className="px-5 pb-5">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            add(e.dataTransfer.files);
+          }}
+          className={cn(
+            "flex flex-col items-center gap-1.5 rounded-large border border-dashed px-4 py-7 text-center transition-colors",
+            over ? "border-(--color-focus-primary) bg-(--brand-100)" : "border-(--color-border-darker) bg-(--color-background-primary)",
+          )}
+        >
+          <FileText className="size-5 text-(--color-text-secondary)" aria-hidden />
+          <p className="text-body-md text-(--color-text-primary)">
+            Drag files here or{" "}
+            <button type="button" onClick={() => input.current?.click()} className="text-(--color-text-clickable) underline underline-offset-2 outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+              attach
+            </button>
+          </p>
+          <p className="text-body-sm text-(--color-text-secondary)">Policies, handbooks, contract templates</p>
+          <input
+            ref={input}
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx"
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => {
+              add(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {files.length > 0 && (
+          <ul className="mt-3 divide-y divide-(--color-border-default) rounded-medium border border-(--color-border-default)">
+            {files.map((f) => (
+              <li key={f.name} className="flex items-center gap-2.5 px-3 py-2 text-body-md">
+                <FileText className="size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
+                <span className="min-w-0 flex-1 truncate text-(--color-text-primary)">{f.name}</span>
+                <span className="shrink-0 text-body-sm text-(--color-text-secondary) tabular-nums">{kb(f.size)}</span>
+                <button type="button" aria-label={`Remove ${f.name}`} onClick={() => onChange(files.filter((x) => x.name !== f.name))} className="grid size-7 shrink-0 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+                  <X className="size-4" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 function Editor({ base }: { base: Workflow }) {
   const router = useRouter();
   const { open, saveWorkflow, runAgent, duplicateAgent, dashboards } = useAgents();
@@ -337,7 +410,7 @@ function Editor({ base }: { base: Workflow }) {
     router.push("/mvp3");
   };
 
-  const status: { label: string; tone: "success" | "info" | "neutral" } = w.kind === "draft" ? { label: "Draft", tone: "info" } : w.state === "live" ? { label: "Live", tone: "success" } : { label: w.state === "learning" ? "Learning" : "Coming soon", tone: "neutral" };
+  const status: { label: string; tone: "success" | "info" | "neutral" } = w.kind === "draft" ? { label: "Draft", tone: "info" } : w.state === "live" ? { label: "Live", tone: "success" } : { label: w.state === "idle" ? "Not live" : "Learning", tone: "neutral" };
   const flat = stepsOf(w);
   const area = (a: Area) => cn("rounded-large transition-[box-shadow] duration-500", flash.includes(a) && "shadow-[0_0_0_2px_var(--color-primary),0_0_0_6px_color-mix(in_srgb,var(--color-primary)_18%,transparent)]");
   const ex = examples(w);
@@ -433,7 +506,9 @@ function Editor({ base }: { base: Workflow }) {
       </aside>
 
       {/* ── preview: read-only, updates as the chat changes it ── */}
-      <div className="min-w-0 flex-1 lg:overflow-y-auto">
+      {/* relative: keeps absolutely positioned children (the sr-only file input) inside this scroller, so they
+          can't stretch the document and make the whole app scroll. */}
+      <div className="relative min-w-0 flex-1 lg:overflow-y-auto">
         <div className="mx-auto w-full max-w-[880px] space-y-4 px-4 py-6 sm:px-6">
           <header id="area-name" className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 p-1", area("name"))}>
             {w.agent && <AgentAvatar agent={w.agent} size={44} />}
@@ -547,6 +622,10 @@ function Editor({ base }: { base: Workflow }) {
               </Section>
             </div>
           )}
+
+          <div id="area-knowledge">
+            <Knowledge files={w.knowledge ?? []} onChange={(knowledge) => apply({ ...w, knowledge }, [])} />
+          </div>
 
           <div id="area-setup" className={area("setup")}>
             <Section title="Setup" sub="When it runs, what it reads and where results go.">

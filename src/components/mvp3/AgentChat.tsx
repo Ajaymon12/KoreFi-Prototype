@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUp, Bike, Check, ChevronDown, Copy, FileText, Landmark, Maximize2, Minimize2, Pin, PinOff, Plus, ShieldCheck, Sparkles, TrendingUp, X } from "lucide-react";
+import { ArrowUp, Bike, Bot, MoreHorizontal, Pencil, Check, ChevronDown, Copy, FileText, Landmark, Maximize2, Minimize2, Pin, PinOff, Plus, ShieldCheck, Sparkles, TrendingUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
-import { REPORTS, SUGGESTIONS, agentOf, seedThreads, type AgentId, type AgentReply, type Message, type ReportId } from "@/lib/mvp3/agents";
+import { FOLDERS, REPORTS, SUGGESTIONS, agentOf, seedThreads, type AgentId, type AgentReply, type Message, type ReportId } from "@/lib/mvp3/agents";
 import { useAgents, type CanvasId } from "./AgentsProvider";
+import { useDismiss } from "@/components/dashboard/useDismiss";
 import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { AgentAvatar, StepOrb, type AvatarMood } from "./AgentAvatar";
@@ -322,8 +324,11 @@ function Bubble({ m }: { m: Message }) {
 
 // ───────── Canvas ─────────
 
-function Canvas({ id }: { id: CanvasId }) {
+/** `width`: the width the owner dragged the panel to (px), or null for the default split. */
+function Canvas({ id, width }: { id: CanvasId; width: number | null }) {
   const { setCanvas, expanded, setExpanded, dashboards, pinReport, sample } = useAgents();
+  // A dragged width wins over the default 1 : 1.4 split, but always leaves the chat at least 360px.
+  const sized = width && !expanded ? { flex: "0 0 auto", width: `min(${width}px, calc(100% - 360px))` } : undefined;
   const tools = (
     <>
       <button type="button" aria-label={expanded ? "Show chat" : "Full width"} title={expanded ? "Show chat" : "Full width"} onClick={() => setExpanded(!expanded)} className={iconBtn}>
@@ -334,11 +339,17 @@ function Canvas({ id }: { id: CanvasId }) {
       </button>
     </>
   );
+  // Split view: the dashboard is the white surface, flush with the app frame, beside the chat on its grey workspace,
+  // so it reads as the document the chat produced, not a second column of the same page.
+  const sheet = cn(
+    "flex min-w-0 flex-col overflow-hidden bg-(--color-background-secondary) motion-safe:animate-page-in",
+    expanded ? "flex-1" : "hidden flex-[1.4] border-l border-(--color-border-default) lg:flex",
+  );
   if (id.startsWith("dash:")) {
     const d = dashboards.find((x) => `dash:${x.id}` === id);
     if (!d) return null;
     return (
-      <aside aria-label={d.title} className={cn("flex min-w-0 flex-col border-l border-(--color-border-default) bg-(--color-background-primary) motion-safe:animate-page-in", expanded ? "flex-1 border-l-0" : "hidden flex-[1.4] lg:flex")}>
+      <aside aria-label={d.title} className={sheet} style={sized}>
         <AgentDashboard d={d} actions={tools} padRight />
       </aside>
     );
@@ -346,7 +357,7 @@ function Canvas({ id }: { id: CanvasId }) {
   const report = id as ReportId;
   const pinned = dashboards.find((x) => x.id === `report-${report}`);
   return (
-    <aside aria-label={REPORTS[report].title} className={cn("flex min-w-0 flex-col border-l border-(--color-border-default) bg-(--color-background-secondary) motion-safe:animate-page-in", expanded ? "flex-1 border-l-0" : "hidden flex-[1.4] lg:flex")}>
+    <aside aria-label={REPORTS[report].title} className={sheet} style={sized}>
       {/* The report brings its own title row; the canvas adds expand and close beside it. */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="absolute top-1.5 right-2 z-10 flex items-center gap-1 rounded-medium bg-(--color-background-secondary)">
@@ -383,9 +394,9 @@ function Home() {
   const fresh = account.stage === "new";
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-10 px-4 pb-10 sm:px-6">
+      <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-10 px-4 pb-10 sm:px-6 md:max-lg:gap-[100px]">
         {/* The hero sits in the optical centre of the first screen, like ChatGPT's empty chat. */}
-        <div className="flex min-h-[62vh] flex-col justify-end gap-7 pb-2">
+        <div className="flex min-h-[62vh] flex-col justify-end gap-7 pb-2 md:max-lg:min-h-[51.5vh]">
           <h1 className="text-center text-page-title font-normal text-(--color-text-primary) sm:text-[28px]">
             {fresh ? `Welcome, ${user.firstName}. Your agents are getting to know ${account.name}.` : `${greeting()}, ${user.firstName}. What should we look into?`}
           </h1>
@@ -421,7 +432,7 @@ function Home() {
             Recent chats
           </h2>
           <ul>
-            {threads.map((t) => (
+            {threads.filter((t) => !t.hidden).map((t) => (
               <li key={t.id}>
                 <button type="button" onClick={() => open(t.id)} className="flex min-h-12 w-full items-center gap-2.5 rounded-medium px-2 text-left active:bg-(--color-neutral-light)">
                   <AgentMark agent={t.agent} />
@@ -437,6 +448,40 @@ function Home() {
   );
 }
 
+/** The chat header's ⋯ menu: go to the agent behind this chat, to see its details or edit it. */
+function AgentMenu({ wid }: { wid: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useDismiss(ref, open, () => setOpen(false));
+  const item = "flex w-full items-center gap-2 rounded-medium px-2.5 py-2 text-left text-body-md text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-4 [&_svg]:text-(--color-text-secondary)";
+  return (
+    <div ref={ref} className="relative ml-auto shrink-0">
+      <button
+        type="button"
+        aria-label="Agent options"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn("grid size-8 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)", open && "bg-(--color-neutral-light) text-(--color-text-primary)")}
+      >
+        <MoreHorizontal className="size-4" aria-hidden />
+      </button>
+      {open && (
+        <div role="menu" className="absolute top-9 right-0 z-20 w-48 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
+          <Link role="menuitem" href={`/mvp3/agent?id=${wid}`} className={item}>
+            <Bot aria-hidden />
+            Agent details
+          </Link>
+          <Link role="menuitem" href={`/mvp3/agent?id=${wid}&edit=1`} className={item}>
+            <Pencil aria-hidden />
+            Edit agent
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ThreadView() {
   const { active, canvas, expanded } = useAgents();
   const end = useRef<HTMLDivElement>(null);
@@ -448,12 +493,22 @@ function ThreadView() {
   }, [count, progress]);
   if (!active) return null;
   const a = agentOf(active.agent);
+  // The agent behind this chat: runs carry it; an agent's seeded chat is matched by its thread id.
+  // Free-form questions have none, so they get no agent links.
+  const wid = active.workflow ?? FOLDERS.flatMap((f) => f.skills).find((s) => s.thread === active.id)?.id;
   return (
-    <section aria-label={active.title} className={cn("min-w-0 flex-1 flex-col", expanded && canvas ? "hidden" : "flex")}>
-      <header className="flex min-h-11 shrink-0 items-center gap-2 border-b border-(--color-border-default) px-4 py-2">
+    <section
+      aria-label={active.title}
+      className={cn(
+        "min-w-0 flex-1 flex-col",
+        expanded && canvas ? "hidden" : "flex",
+      )}
+    >
+      <header className={cn("flex h-11 shrink-0 items-center gap-2 border-b border-(--color-border-default) px-4", canvas && !expanded && "lg:border-b-transparent")}>
         <AgentMark agent={active.agent} size={24} />
         <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{active.title}</h1>
         <span className="hidden shrink-0 text-body-sm text-(--color-text-secondary) sm:inline">· {a.name}</span>
+        {wid && <AgentMenu wid={wid} />}
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className={cn("mx-auto flex w-full flex-col gap-6 px-4 py-6", canvas ? "max-w-[560px]" : "max-w-[720px] sm:px-6")}>
@@ -472,7 +527,7 @@ function ThreadView() {
 }
 
 export function AgentWorkspace() {
-  const { active, canvas, open, setCanvas } = useAgents();
+  const { active, canvas, open, setCanvas, expanded } = useAgents();
   const { stage } = useOnboarding();
   // ?chat=<id> opens a chat (links from an SMS or email update would land here); its report opens with it.
   const params = useSearchParams();
@@ -484,10 +539,90 @@ export function AgentWorkspace() {
     const first = t?.messages.find((m) => m.role === "agent" && "reply" in m);
     if (first && "reply" in first && first.reply.report) setCanvas(first.reply.report);
   }, [chat, open, setCanvas]);
+  const box = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useCanvasWidth();
+  const split = !!(active && canvas) && !expanded;
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
+    <div ref={box} className={cn("flex min-h-0 min-w-0 flex-1 transition-colors", split && "lg:bg-(--color-background-primary)")}>
       {active ? <ThreadView /> : stage === "welcome" ? <Welcome /> : <Home />}
-      {active && canvas && <Canvas id={canvas} />}
+      {split && <ResizeHandle box={box} width={width} onWidth={setWidth} />}
+      {active && canvas && <Canvas id={canvas} width={width} />}
+    </div>
+  );
+}
+
+// ───────── Resizable chat / panel split ─────────
+
+const CANVAS_KEY = "mvp3.canvasWidth";
+const CANVAS_MIN = 420;
+const CHAT_MIN = 360;
+
+/** The panel width the owner last dragged to, remembered in this browser (a convenience only: it can come back empty). */
+function useCanvasWidth() {
+  const [width, setWidth] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const n = Number(window.localStorage.getItem(CANVAS_KEY));
+      return n > 0 ? n : null;
+    } catch {
+      return null;
+    }
+  });
+  const save = (n: number | null) => {
+    setWidth(n);
+    try {
+      if (n) window.localStorage.setItem(CANVAS_KEY, String(Math.round(n)));
+      else window.localStorage.removeItem(CANVAS_KEY);
+    } catch {}
+  };
+  return [width, save] as const;
+}
+
+/** The line between the chat and the dashboard: drag it (or focus it and use ←/→) to resize; double-click resets. */
+function ResizeHandle({ box, width, onWidth }: { box: React.RefObject<HTMLDivElement | null>; width: number | null; onWidth: (n: number | null) => void }) {
+  const [drag, setDrag] = useState(false);
+  const clamp = (n: number) => {
+    const total = box.current?.getBoundingClientRect().width ?? 0;
+    return Math.max(CANVAS_MIN, Math.min(n, total - CHAT_MIN));
+  };
+  const current = () => width ?? (box.current?.lastElementChild as HTMLElement | null)?.getBoundingClientRect().width ?? CANVAS_MIN;
+  const fromPointer = (x: number) => clamp((box.current?.getBoundingClientRect().right ?? 0) - x);
+  return (
+    <div className="relative z-20 hidden w-0 lg:block">
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the chat and dashboard"
+        aria-valuenow={Math.round(current())}
+        aria-valuemin={CANVAS_MIN}
+        tabIndex={0}
+        title="Drag to resize · double-click to reset"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setDrag(true);
+          document.body.style.userSelect = "none";
+          document.body.style.cursor = "col-resize";
+        }}
+        onPointerMove={(e) => drag && onWidth(fromPointer(e.clientX))}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          setDrag(false);
+          document.body.style.userSelect = "";
+          document.body.style.cursor = "";
+        }}
+        onDoubleClick={() => onWidth(null)}
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          onWidth(clamp(current() + (e.key === "ArrowLeft" ? 32 : -32)));
+        }}
+        className="group absolute inset-y-0 -left-1.5 flex w-3 cursor-col-resize justify-center outline-none"
+      >
+        {/* A thin line that lights up on hover, focus and drag, with a grip in the middle. */}
+        <span className={cn("h-full w-0.5 transition-colors", drag ? "bg-(--color-primary)" : "bg-transparent group-hover:bg-(--color-border-darker) group-focus-visible:bg-(--color-focus-primary)")} />
+        <span className={cn("absolute top-1/2 h-8 w-1.5 -translate-y-1/2 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) shadow-sm transition-opacity", drag ? "opacity-100" : "opacity-60 group-hover:opacity-100 group-focus-visible:opacity-100")} />
+      </div>
     </div>
   );
 }

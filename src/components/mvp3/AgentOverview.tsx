@@ -12,6 +12,7 @@ import { runHistory, usd, type Run } from "@/lib/mvp3/runs";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { useOnboarding } from "./Onboarding";
+import { useAccount } from "./AccountSwitcher";
 
 // A live agent's home (/mvp3/agent?id=chargebacks), kept to what the owner scans:
 //  - header: who it is, one line of what it does, Edit and Run;
@@ -28,7 +29,7 @@ type Row = { id: string; at: number | null; status: "completed" | "running"; tri
 
 export function AgentOverview({ w }: { w: Workflow }) {
   const router = useRouter();
-  // A restaurant with no reports yet has no runs: never show another restaurant's history.
+  // A restaurant with no reports yet, or one that only just turned this agent on, has no past runs.
   const { threads, runAgent, duplicateAgent, openRun, dashboards, sample } = useAgents();
   // The signed-in owner's address: a new sign-up's own, not the demo account's.
   const { profile, isNew } = useOnboarding();
@@ -36,7 +37,9 @@ export function AgentOverview({ w }: { w: Workflow }) {
   const skill = FOLDERS.flatMap((f) => f.skills).find((s) => s.id === w.id);
   const dash = dashboards.find((d) => d.workflow === w.id && d.pinned);
   const trigger = w.triggers.find(isSchedule) ?? w.triggers[0];
-  const history = useMemo(() => (sample ? [] : runHistory(w.id, skill?.thread)), [sample, w.id, skill?.thread]);
+  const { account } = useAccount();
+  const noPast = sample || !!account.agentsOff;
+  const history = useMemo(() => (noPast ? [] : runHistory(w.id, skill?.thread)), [noPast, w.id, skill?.thread]);
 
   const rows: Row[] = useMemo(() => {
     // Runs started in this session: chats that begin with "Run <agent>".

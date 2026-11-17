@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { user } from "@/lib/mockData";
 import type { Account } from "@/lib/mvp3/accounts";
 import { useAccount } from "./AccountSwitcher";
-import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
+import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, weeklyPnl, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
 import { blankWorkflow, isSchedule, workflowOf, type Workflow } from "@/lib/mvp3/workflows";
 import { DEFAULT_CONFIG, customize, parseSchedule, scopeLabel, type Automation, type Dashboard } from "@/lib/mvp3/dashboards";
 
@@ -23,6 +23,8 @@ type Ctx = {
   open: (id: string) => void;
   newChat: () => void;
   send: (text: string) => void;
+  /** Home's tiles: ask a question in its own chat. Reopens the chat that already asked it, so repeat clicks don't pile up. */
+  ask: (question: string) => void;
   busy: boolean;
   canvas: CanvasId | null;
   setCanvas: (r: CanvasId | null) => void;
@@ -41,6 +43,8 @@ type Ctx = {
   // dashboards
   dashboards: Dashboard[];
   pinDashboard: (id: string, pinned: boolean) => void;
+  /** Open a pinned dashboard as its chat with the dashboard in the canvas. False when it has no chat to open. */
+  openDashboard: (id: string) => boolean;
   /** Pin (or unpin) a report the agent opened, e.g. the P&L Summary. Pinned reports are dashboards with `report`. */
   pinReport: (report: ReportId, pinned: boolean) => void;
   setAutomation: (id: string, a: Automation | undefined) => void;
@@ -73,10 +77,24 @@ function noReportsYet(agent: AgentReply["agent"], restaurant: string): AgentRepl
 
 const where = (a: Automation, title: string, report = false) => [a.email && `email the report to ${user.email}`, a.dashboard && (report ? `refresh the pinned ${title}` : `update the ${title} dashboard`)].filter(Boolean).join(" and ");
 
-/** The chats an account opens on: what its agents posted, or none for a restaurant that just joined. */
+/** The chats an account opens on: what its agents posted, or none for a restaurant that just joined or has no agent on yet. */
 function seedFor(account: Account) {
   setAccountStores(account.stores);
-  return account.stage === "new" ? [] : seedThreads();
+  if (account.stage === "new" || account.agentsOff) return [];
+  if (!account.home) return seedThreads();
+  // Taco Pros opens with Recent chats empty: its seeded chats only back the pinned dashboards and agent cards.
+  // The Chargebacks chat is where the Chargebacks dashboard was built, so asks there reshape it.
+  return seedThreads().map((t) => ({ ...t, hidden: true, unread: false, ...(t.id === "cb" ? { dashboard: "dash-chargebacks" } : {}) }));
+}
+
+/** Taco Pros (Account.home) opens with two dashboards already pinned (Daily P&L is not live, so it isn't pinned), each built in one of its seeded chats. */
+function seedDashboards(account: Account): Dashboard[] {
+  if (!account.home) return [];
+  const thu = "Every Thursday, 8:00 AM";
+  return [
+    { id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
+    { id: "report-payouts", title: REPORTS.payouts.title, workflow: "payouts", agent: "finance", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "payout", report: "payouts", automation: { schedule: thu, email: true, dashboard: true } },
+  ];
 }
 
 export function AgentsProvider({ children }: { children: React.ReactNode }) {
@@ -87,7 +105,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const [canvas, setCanvasState] = useState<CanvasId | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [workflows, setWorkflows] = useState<Record<string, Workflow>>({});
-  const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  const [dashboards, setDashboards] = useState<Dashboard[]>(() => seedDashboards(account));
   // Switching restaurant (top-bar AccountSwitcher) starts over on that account's chats and dashboards.
   const [seededFor, setSeededFor] = useState(account.id);
   if (seededFor !== account.id) {
@@ -96,7 +114,8 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     setActiveId(null);
     setCanvasState(null);
     setExpanded(false);
-    setDashboards([]);
+    setDashboards(seedDashboards(account));
+    setWorkflows({});
   }
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
@@ -134,7 +153,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       setCanvasState(null);
     } else {
       const t2 = target;
-      setThreads((ts) => ts.map((t) => (t.id === t2 ? { ...t, ...extra, messages: [...t.messages, { id: id(), role: "user", text: q }, pending] } : t)));
+      setThreads((ts) => ts.map((t) => (t.id === t2 ? { ...t, ...extra, hidden: false, messages: [...t.messages, { id: id(), role: "user", text: q }, pending] } : t)));
     }
     const done = target;
     reply.work.forEach((_, i) => {
@@ -151,7 +170,16 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
 
   // ── Agents ──
 
-  const getWorkflow = useCallback((wid: string) => workflows[wid] ?? workflowOf(wid), [workflows]);
+  // An account with no agent turned on (Saffron Grill) sees every preset as Not live until it's run.
+  const agentsOff = !!account.agentsOff;
+  const getWorkflow = useCallback(
+    (wid: string) => {
+      if (workflows[wid]) return workflows[wid];
+      const w = workflowOf(wid);
+      return w && agentsOff && w.kind === "preset" ? { ...w, state: "idle" as const } : w;
+    },
+    [workflows, agentsOff],
+  );
 
   /** A schedule and delivery set on a dashboard carry over to its agent, and the other way round. */
   const saveWorkflow = useCallback((w: Workflow) => {
@@ -177,6 +205,8 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
 
   const runAgent = useCallback(
     (w: Workflow) => {
+      // An agent that isn't live yet goes live on its first run.
+      if (w.state === "idle") setWorkflows((ws) => ({ ...ws, [w.id]: { ...(ws[w.id] ?? w), state: "live" } }));
       const steps = w.groups.flatMap((g) => g.steps).filter((s) => s.trim());
       const work = (steps.length ? steps : ["Read last week's data"]).slice(0, 6).map((s) => s.replace(/\.$/, ""));
       const agent = w.agent ?? "operations";
@@ -208,6 +238,8 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         setDashboards((ds) => (existing ? ds.map((x) => (x.id === dashId ? next : x)) : [...ds, next]));
       } else if (w.id === "payouts") {
         reply = { ...payoutCheck(), work };
+      } else if (w.id === "channel-pnl") {
+        reply = { ...weeklyPnl(), work };
       } else {
         reply = {
           agent,
@@ -246,12 +278,23 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
 
   const pinDashboard = useCallback((did: string, pinned: boolean) => setDashboards((ds) => ds.map((d) => (d.id === did ? { ...d, pinned } : d))), []);
 
+  const openDashboard = useCallback(
+    (did: string) => {
+      const d = dashboards.find((x) => x.id === did);
+      if (!d?.thread || !threads.some((t) => t.id === d.thread)) return false;
+      open(d.thread);
+      setCanvasState(d.report ?? `dash:${d.id}`);
+      return true;
+    },
+    [dashboards, threads, open],
+  );
+
   /** The agent each report belongs to, and the agent workflow that fills it (if any). */
   const reportDash = useCallback(
     (report: ReportId, thread?: string): Dashboard => ({
       id: `report-${report}`,
       title: REPORTS[report].title,
-      workflow: report === "payouts" ? "payouts" : "",
+      workflow: report === "payouts" ? "payouts" : report === "pnl" ? "channel-pnl" : "",
       agent: report === "chargebacks" ? "operations" : "finance",
       config: DEFAULT_CONFIG,
       pinned: false,
@@ -353,7 +396,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       // "Run Chargeback recovery" from any chat runs that agent.
       if (/^(run|start)\b/i.test(q)) {
         const name = q.replace(/^(run|start)\s+(the\s+)?/i, "").toLowerCase();
-        const skill = name && FOLDERS.flatMap((f) => f.skills).find((s) => s.state !== "soon" && (name.includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(name.replace(/ agent$/, ""))));
+        const skill = name && FOLDERS.flatMap((f) => f.skills).find((s) => (name.includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(name.replace(/ agent$/, ""))));
         const w = skill && getWorkflow(skill.id);
         if (w) return runAgent(w);
       }
@@ -363,11 +406,20 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     [activeId, threads, dashboards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account.name],
   );
 
+  const ask = useCallback(
+    (question: string) => {
+      const asked = threads.find((t) => t.messages[0]?.role === "user" && t.messages[0].text === question);
+      if (asked) return open(asked.id);
+      play(null, question, answer(question));
+    },
+    [threads, open, play],
+  );
+
   const active = threads.find((t) => t.id === activeId) ?? null;
   const busy = !!active?.messages.some((m) => "pending" in m);
   const value = useMemo<Ctx>(
-    () => ({ threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, setExpanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation, sample }),
-    [threads, active, open, newChat, send, busy, canvas, setCanvas, expanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, pinReport, setAutomation, sample],
+    () => ({ threads, active, open, newChat, send, ask, busy, canvas, setCanvas, expanded, setExpanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sample }),
+    [threads, active, open, newChat, send, ask, busy, canvas, setCanvas, expanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sample],
   );
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;
 }

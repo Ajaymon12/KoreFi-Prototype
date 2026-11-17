@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useDismiss } from "@/components/dashboard/useDismiss";
-import { Check, ChevronRight, CirclePlay, Clock, Copy, ExternalLink, Eye, EyeOff, Mail, MessageCircle, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
+import { Bot, Check, ChevronRight, CirclePlay, Clock, Plug, Copy, ExternalLink, Eye, EyeOff, Mail, MessageCircle, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
 import { ThinkingOrb } from "thinking-orbs";
 import { cn } from "@/lib/utils";
 import { asset } from "@/lib/asset";
-import type { AgentId } from "@/lib/mvp3/agents";
+import { FOLDERS, type AgentId } from "@/lib/mvp3/agents";
 import { AppLogo } from "@/components/onboarding/marks";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
@@ -131,6 +131,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (account.stage === "new" && path !== "/mvp3") router.push("/mvp3");
+    // Taco Pros (Account.home) lands on Home, unless a ?chat= link is opening one of its chats.
+    else if (account.home && path !== "/mvp3/home" && !new URLSearchParams(window.location.search).has("chat")) router.push("/mvp3/home");
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -424,19 +426,31 @@ export function emailsFor(restaurant: string) {
   return [`${slug}-reports@korefiops.com`, `${slug}-reports@restaurantledger.co`, `${slug}-reports@kitchenbooks.io`];
 }
 
+/** The agents a new restaurant can turn on in the welcome chat: every live one, with the data it reads. */
+const STARTERS = FOLDERS.flatMap((f) => f.skills.filter((s) => s.state === "live" && s.thread).map((s) => ({ id: s.id, name: s.name, blurb: s.blurb, access: s.access, agent: f.agent })));
+const starter = (id: string) => STARTERS.find((x) => x.id === id)!;
+const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : (xs[0] ?? ""));
+const needsApps = (ids: string[]) => ids.some((id) => starter(id).access.some((a) => a !== "POS"));
+const needsPos = (ids: string[]) => ids.filter((id) => starter(id).access.includes("POS"));
+/** Typed agent names: "chargebacks and payouts", "all of them". */
+const agentsIn = (q: string) =>
+  /\b(all|every|both)\b/i.test(q) ? STARTERS.map((x) => x.id) : STARTERS.filter((x) => (x.id === "chargebacks" ? /charge ?back|dispute/i : x.id === "payouts" ? /payout|reconcil/i : /p ?& ?l|profit|channel/i).test(q)).map((x) => x.id);
+
 export type AppState = "todo" | "verifying";
 type Entry =
   | { id: number; kind: "text"; text: string }
   | { id: number; kind: "user"; text: string }
+  | { id: number; kind: "agents" }
   | { id: number; kind: "pick" }
   | { id: number; kind: "email" }
   | { id: number; kind: "guide"; app: App }
   | { id: number; kind: "settings"; label?: string }
   | { id: number; kind: "phone"; channel: "text" | "WhatsApp" }
   | { id: number; kind: "reach" }
+  | { id: number; kind: "summary" }
     | { id: number; kind: "tour" };
 type Draft = Entry extends infer E ? (E extends Entry ? Omit<E, "id"> : never) : never;
-type WelcomeSnap = { log: Entry[]; queue: Draft[]; picked: App[] | null; reach: Reach | null; email: string; tourDismissed: boolean; wrapped: boolean; nextId: number; time: string };
+type WelcomeSnap = { log: Entry[]; queue: Draft[]; agents?: string[] | null; picked: App[] | null; reach: Reach | null; email: string; tourDismissed: boolean; wrapped: boolean; nextId: number; time: string };
 
 /** One-tap answers to "how should we reach you?". */
 const REACH = [
@@ -470,6 +484,8 @@ export function Welcome() {
   // Reopened from Recent chats: pick up the conversation where it was left.
   const [log, setLog] = useState<Entry[]>(snap?.log ?? []);
   const [queue, setQueue] = useState<Draft[]>(snap?.queue ?? []);
+  // Which agents the owner turned on (null: not answered yet). Older saved chats skipped this step.
+  const [agents, setAgents] = useState<string[] | null>(snap ? (snap.agents ?? STARTERS.map((x) => x.id)) : null);
   const [picked, setPicked] = useState<App[] | null>(snap?.picked ?? null);
   const [reach, setReach] = useState<Reach | null>(snap?.reach ?? null);
   const [email, setEmail] = useState(snap?.email ?? emails[0]);
@@ -479,8 +495,8 @@ export function Welcome() {
   const end = useRef<HTMLDivElement>(null);
   const [time] = useState(() => snap?.time ?? new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
   useEffect(() => {
-    saveWelcome({ log, queue, picked, reach, email, tourDismissed, wrapped: wrapped.current, nextId: nextId.current, time });
-  }, [log, queue, picked, reach, email, tourDismissed, time, saveWelcome]);
+    saveWelcome({ log, queue, agents, picked, reach, email, tourDismissed, wrapped: wrapped.current, nextId: nextId.current, time });
+  }, [log, queue, agents, picked, reach, email, tourDismissed, time, saveWelcome]);
 
   const say = useCallback((...d: Draft[]) => setQueue((q) => [...q, ...d]), []);
   const post = useCallback((d: Draft) => setLog((l) => [...l, { ...d, id: nextId.current++ } as Entry]), []);
@@ -492,10 +508,10 @@ export function Welcome() {
     opened.current = true;
     say(
       { kind: "text", text: `Hey ${firstName(profile.name)}! We're your KoreFi agents. We watch sales, payouts and chargebacks across your delivery apps, and check in when something changes.` },
-      { kind: "text", text: `First we need to see ${possessive(profile.restaurant)} reports. Which delivery apps do you sell on?` },
-      { kind: "pick" },
+      { kind: "text", text: "Which agents do you want to turn on? Pick as many as you like. You can change this any time." },
+      { kind: "agents" },
     );
-  }, [say, profile.name, profile.restaurant]);
+  }, [say, profile.name]);
 
   // The owner's own words post at once; the agents' lines arrive one at a time behind a typing bubble.
   useEffect(() => {
@@ -524,6 +540,27 @@ export function Welcome() {
       );
     },
     [say],
+  );
+
+  /** The agents to turn on → the data they need: delivery apps for all of them, Square for some. */
+  const chooseAgents = useCallback(
+    (ids: string[]) => {
+      if (agents || !ids.length) return;
+      setAgents(ids);
+      post({ kind: "user", text: list(ids.map((id) => starter(id).name)) });
+      const pos = needsPos(ids).map((id) => starter(id).name);
+      const posLine = pos.length ? ` ${list(pos)} also ${pos.length > 1 ? "match" : "matches"} them to your Square sales. The KoreFi team sets Square up with you once your apps are in.` : "";
+      if (!needsApps(ids)) {
+        wrapUp(`Done. The KoreFi team will set up ${list(ids.map((id) => starter(id).name))} with you.`);
+        return;
+      }
+      say(
+        { kind: "text", text: `Good choice. ${ids.length > 1 ? "They read" : "It reads"} your delivery-app reports.${posLine}` },
+        { kind: "text", text: `First we need to see ${possessive(profile.restaurant)} reports. Which delivery apps do you sell on?` },
+        { kind: "pick" },
+      );
+    },
+    [agents, post, say, wrapUp, profile.restaurant],
   );
 
   const choose = useCallback(
@@ -558,6 +595,7 @@ export function Welcome() {
           : r === "Email"
             ? [{ kind: "text", text: `Done. We'll email ${profile.email} when something changes.${after}` }]
             : [{ kind: "text", text: `Done. Updates will stay right here in your chats.${after}` }]) as Draft[]),
+        ...(r === "Text" || r === "WhatsApp" ? [] : ([{ kind: "text", text: "Here's where things stand." }, { kind: "summary" }] as Draft[])),
         { kind: "tour" },
       );
     },
@@ -571,9 +609,15 @@ export function Welcome() {
       setLog((l) => l.filter((e) => e.kind !== "tour"));
       setQueue((q) => q.filter((d) => d.kind !== "tour"));
       post({ kind: "user", text: p });
-      say({ kind: "text", text: `Saved. We'll ${channel === "text" ? `text ${p}` : `message ${p} on WhatsApp`} when something changes. You can change it any time in Settings.` }, { kind: "tour" });
+      // A number can be changed later; only the first save adds the summary.
+      const first = !log.some((e) => e.kind === "summary") && !queue.some((d) => d.kind === "summary");
+      say(
+        { kind: "text", text: `Saved. We'll ${channel === "text" ? `text ${p}` : `message ${p} on WhatsApp`} when something changes. You can change it any time in Settings.` },
+        ...(first ? ([{ kind: "text", text: "Here's where things stand." }, { kind: "summary" }] as Draft[]) : []),
+        { kind: "tour" },
+      );
     },
-    [setPhone, post, say],
+    [setPhone, post, say, log, queue],
   );
 
   const skip = useCallback(() => {
@@ -620,6 +664,11 @@ export function Welcome() {
 
   /** Typed answers: "DoorDash and Grubhub", "later", "connect Uber Eats", "done", "added it in DoorDash". */
   const intercept = (q: string) => {
+    if (!agents) {
+      const ids = agentsIn(q);
+      if (ids.length) return chooseAgents(ids), true;
+      return false;
+    }
     const found = appsIn(q);
     if (!picked) {
       if (found.length) return choose(found), true;
@@ -657,6 +706,8 @@ export function Welcome() {
             {e.text}
           </p>
         );
+      case "agents":
+        return <PickAgents key={e.id} answered={agents} onPick={chooseAgents} />;
       case "pick":
         return <PickApps key={e.id} answered={picked} onPick={choose} onSkip={skip} />;
       case "email":
@@ -695,6 +746,8 @@ export function Welcome() {
             ))}
           </div>
         );
+      case "summary":
+        return <SetupSummary key={e.id} agents={agents ?? []} apps={(picked ?? []).filter((a) => apps[a] === "verifying")} todo={(picked ?? []).filter((a) => apps[a] === "todo")} reach={reach} phone={phone} email={profile.email} onLeave={finish} />;
       case "tour":
         if (tourDismissed) return null;
         return (
@@ -767,6 +820,119 @@ export function Welcome() {
 }
 
 /** "Which delivery apps do you sell on?" — tap the apps, then Continue. Frozen once answered. */
+/** The wrap-up: what's set up, what the KoreFi team does next, and where to go from here. */
+function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { agents: string[]; apps: App[]; todo: App[]; reach: Reach | null; phone: string; email: string; onLeave: () => void }) {
+  const reachText = reach === "Email" ? `Email to ${email}` : reach === "Text" ? `Text to ${phone}` : reach === "WhatsApp" ? `WhatsApp to ${phone}` : "Here in your chats";
+  const setup = [
+    { label: "Agents on", value: agents.length ? list(agents.map((id) => starter(id).name)) : "None yet" },
+    { label: "Delivery apps", value: apps.length ? `${names(apps)} · KoreFi is verifying` : "Not connected yet", sub: todo.length ? `${names(todo)} still to add` : undefined },
+    { label: "Updates", value: reachText },
+  ];
+  const next = [
+    "The KoreFi team accepts the invite and maps each app's stores to your locations.",
+    "We check your first reports. This usually takes about 1 business day.",
+    "Each agent posts its first update here, then runs on its schedule.",
+  ];
+  const explore = [
+    { href: "/mvp3/agents", label: "Edit your agents", sub: "Change steps, schedules and what they email you", Icon: Bot },
+    { href: "/mvp3/integrations", label: "Integrations", sub: "Check what's connected, or add an app", Icon: Plug },
+    { href: "/mvp3/settings", label: "Settings", sub: "Where updates reach you", Icon: UserRoundCog },
+  ];
+  return (
+    <div className={cn(card, "space-y-4 p-4")}>
+      <section aria-label="Your setup">
+        <h3 className="text-body-sm font-medium text-(--color-text-secondary)">Your setup</h3>
+        <dl className="mt-2 divide-y divide-(--color-border-default) rounded-medium border border-(--color-border-default)">
+          {setup.map((x) => (
+            <div key={x.label} className="grid grid-cols-[120px_1fr] gap-3 px-3 py-2 text-body-md">
+              <dt className="text-(--color-text-secondary)">{x.label}</dt>
+              <dd className="min-w-0 text-(--color-text-primary)">
+                {x.value}
+                {x.sub && <span className="block text-body-sm text-(--color-text-secondary)">{x.sub}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section aria-label="What happens next">
+        <h3 className="text-body-sm font-medium text-(--color-text-secondary)">What happens next</h3>
+        <ol className="mt-2 space-y-1.5">
+          {next.map((t, i) => (
+            <li key={i} className="flex gap-2.5 text-body-md text-(--color-text-primary)">
+              <span aria-hidden className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-circle bg-(--color-neutral-light) text-[11px] font-medium text-(--color-text-secondary)">{i + 1}</span>
+              {t}
+            </li>
+          ))}
+        </ol>
+      </section>
+      <section aria-label="While you wait">
+        <h3 className="text-body-sm font-medium text-(--color-text-secondary)">While you wait</h3>
+        <ul className="mt-2 grid gap-2 sm:grid-cols-3">
+          {explore.map(({ href, label, sub, Icon }) => (
+            <li key={href}>
+              <Link href={href} onClick={onLeave} className="flex h-full flex-col gap-1 rounded-medium border border-(--color-border-default) p-3 outline-none transition-colors hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+                <span className="flex items-center gap-1.5 text-body-md font-medium text-(--color-text-primary)">
+                  <Icon className="size-4 text-(--color-text-secondary)" aria-hidden />
+                  {label}
+                </span>
+                <span className="text-body-sm text-(--color-text-secondary)">{sub}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-body-sm text-(--color-text-secondary)">Or ask your agents anything below.</p>
+      </section>
+    </div>
+  );
+}
+
+/** One row per live agent: its face, name, what it does and what it reads. Multi-select, then Continue. */
+function PickAgents({ answered, onPick }: { answered: string[] | null; onPick: (ids: string[]) => void }) {
+  const [sel, setSel] = useState<string[]>([]);
+  const done = answered !== null;
+  const on = (id: string) => (done ? answered.includes(id) : sel.includes(id));
+  const allOn = sel.length === STARTERS.length;
+  return (
+    <div className={card}>
+      <ul className="space-y-2">
+        {STARTERS.map((x) => (
+          <li key={x.id}>
+            <button
+              type="button"
+              disabled={done}
+              aria-pressed={on(x.id)}
+              onClick={() => setSel((s) => (s.includes(x.id) ? s.filter((v) => v !== x.id) : [...s, x.id]))}
+              className={cn(
+                "relative flex w-full items-start gap-3 rounded-large border p-3 text-left outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) disabled:cursor-default",
+                on(x.id) ? "border-(--color-focus-primary) bg-(--brand-100)" : "border-(--color-border-default) enabled:hover:border-(--color-border-darker)",
+                done && !on(x.id) && "opacity-50",
+              )}
+            >
+              <AgentAvatar agent={x.agent} size={28} />
+              <span className="min-w-0 flex-1 pr-6">
+                <span className="block text-body-md font-medium text-(--color-text-primary)">{x.name}</span>
+                <span className="block text-body-sm text-(--color-text-secondary)">{x.blurb}</span>
+                <span className="mt-1 block text-body-sm text-(--color-text-tertiary)">Reads {list(x.access.map((a) => (a === "POS" ? "Square" : a)))}</span>
+              </span>
+              {on(x.id) && <Check className="absolute top-3 right-3 size-4 text-(--brand-900)" aria-hidden />}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {!done && (
+        <div className="mt-3 flex justify-end gap-2">
+          <Button type="text" size="small" onClick={() => setSel(allOn ? [] : STARTERS.map((x) => x.id))}>
+            {allOn ? "Clear" : "Select all"}
+          </Button>
+          <Button type="primary" size="small" disabled={!sel.length} onClick={() => onPick(STARTERS.filter((x) => sel.includes(x.id)).map((x) => x.id))}>
+            Continue
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PickApps({ answered, onPick, onSkip }: { answered: App[] | null; onPick: (as: App[]) => void; onSkip: () => void }) {
   const [sel, setSel] = useState<App[]>([]);
   const done = answered !== null;

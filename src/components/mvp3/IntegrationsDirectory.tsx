@@ -15,6 +15,7 @@ import { update, useOnboarding } from "@/lib/org/store";
 import { user } from "@/lib/mockData";
 import { FOLDERS } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
+import { useAgents } from "./AgentsProvider";
 import { BrandMark } from "./BrandMark";
 import { AppCard, EmailCard, GUIDE, emailsFor, useOnboarding as useFirstVisit, type App } from "./Onboarding";
 
@@ -232,7 +233,8 @@ function Directory({ items, onOpen }: { items: Item[]; onOpen: (id: SourceId) =>
 
 function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: boolean; onBack: () => void; onConnect: () => void; onDisconnect: () => void }) {
   const router = useRouter();
-  const skills = skillsUsing(c);
+  const { getWorkflow } = useAgents();
+  const skills = skillsUsing(c).map((s) => ({ ...s, state: getWorkflow(s.id)?.state ?? s.state }));
   const { blurb, reads } = info(c);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -330,17 +332,11 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
                 <ul className="flex flex-wrap gap-1.5">
                   {skills.map((s) => (
                     <li key={s.id}>
-                      {s.state === "soon" ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary)">
-                          <AgentAvatar agent={s.agent} size={20} />
-                          {s.name}
-                          <span className="text-(--color-text-tertiary)">· soon</span>
-                        </span>
-                      ) : (
+                      {(
                         <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
                           <AgentAvatar agent={s.agent} size={20} />
                           {s.name}
-                          {s.state !== "live" && <span className="text-(--color-text-tertiary)">· learning</span>}
+                          {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not live" : "learning"}</span>}
                         </button>
                       )}
                     </li>
