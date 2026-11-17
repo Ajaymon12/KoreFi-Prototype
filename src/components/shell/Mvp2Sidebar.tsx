@@ -311,14 +311,93 @@ export function Mvp2Sidebar() {
   );
 }
 
+// ---- Phone drawer ----
+
+/** The list for the drawer under lg: the same pages, built for a thumb. Rows are 48px (the sidebar's are 30), each
+ *  coworker is one row that opens and closes (the desktop's icon-to-chevron swap needs a hover) with its chevron always
+ *  showing, and the current page is a tinted row. Tapping a report follows it and closes the drawer. */
+function MobileWorkspace({ path, tab, onFollow }: { path: string; tab: string | null; onFollow: () => void }) {
+  const current = groupOf(path);
+  const [openId, setOpenId] = useState<string | null>(current);
+  const fresh = useNewHrefs();
+  const row = "flex min-h-12 w-full items-center gap-3 rounded-medium px-3 text-left text-body-md outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
+  const tile = (on: boolean) => cn("grid size-8 shrink-0 place-items-center rounded-(--module-radius) [&_svg]:size-4", on ? "bg-(--module-tint) text-(--module-strong)" : "bg-(--color-neutral-lightest) text-(--color-text-secondary)");
+  // The drawer sits in the top bar, outside the page's data-module, so it carries the module's tints itself.
+  return (
+    <div data-module="mvp">
+      <p className="px-3 pt-1 pb-1.5 text-body-sm text-(--color-text-secondary)">Workspace</p>
+      <ul>
+        {MVP2_TOP.map(({ label, href, Icon }) => {
+          const on = path === href;
+          return (
+            <li key={href}>
+              <Link href={href} onClick={onFollow} aria-current={on ? "page" : undefined} className={cn(row, on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-primary) active:bg-(--color-neutral-light)")}>
+                <span className={tile(on)}>
+                  <Icon aria-hidden />
+                </span>
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="px-3 pt-5 pb-1.5 text-body-sm text-(--color-text-secondary)">Coworkers</p>
+      <ul className="flex flex-col gap-0.5">
+        {MVP2_GROUPS.map((g) => {
+          const open = openId === g.id;
+          const holds = current === g.id;
+          const hasNew = g.items.some((i) => i.href && fresh.has(i.href));
+          return (
+            <li key={g.id}>
+              <button type="button" aria-expanded={open} onClick={() => setOpenId(open ? null : g.id)} className={cn(row, "text-(--color-text-primary) active:bg-(--color-neutral-light)", holds && "font-medium")}>
+                <span className={tile(holds)}>
+                  <g.Icon aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1 truncate">{g.label}</span>
+                {hasNew && !open && <NewTag />}
+                <ChevronDown aria-hidden className={cn("size-4 shrink-0 text-(--color-text-tertiary) transition-transform duration-200", !open && "-rotate-90")} />
+              </button>
+              <div className={cn("grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")} inert={!open}>
+                <div className="min-h-0 overflow-hidden">
+                  <ul className="mt-0.5 mr-1 mb-1.5 ml-[27px] space-y-0.5 border-l border-(--color-border-default) pl-2">
+                    {g.items.map((item) => {
+                      const on = isCurrent(item, g.items, path, tab);
+                      const cls = "flex min-h-11 w-full items-center gap-2 rounded-medium px-3 text-body-md outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
+                      return (
+                        <li key={item.label}>
+                          {item.href ? (
+                            <Link href={item.href} onClick={onFollow} aria-current={on ? "page" : undefined} className={cn(cls, on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-secondary) active:bg-(--color-neutral-light)")}>
+                              <span className="min-w-0 truncate">{item.label}</span>
+                              {fresh.has(item.href) && <NewTag />}
+                            </Link>
+                          ) : (
+                            <span aria-disabled="true" className={cn(cls, "text-(--color-text-tertiary)")}>
+                              <span className="min-w-0 truncate">{item.label}</span>
+                              {item.soon && <Soon />}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 /** The same list in the top-bar drawer under lg (always wide). */
 export function Mvp2MobileNav() {
   const path = usePathname();
   return (
     <NavDrawer>
       {(close) => (
-        <Suspense fallback={<Workspace path={path} tab={null} onFollow={close} />}>
-          <WithTab>{(tab) => <Workspace path={path} tab={tab} onFollow={close} />}</WithTab>
+        <Suspense fallback={<MobileWorkspace path={path} tab={null} onFollow={close} />}>
+          <WithTab>{(tab) => <MobileWorkspace path={path} tab={tab} onFollow={close} />}</WithTab>
         </Suspense>
       )}
     </NavDrawer>

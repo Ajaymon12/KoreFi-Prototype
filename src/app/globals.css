@@ -103,3 +103,8 @@
 @media (prefers-reduced-motion: reduce) {
   .kf-row-in, .kf-pin-in, .kf-shimmer, .kf-ping, .kf-fade, .kf-pop { animation: none; }
 }
+/* MVP 3 onboarding (components/mvp3/Onboarding): the setup ring breathes while the agents get ready. */
+@keyframes kf-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.82; }
+}
