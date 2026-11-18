@@ -26,6 +26,8 @@ export type Chargeback = {
   decided?: string;
   windowCloses?: string;
   reason: string;
+  /** The dish the order was charged back for. */
+  item: string;
   detail: string;
 };
 export type Week = { year: number; w: number; start: Date };
@@ -83,6 +85,7 @@ export function chargebacks(weeks: readonly Week[], from: number, to: number, st
         const winShare = report[app].moneyBack / total;
         weights.forEach((wt, k) => {
           const s = seed + k;
+          const item = ITEMS[hash(s + "item") % ITEMS.length];
           const amount = Math.round((total * wt * 100) / sumW) / 100;
           const date = start.getTime() + Math.floor(rand(s + "d") * 7) * DAY;
           const decidedAt = date + (6 + Math.floor(rand(s + "r") * 8)) * DAY;
@@ -101,7 +104,8 @@ export function chargebacks(weeks: readonly Week[], from: number, to: number, st
             decided: status === "disputing" ? undefined : iso(decidedAt),
             windowCloses: days ? iso(date + days * DAY) : undefined,
             reason: r.reason,
-            detail: r.detail(ITEMS[hash(s + "item") % ITEMS.length], 1 + (hash(s + "n") % 2)),
+            item,
+            detail: r.detail(item, 1 + (hash(s + "n") % 2)),
           });
         });
       }

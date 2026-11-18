@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, MoreHorizontal, Play, Plus, Search, SquareArrowOutUpRight } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Play, Plus, Search, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -58,7 +58,7 @@ const BADGE: Record<Kind,{ label: string; cls: string }> = {
 
 // ───────── Card ─────────
 
-function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDuplicate: () => void }) {
+function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDuplicate?: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(ref, open, () => setOpen(false));
@@ -80,16 +80,22 @@ function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDu
             <SquareArrowOutUpRight aria-hidden />
             Open
           </Link>
+          <Link role="menuitem" href={`/mvp3/agent?id=${c.id}&edit=1`} className={item}>
+            <Pencil aria-hidden />
+            Edit
+          </Link>
           {onRun && (
             <button role="menuitem" type="button" onClick={onRun} className={item}>
               <Play aria-hidden />
               Run now
             </button>
           )}
-          <button role="menuitem" type="button" onClick={onDuplicate} className={item}>
-            <Copy aria-hidden />
-            Duplicate
-          </button>
+          {onDuplicate && (
+            <button role="menuitem" type="button" onClick={onDuplicate} className={item}>
+              <Copy aria-hidden />
+              Duplicate
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -99,6 +105,7 @@ function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDu
 export function AgentCard({ c, real }: { c: Card; real: boolean }) {
   const router = useRouter();
   const { getWorkflow, runAgent, duplicateAgent } = useAgents();
+  const limited = !!useAccount().account.limited;
   const w = getWorkflow(c.id);
   const b = BADGE[c.kind];
   return (
@@ -132,7 +139,7 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
                   }
                 : undefined
             }
-            onDuplicate={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)}
+            onDuplicate={limited ? undefined : () => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)}
           />
         )}
       </div>
@@ -211,7 +218,7 @@ export function AgentsPage() {
       <PageHeader
         title="Agents"
         actions={
-          <button type="button" onClick={() => router.push(`/mvp3/agent?id=${newAgent()}`)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-medium bg-(--color-primary) px-3 text-body-sm font-medium text-white hover:opacity-90", focus, "focus-visible:outline-offset-1")}>
+          !account.limited && <button type="button" onClick={() => router.push(`/mvp3/agent?id=${newAgent()}`)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-medium bg-(--color-primary) px-3 text-body-sm font-medium text-white hover:opacity-90", focus, "focus-visible:outline-offset-1")}>
             <Plus className="size-4" aria-hidden />
             New agent
           </button>

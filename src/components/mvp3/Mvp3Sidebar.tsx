@@ -1,11 +1,13 @@
 "use client";
+import { usePath } from "@/lib/mvp3/usePath";
 import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Blocks, Bot, CalendarClock, FileText, House, LayoutDashboard, MessagesSquare, PanelLeftClose, PanelLeftOpen, Search, Settings, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavDrawer } from "@/components/shell/NavDrawer";
 import { navItemClass } from "@/components/shell/navItem";
+import { CHAT_BUCKETS, chatBucket, type Thread } from "@/lib/mvp3/agents";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { ChatSearch, openChatSearch } from "./ChatSearch";
@@ -17,19 +19,27 @@ import { useAccount } from "./AccountSwitcher";
 //  - "Dashboards": what the owner pinned from a chat (shown once there is one).
 //  - "Recent chats": every thread, unread ones bold with a dot. Picking one opens it on /mvp3.
 //  - Integrations and Settings pinned to the bottom.
+//  - A `limited` account (Masa Kitchen) drops New chat and Integrations.
 //  - Narrow mode: an icon column (button or "[", remembered per browser) with hover flyouts.
 
 const HOME = "/mvp3";
 /** The live summary page, above New chat. Only accounts with `home` (Taco Pros) get it. */
 const HOME_PAGE = "/mvp3/home";
 const useHasHome = () => !!useAccount().account.home;
+/** A `limited` account (Masa Kitchen) gets no New chat and no Integrations. */
+const useLimited = () => !!useAccount().account.limited;
+
+/** Where Home goes: the Home page, for every account with one (Masa Kitchen included). */
+function useHomeNav(path: string) {
+  return { href: HOME_PAGE, on: path === HOME_PAGE, onClick: undefined as (() => void) | undefined };
+}
 
 /** Open a pinned dashboard in its chat, with the dashboard in the canvas, and fold the sidebar to icons so the
  *  chat and dashboard get the room. False (do nothing) when the dashboard has no chat; the caller falls back to its page. */
 export function useOpenPinned() {
   const { openDashboard } = useAgents();
   const router = useRouter();
-  const path = usePathname();
+  const path = usePath();
   return (id: string) => {
     if (!openDashboard(id)) return false;
     setNarrow(true);
@@ -91,6 +101,10 @@ const BOTTOM = [
   { href: "/mvp3/integrations", label: "Integrations", Icon: Blocks },
   { href: "/mvp3/settings", label: "Settings", Icon: Settings },
 ];
+const useBottom = () => {
+  const limited = useLimited();
+  return limited ? BOTTOM.filter((b) => b.href !== "/mvp3/integrations") : BOTTOM;
+};
 
 // ---- Narrow mode, remembered per browser ----
 
@@ -128,7 +142,7 @@ export function StatusDot({ status }: { status: "watching" | "learning" }) {
 
 /** Open a chat or start a new one; both live on /mvp3, so come back there from another page. */
 function useGo() {
-  const path = usePathname();
+  const path = usePath();
   const router = useRouter();
   return (fn: () => void) => {
     fn();
@@ -153,30 +167,42 @@ function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
   const fresh = useNewChat(path);
   const go = useGo();
   const hasHome = useHasHome();
+  const limited = useLimited();
+  const home = useHomeNav(path);
   return (
     <ul data-tour="workspace" className="flex flex-col gap-1">
       {hasHome && (
         <li>
-          <Link href={HOME_PAGE} onClick={onFollow} aria-current={path === HOME_PAGE ? "page" : undefined} className={navItemClass(path === HOME_PAGE)}>
+          <Link
+            href={home.href}
+            onClick={() => {
+              home.onClick?.();
+              onFollow?.();
+            }}
+            aria-current={home.on ? "page" : undefined}
+            className={navItemClass(home.on)}
+          >
             <House aria-hidden />
             Home
           </Link>
         </li>
       )}
-      <li>
-        <button
-          type="button"
-          onClick={() => {
-            go(fresh.start);
-            onFollow?.();
-          }}
-          aria-current={fresh.on ? "page" : undefined}
-          className={cn(navItemClass(fresh.on), "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)")}
-        >
-          <SquarePen aria-hidden />
-          New chat
-        </button>
-      </li>
+      {!limited && (
+        <li>
+          <button
+            type="button"
+            onClick={() => {
+              go(fresh.start);
+              onFollow?.();
+            }}
+            aria-current={fresh.on ? "page" : undefined}
+            className={cn(navItemClass(fresh.on), "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)")}
+          >
+            <SquarePen aria-hidden />
+            New chat
+          </button>
+        </li>
+      )}
       <li>
         <button
           type="button"
@@ -202,9 +228,10 @@ function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
 }
 
 function BottomLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
+  const bottom = useBottom();
   return (
-    <ul data-tour="settings" className="mt-auto flex flex-col gap-1 pt-4">
-      {BOTTOM.map(({ href, label, Icon }) => (
+    <ul data-tour="settings" className="flex flex-col gap-1 pt-2">
+      {bottom.map(({ href, label, Icon }) => (
         <li key={href}>
           <Link href={href} onClick={onFollow} aria-current={path.startsWith(href) ? "page" : undefined} className={navItemClass(path.startsWith(href))}>
             <Icon aria-hidden />
@@ -230,9 +257,22 @@ function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: ()
       bold && "font-medium text-(--color-text-primary)",
     );
   const welcomeOn = path === HOME && !active && stage === "welcome";
+  // Grouped by when they happened: Today, Yesterday, Previous 30 days. A heading shows only when there's more than one group.
+  const groups = CHAT_BUCKETS.map((b) => ({ b, items: threads.filter((t) => chatBucket(t.at) === b) })).filter((g) => g.items.length);
+  const headed = groups.length > 1;
+  const rows = groups.flatMap((g) => [{ head: g.b } as const, ...g.items.map((t) => ({ t }))]);
   return (
     <ul className="flex flex-col gap-0.5">
-      {threads.map((t) => {
+      {rows.map((r, i) => {
+        if ("head" in r) {
+          if (!headed) return null;
+          return (
+            <li key={`h-${r.head}`} role="presentation" className={cn("px-3 text-body-sm text-(--color-text-tertiary)", i > 0 ? "pt-3 pb-1" : "pb-1")}>
+              {r.head}
+            </li>
+          );
+        }
+        const t: Thread = r.t;
         const on = path === HOME && active?.id === t.id;
         return (
           <li key={t.id}>
@@ -291,21 +331,47 @@ function PinnedSection({ path, big = false, onFollow }: { path: string; big?: bo
 
 /** The full list: Workspace, Dashboards, Chats, then Integrations and Settings. */
 function Workspace({ path, onCollapse }: { path: string; onCollapse: () => void }) {
+  // Workspace, Dashboards and the Recent chats heading stay put at the top, Integrations and Settings at the bottom; only the chats scroll.
+  // The bottom links cast a soft shadow only while chats run on below them; a short list gets no separator.
+  const scroller = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const check = () => setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", check);
+      ro.disconnect();
+    };
+  }, []);
   return (
     <>
-      <div className="flex items-center justify-between px-2 pt-1 pb-2">
-        <p className="text-body-sm text-(--color-text-secondary)">Workspace</p>
-        <button type="button" onClick={onCollapse} aria-label="Collapse sidebar" title="Collapse sidebar  [" className="-mr-1 grid size-7 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
-          <PanelLeftClose className="size-4" aria-hidden />
-        </button>
+      <div className="shrink-0">
+        <div className="flex items-center justify-between px-2 pt-1 pb-2">
+          <p className="text-body-sm text-(--color-text-secondary)">Workspace</p>
+          <button type="button" onClick={onCollapse} aria-label="Collapse sidebar" title="Collapse sidebar  [" className="-mr-1 grid size-7 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+            <PanelLeftClose className="size-4" aria-hidden />
+          </button>
+        </div>
+        <TopLinks path={path} />
+        <PinnedSection path={path} />
       </div>
-      <TopLinks path={path} />
-      <PinnedSection path={path} />
-      <div data-tour="chats">
-        <p className="px-2 pt-4 pb-2 text-body-sm text-(--color-text-secondary)">Recent chats</p>
-        <ChatList path={path} />
+      <div data-tour="chats" className="flex min-h-0 flex-1 flex-col">
+        <p className="shrink-0 px-2 pt-4 pb-2 text-body-sm text-(--color-text-secondary)">Recent chats</p>
+        <div ref={scroller} className="-mx-3 min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+          <div>
+            <ChatList path={path} />
+          </div>
+        </div>
       </div>
-      <BottomLinks path={path} />
+      <div className={cn("relative z-10 -mx-3 shrink-0 bg-(--color-background-primary) px-3 pb-1 transition-shadow duration-200", more && "shadow-[0_-8px_16px_-8px_rgb(0_0_0/0.12)]")}>
+        <BottomLinks path={path} />
+      </div>
     </>
   );
 }
@@ -321,6 +387,9 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
   const fresh = useNewChat(path);
   const go = useGo();
   const hasHome = useHasHome();
+  const limited = useLimited();
+  const bottom = useBottom();
+  const home = useHomeNav(path);
   const [fly, setFly] = useState<Flyout | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keep = () => {
@@ -357,16 +426,18 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
       <ul className="mt-2 flex flex-col items-center gap-1">
         {hasHome && (
           <li>
-            <Link href={HOME_PAGE} aria-label="Home" aria-current={path === HOME_PAGE ? "page" : undefined} className={icon(path === HOME_PAGE)} {...hover("home", label("Home"))}>
+            <Link href={home.href} onClick={home.onClick} aria-label="Home" aria-current={home.on ? "page" : undefined} className={icon(home.on)} {...hover("home", label("Home"))}>
               <House aria-hidden />
             </Link>
           </li>
         )}
-        <li>
-          <button type="button" onClick={() => go(fresh.start)} aria-label="New chat" className={icon(fresh.on)} {...hover("new", label("New chat"))}>
-            <SquarePen aria-hidden />
-          </button>
-        </li>
+        {!limited && (
+          <li>
+            <button type="button" onClick={() => go(fresh.start)} aria-label="New chat" className={icon(fresh.on)} {...hover("new", label("New chat"))}>
+              <SquarePen aria-hidden />
+            </button>
+          </li>
+        )}
         <li>
           <button type="button" onClick={openChatSearch} aria-label="Search chats" className={icon(false)} {...hover("search", label("Search chats  ⌘K"))}>
             <Search aria-hidden />
@@ -416,7 +487,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
         </li>
       </ul>
       <ul className="mt-auto flex flex-col items-center gap-1 pt-3">
-        {BOTTOM.map(({ href, label: l, Icon }) => (
+        {bottom.map(({ href, label: l, Icon }) => (
           <li key={href}>
             <Link href={href} aria-label={l} aria-current={path.startsWith(href) ? "page" : undefined} className={icon(path.startsWith(href))} {...hover(href, label(l))}>
               <Icon aria-hidden />
@@ -435,7 +506,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
 }
 
 export function Mvp3Sidebar() {
-  const path = usePathname();
+  const path = usePath();
   const narrow = useNarrow();
 
   // "[" folds and unfolds the sidebar, unless the user is typing (the composer is a textarea).
@@ -452,7 +523,7 @@ export function Mvp3Sidebar() {
 
   return (
     <aside className={cn("hidden shrink-0 flex-col overflow-hidden border-r border-(--color-border-default) bg-(--color-background-primary) transition-[width] duration-200 ease-out lg:flex", narrow ? "w-14" : "w-[220px]")}>
-      <nav aria-label="Workspace" className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto py-2", narrow ? "items-center px-2" : "px-3")}>
+      <nav aria-label="Workspace" className={cn("flex min-h-0 flex-1 flex-col py-2", narrow ? "items-center overflow-y-auto px-2" : "px-3")}>
         {narrow ? <Narrow path={path} onExpand={() => setNarrow(false)} /> : <Workspace path={path} onCollapse={() => setNarrow(true)} />}
       </nav>
       {/* rendered into <body>, so it works under lg too, where this sidebar is hidden */}
@@ -473,6 +544,9 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
   const rowOn = (on: boolean) => cn(row, on ? "bg-(--module-tint) font-medium text-(--color-text-primary)" : "text-(--color-text-primary) active:bg-(--color-neutral-light)");
   const homeOn = fresh.on;
   const hasHome = useHasHome();
+  const limited = useLimited();
+  const bottom = useBottom();
+  const home = useHomeNav(path);
   // The drawer sits in the top bar, outside the page's data-module, so it carries the module's tints itself.
   return (
     <div data-module="mvp">
@@ -480,30 +554,40 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
       <ul>
         {hasHome && (
           <li>
-            <Link href={HOME_PAGE} onClick={onFollow} aria-current={path === HOME_PAGE ? "page" : undefined} className={rowOn(path === HOME_PAGE)}>
-              <span className={tile(path === HOME_PAGE)}>
+            <Link
+              href={home.href}
+              onClick={() => {
+                home.onClick?.();
+                onFollow();
+              }}
+              aria-current={home.on ? "page" : undefined}
+              className={rowOn(home.on)}
+            >
+              <span className={tile(home.on)}>
                 <House aria-hidden />
               </span>
               Home
             </Link>
           </li>
         )}
-        <li>
-          <button
-            type="button"
-            onClick={() => {
-              go(fresh.start);
-              onFollow();
-            }}
-            aria-current={homeOn ? "page" : undefined}
-            className={rowOn(homeOn)}
-          >
-            <span className={tile(homeOn)}>
-              <SquarePen aria-hidden />
-            </span>
-            New chat
-          </button>
-        </li>
+        {!limited && (
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                go(fresh.start);
+                onFollow();
+              }}
+              aria-current={homeOn ? "page" : undefined}
+              className={rowOn(homeOn)}
+            >
+              <span className={tile(homeOn)}>
+                <SquarePen aria-hidden />
+              </span>
+              New chat
+            </button>
+          </li>
+        )}
         <li>
           <button
             type="button"
@@ -519,7 +603,7 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
             Search chats
           </button>
         </li>
-        {[{ href: AGENTS_HREF, label: "Agents", Icon: Bot }, ...BOTTOM].map(({ href, label, Icon }) => {
+        {[{ href: AGENTS_HREF, label: "Agents", Icon: Bot }, ...bottom].map(({ href, label, Icon }) => {
           const on = href === AGENTS_HREF ? onAgents(path) : path.startsWith(href);
           return (
             <li key={href}>
@@ -541,7 +625,7 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
 }
 
 export function Mvp3MobileNav() {
-  const path = usePathname();
+  const path = usePath();
   return (
     <NavDrawer>
       {(close) => <MobileWorkspace path={path} onFollow={close} />}

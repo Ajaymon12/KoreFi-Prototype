@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDismiss } from "@/components/dashboard/useDismiss";
@@ -9,7 +9,9 @@ import { ACCOUNTS, DEFAULT_ACCOUNT, type Account } from "@/lib/mvp3/accounts";
 
 // /mvp3's top-bar switcher: which restaurant account is open (lib/mvp3/accounts). Just the restaurant name,
 // no branch step: agents always look across every outlet. Switching resets the chats to that account's.
-// Prototype: in memory; every refresh opens Little Pho at sign-up (DEFAULT_ACCOUNT).
+// Prototype: the pick is kept for the browser tab (sessionStorage), so a refresh or a link stays on that restaurant.
+// A tab's first visit opens Little Pho at sign-up (DEFAULT_ACCOUNT), or Taco Pros on its own Home link.
+// Little Pho still replays its welcome flow on every refresh: that lives in memory (Onboarding).
 
 type Ctx = { account: Account; setAccount: (id: string) => void };
 const AccountContext = createContext<Ctx | null>(null);
@@ -20,10 +22,36 @@ export function useAccount() {
   return c;
 }
 
+const KEY = "korefi.mvp3.account";
+const read = () => {
+  try {
+    return window.sessionStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+};
+
+const noop = () => () => {};
+const HOME_ID = ACCOUNTS.find((a) => a.home)?.id ?? null;
+
 export function AccountProvider({ children }: { children: React.ReactNode }) {
-  const [account, set] = useState<Account>(DEFAULT_ACCOUNT);
-  const setAccount = useCallback((id: string) => set(ACCOUNTS.find((a) => a.id === id) ?? DEFAULT_ACCOUNT), []);
-  return <AccountContext.Provider value={{ account, setAccount }}>{children}</AccountContext.Provider>;
+  // The static site renders before it can read the tab's pick, so the pages wait for the browser: otherwise they
+  // mount as Little Pho for a moment and its redirects (new account → the welcome chat) throw Taco Pros off its Home.
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
+  const [picked, setPicked] = useState<string | null>(null);
+  // Worked out once, on load: the tab's saved pick, else Taco Pros when the link was its Home.
+  const restored = useMemo(() => (hydrated ? (read() ?? (/\/mvp3\/home\/?$/.test(window.location.pathname) ? HOME_ID : null)) : null), [hydrated]);
+  const account = ACCOUNTS.find((a) => a.id === (picked ?? restored)) ?? DEFAULT_ACCOUNT;
+  const setAccount = useCallback((id: string) => {
+    const next = ACCOUNTS.find((a) => a.id === id) ?? DEFAULT_ACCOUNT;
+    setPicked(next.id);
+    try {
+      window.sessionStorage.setItem(KEY, next.id);
+    } catch {
+      // Storage blocked (private mode): the pick lasts until the next refresh.
+    }
+  }, []);
+  return <AccountContext.Provider value={{ account, setAccount }}>{hydrated ? children : null}</AccountContext.Provider>;
 }
 
 const asBrand = (a: Account) => ({ id: a.id, name: a.name, logo: a.logo }) as Brand;

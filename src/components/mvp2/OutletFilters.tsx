@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Building2, Check, ChevronDown, ChevronLeft, ChevronRight, ListFilter, MapPin, Plus, Search, Store as StoreIcon, X, type LucideIcon } from "lucide-react";
 import { useDismiss } from "@/components/dashboard/useDismiss";
 import { totals } from "@/components/finance/PnlStory";
@@ -38,31 +38,44 @@ import { cn } from "@/lib/utils";
 
 const FIELD_ICON: Record<Field, LucideIcon> = { state: MapPin, city: Building2, outlet: StoreIcon };
 
+// The outlets a report can show at all. Every outlet by default (/mvp2); MVP 3 wraps a report in <OutletUniverse>
+// with the open restaurant's outlets, and `initial` opens it filtered to the outlets a chat reply was kept to.
+type Universe = { stores: readonly Store[] | null; initial?: readonly Store[] };
+const UniverseContext = createContext<Universe>({ stores: null });
+export function OutletUniverse({ stores, initial, children }: Universe & { children: React.ReactNode }) {
+  const value = useMemo(() => ({ stores, initial }), [stores, initial]);
+  return <UniverseContext.Provider value={value}>{children}</UniverseContext.Provider>;
+}
+
 /** The filter, each outlet's figures for the range (for the menus and the ranking quick filters) and the outlets it leaves. */
 export function useOutletFilter(range: [number, number]) {
-  const [filter, setFilter] = useState<OutletFilter>(NO_FILTER);
+  const u = useContext(UniverseContext);
+  const universe = useMemo(() => (u.stores ? OUTLETS.filter((o) => u.stores!.includes(o.store)) : OUTLETS), [u.stores]);
+  const [filter, setFilter] = useState<OutletFilter>(() => (u.initial?.length ? { quick: [], rules: [newRule("outlet", [...u.initial])] } : NO_FILTER));
   const [a, b] = range;
   const stats: OutletStats = useMemo(
     () =>
       new Map(
-        OUTLETS.map((o) => {
+        universe.map((o) => {
           const t = totals([o.store], a, b, () => TYPICAL);
           return [o.store, { sales: t.all.sales, appShare: t.all.sales ? 1 - t.cols.instore.sales / t.all.sales : 0 }];
         }),
       ),
-    [a, b],
+    [a, b, universe],
   );
-  const stores = useMemo(() => filterStores(filter, stats), [filter, stats]);
-  return { filter, setFilter, stats, stores, filtered: activeCount(filter) > 0 };
+  const stores = useMemo(() => filterStores(filter, stats, universe), [filter, stats, universe]);
+  // `subset`: fewer than every outlet KoreFi has, by filter or because the restaurant has fewer (pass `stores`, not null).
+  return { filter, setFilter, stats, stores, universe, filtered: activeCount(filter) > 0, subset: stores.length < OUTLETS.length };
 }
 export type OutletScope = ReturnType<typeof useOutletFilter>;
 
 /** The Filter button and the State / City / Outlet pills. `compact` (phones) keeps the button alone: its panel has every rule. */
-export function OutletFilters({ scope, compact = false }: { scope: OutletScope; compact?: boolean }) {
+/** `pills`: which field pills to show beside Filter (all three by default). */
+export function OutletFilters({ scope, compact = false, pills }: { scope: OutletScope; compact?: boolean; pills?: Field[] }) {
   return (
     <>
       <FilterPanel scope={scope} />
-      {FIELDS.map((f) => (
+      {FIELDS.filter((f) => !pills || pills.includes(f.key)).map((f) => (
         <div key={f.key} className={cn("contents", compact && "max-md:hidden")}>
           <FieldPill field={f.key} scope={scope} />
         </div>
@@ -76,7 +89,7 @@ export function OutletCount({ scope }: { scope: OutletScope }) {
   if (!scope.filtered) return null;
   return (
     <span className="text-body-sm text-(--color-text-secondary) tabular-nums">
-      {scope.stores.length} of {OUTLETS.length} outlets
+      {scope.stores.length} of {scope.universe.length} outlets
     </span>
   );
 }
@@ -88,7 +101,7 @@ export function NoOutlets({ scope }: { scope: OutletScope }) {
       <ListFilter aria-hidden className="size-6 text-(--color-text-tertiary)" />
       <div>
         <p className="text-subtitle-sm text-(--color-text-primary)">No outlets match these filters</p>
-        <p className="mt-1 text-body-sm text-(--color-text-secondary)">Remove a filter, or clear them to see all {OUTLETS.length} outlets.</p>
+        <p className="mt-1 text-body-sm text-(--color-text-secondary)">Remove a filter, or clear them to see all {scope.universe.length} outlets.</p>
       </div>
       <button type="button" onClick={() => scope.setFilter(NO_FILTER)} className="h-8 rounded-medium border border-(--color-border-default) px-3 text-menu-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
         Clear filters
@@ -116,7 +129,7 @@ const menu = "absolute top-full left-0 z-30 mt-1.5 overflow-hidden rounded-large
 
 /** Values the other filters leave, counted, plus anything already picked. */
 function optionsFor(field: Field, scope: OutletScope, skip?: Rule) {
-  const within = OUTLETS.filter((o) => matches(o, scope.filter, scope.stats, skip));
+  const within = scope.universe.filter((o) => matches(o, scope.filter, scope.stats, skip));
   const picked = skip?.values ?? [];
   return choices(field, within).filter((c) => c.count > 0 || picked.includes(c.value));
 }
@@ -290,8 +303,8 @@ function FilterPanel({ scope }: { scope: OutletScope }) {
           </div>
 
           <p className="mt-3 border-t border-(--color-border-default) pt-3 text-body-sm text-(--color-text-secondary) tabular-nums">
-            Showing {scope.stores.length} of {OUTLETS.length} outlets
-            {scope.stores.length > 0 && scope.stores.length < OUTLETS.length && <> · {summary(scope.stores)}</>}
+            Showing {scope.stores.length} of {scope.universe.length} outlets
+            {scope.stores.length > 0 && scope.stores.length < scope.universe.length && <> · {summary(scope.stores)}</>}
           </p>
         </div>
       )}
@@ -393,7 +406,7 @@ export function OutletFilterSheet({ scope, open, onClose, presets, range, onRang
   const toggleQuick = (k: string) => setFilter((f) => ({ ...f, quick: f.quick.includes(k) ? f.quick.filter((x) => x !== k) : [...f.quick, k] }));
   const preset = presets.find((p) => p.range[0] === range[0] && p.range[1] === range[1]);
   const field = FIELDS.find((f) => f.key === view);
-  const results = `Show results · ${scope.stores.length} of ${OUTLETS.length} outlets`;
+  const results = `Show results · ${scope.stores.length} of ${scope.universe.length} outlets`;
 
   const row = "flex min-h-12 w-full items-center gap-3 border-b border-(--color-border-default) px-4 text-left outline-none focus-visible:bg-(--color-neutral-lightest)";
 

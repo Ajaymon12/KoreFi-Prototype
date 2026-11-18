@@ -18,7 +18,7 @@ import { useOpenPinned } from "./Mvp3Sidebar";
 // MVP 3 / Home: the restaurant at a glance, from what the agents already read. Taco Pros only (Account.home).
 //  - Pulse: last week's sales (Sales and Net after fees both open the weekly P&L chat), the apps' share, net after fees, chargebacks won back (same figures and spans as
 //    the agent replies they open, so the numbers match).
-//  - Agents: each live agent's latest run, with a sparkline of its runs. Opens that run's chat.
+//  - Agents: a card per live agent (latest run, its metric and sparkline). Opens the agent's details page.
 //  - Needs a look: what the agents flagged. Each asks its question in a chat.
 //  - Your dashboards: what the owner pinned (Taco Pros starts with three). Opens the dashboard beside the chat it
 //    was built in, sidebar folded to icons.
@@ -43,17 +43,17 @@ function AskHint({ label = "Ask" }: { label?: string }) {
   );
 }
 
-function Spark({ values, tone }: { values: number[]; tone?: "success" | "danger" }) {
+function Spark({ values, tone, wide }: { values: number[]; tone?: "success" | "danger"; wide?: boolean }) {
   if (values.length < 2) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
-  const W = 96;
-  const H = 28;
+  const W = wide ? 240 : 96;
+  const H = wide ? 44 : 28;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * W).toFixed(1)},${(H - 2 - ((v - min) / (max - min || 1)) * (H - 4)).toFixed(1)}`).join(" ");
   const color = tone === "danger" ? "var(--color-text-danger)" : tone === "success" ? "var(--color-text-success)" : "var(--color-primary)";
   return (
-    <svg aria-hidden width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="shrink-0 overflow-visible">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    <svg aria-hidden width={wide ? "100%" : W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="shrink-0 overflow-visible">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -69,7 +69,7 @@ const LIVE: { id: string; metric: string }[] = [
 export function AgentHome() {
   const router = useRouter();
   const { account } = useAccount();
-  const { ask, openRun, getWorkflow, dashboards } = useAgents();
+  const { ask, dashboards } = useAgents();
 
   // Home is Taco Pros only: any other restaurant (or switching to one while here) goes back to the chat.
   useEffect(() => {
@@ -102,12 +102,6 @@ export function AgentHome() {
 
   const go = (question: string) => {
     ask(question);
-    router.push("/mvp3");
-  };
-  const openLatest = (a: (typeof agents)[number]) => {
-    const w = getWorkflow(a.id);
-    if (!w || !a.latest) return;
-    openRun({ id: a.latest.id, thread: a.latest.thread, week: a.latest.week, reply: a.latest.reply }, w);
     router.push("/mvp3");
   };
 
@@ -178,6 +172,7 @@ export function AgentHome() {
           {/* Agents: each live agent's latest run */}
           <Section
             id="agents"
+            bare
             title="Your agents"
             aside={
               <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focus)}>
@@ -185,22 +180,10 @@ export function AgentHome() {
               </Link>
             }
           >
-            <ul className="divide-y divide-(--color-border-default)">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {agents.map((a) => (
                 <li key={a.id}>
-                  <button type="button" onClick={() => openLatest(a)} className={row}>
-                    <AgentAvatar agent={a.agent} size={32} />
-                    <Lines title={a.name} sub={a.latest?.headline ?? "No runs yet"} />
-                    <span className="hidden w-36 shrink-0 flex-col items-end gap-1 sm:flex">
-                      <Spark values={a.spark} tone={a.tone} />
-                      <span className="text-[11px] text-(--color-text-tertiary)">
-                        {a.metric}, {a.spark.length} weeks
-                      </span>
-                    </span>
-                    {a.latest && <span className="hidden w-28 shrink-0 text-right text-body-sm text-(--color-text-secondary) md:block">Ran {when(a.latest.at)}</span>}
-                    <Chevron />
-                    <span className="sr-only">Open the latest run&rsquo;s chat</span>
-                  </button>
+                  <AgentTile a={a} />
                 </li>
               ))}
             </ul>
@@ -229,8 +212,58 @@ export function AgentHome() {
   );
 }
 
+type AgentSummary = { id: string; name: string; agent: AgentId; latest?: Run; spark: number[]; metric: string; tone?: "success" | "danger" };
+
+/** A live agent as a card: face, name and Live badge; the latest run's headline; its metric over 13 weeks; when it ran.
+ *  The whole card opens the agent's details page (overview, runs, activity). */
+function AgentTile({ a }: { a: AgentSummary }) {
+  const latest = a.latest?.metrics.find((m) => m.label === a.metric);
+  return (
+    <Link
+      href={`/mvp3/agent?id=${a.id}`}
+      className={cn(
+        "group flex h-full flex-col gap-4 rounded-xlarge border border-(--color-border-default) bg-(--color-background-secondary) p-5 transition-[border-color,box-shadow]",
+        "hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
+        focus,
+        "focus-visible:outline-offset-2",
+      )}
+    >
+      <span className="flex items-center gap-3">
+        <AgentAvatar agent={a.agent} size={32} />
+        <span className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary)">{a.name}</span>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-circle bg-(--color-success-lightest) px-2 py-0.5 text-[11px] font-medium text-(--color-text-success) shadow-[0_0_0_1px_var(--color-border-default)]">
+          <span className="size-1.5 rounded-circle bg-current" />
+          Live
+        </span>
+      </span>
+      <span className="text-body-md text-(--color-text-secondary)">{a.latest?.headline ?? "No runs yet"}</span>
+      <span className="flex items-end gap-4">
+        {latest && (
+          <span className="shrink-0">
+            <span className={cn("block text-jumbo-sm tabular-nums", a.tone === "danger" ? "text-(--color-text-danger)" : a.tone === "success" ? "text-(--color-text-success)" : "text-(--color-text-primary)")}>
+              {latest.money ? usd(latest.value) : latest.value.toLocaleString("en-US")}
+            </span>
+            <span className="mt-1 block text-body-sm text-(--color-text-secondary)">{a.metric.toLowerCase()}, last run</span>
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <Spark values={a.spark} tone={a.tone} wide />
+          <span className="mt-1 block text-right text-[11px] text-(--color-text-tertiary)">{a.spark.length} weeks</span>
+        </span>
+      </span>
+      <span className="mt-auto flex items-center justify-between gap-2 border-t border-(--color-border-default) pt-3 text-body-sm">
+        <span className="text-(--color-text-secondary)">{a.latest ? `Ran ${when(a.latest.at)}` : "Not run yet"}</span>
+        <span className="inline-flex items-center gap-1 text-(--color-text-clickable)">
+          View details
+          <ChevronRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 /** One home section: a title row, then the app's grey tray around a white panel (as on the Payout report). */
-function Section({ id, title, aside, children }: { id: string; title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+function Section({ id, title, aside, bare, children }: { id: string; title: string; aside?: React.ReactNode; bare?: boolean; children: React.ReactNode }) {
   return (
     <section aria-labelledby={`${id}-h`} className="space-y-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -239,9 +272,13 @@ function Section({ id, title, aside, children }: { id: string; title: string; as
         </h2>
         {aside}
       </div>
-      <div className="rounded-large bg-(--gray-300) p-1.5">
-        <div className="overflow-hidden rounded-medium bg-(--color-background-secondary)">{children}</div>
-      </div>
+      {bare ? (
+        children
+      ) : (
+        <div className="rounded-large bg-(--gray-300) p-1.5">
+          <div className="overflow-hidden rounded-medium bg-(--color-background-secondary)">{children}</div>
+        </div>
+      )}
     </section>
   );
 }

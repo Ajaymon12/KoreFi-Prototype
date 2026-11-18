@@ -62,10 +62,10 @@ export function Delta({ now, before, goodWhenUp = true, points = false }: { now:
 
 export type Stat = { label: string; value: React.ReactNode; tone?: "success" | "danger"; sub?: React.ReactNode; delta?: React.ReactNode };
 
-/** A row of figures in the P&L cards' tray: grey surround, white tiles. */
-export function StatRow({ stats, label }: { stats: Stat[]; label: string }) {
+/** A row of figures in the P&L cards' tray: grey surround, white tiles. `cols`: the grid columns, for a row of three. */
+export function StatRow({ stats, label, cols = "sm:grid-cols-2 xl:grid-cols-4" }: { stats: Stat[]; label: string; cols?: string }) {
   return (
-    <section aria-label={label} className="grid gap-1.5 rounded-large bg-(--gray-300) p-1.5 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label={label} className={cn("grid gap-1.5 rounded-large bg-(--gray-300) p-1.5", cols)}>
       {stats.map((s) => (
         <div key={s.label} className="flex min-w-0 flex-col justify-between gap-3 rounded-medium bg-(--color-background-secondary) p-4">
           <p className="text-body-sm text-(--color-text-secondary)">{s.label}</p>
@@ -96,6 +96,24 @@ export function Section({ title, sub, actions, children, className }: { title: s
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </header>
       {children}
+    </section>
+  );
+}
+
+/** A card in the payout report's tray: grey surround, white card, a title with its note on the right
+ *  (3PD Payouts' "Matched with Square" and "Where each $1 went"). */
+export function Tray({ title, sub, label, children, className }: { title?: React.ReactNode; sub?: React.ReactNode; label?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section aria-label={label ?? (typeof title === "string" ? title : undefined)} className={cn("rounded-large bg-(--gray-300) p-1.5", className)}>
+      <div className="rounded-medium bg-(--color-background-secondary) px-5 py-4">
+        {title && (
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+            <p className="text-body-md font-medium text-(--color-text-primary)">{title}</p>
+            {sub && <p className="text-body-sm text-(--color-text-secondary)">{sub}</p>}
+          </div>
+        )}
+        <div className={cn(title && "mt-3")}>{children}</div>
+      </div>
     </section>
   );
 }

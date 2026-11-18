@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -19,7 +19,6 @@ import {
   Package,
   Play,
   Copy,
-  Plug,
   Rocket,
   ShieldCheck,
   Sparkles,
@@ -40,19 +39,18 @@ import { ALL_INTEGRATIONS, isSchedule, type Workflow } from "@/lib/mvp3/workflow
 import { parseSchedule } from "@/lib/mvp3/dashboards";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
+import { useAccount } from "./AccountSwitcher";
 
 // Opens from an agent's overview (Edit) or a draft. Laid out like Copilot's Agent Builder:
 //  - left, on white: the chat. It's the only way to change the agent ("Run every Monday at 8 AM and email me",
 //    "Remove step 2", "Also read QuickBooks", "Rename it to …"). Every change saves straight away, the changed
 //    part of the page flashes, and the reply offers Undo. A vague message gets examples instead of a guess.
 //  - right, on the page grey: a read-only preview in the Foundation system: header (avatar, name, status, Run),
-//    How it runs, Overview, Steps, Inputs, Knowledge (files it reads) and Setup (when it runs, what it reads, where results go).
+//    the overview's first sentence under the name, one vertical recipe (when → stages with numbered steps →
+//    what you get), then a quiet "More details" for About, Inputs and Knowledge (files it reads).
 // No Test or Save: changes apply from the next run. Drafts still get Publish.
 // Edits are kept in AgentsProvider, so a schedule set in the main chat shows up here and the other way round.
 // Brand orange only (module tokens); icons sit on neutral tiles. Workflows only read, match and report.
-
-/** A neutral icon tile. */
-const tile = "grid shrink-0 place-items-center rounded-medium bg-(--color-neutral-lightest) text-(--color-text-secondary)";
 
 /** A stage's icon and kind of action, from the verb its name starts with. */
 function stageKind(title: string): { Icon: LucideIcon; action: string } {
@@ -66,9 +64,6 @@ function stageKind(title: string): { Icon: LucideIcon; action: string } {
 }
 
 const triggerIcon = (t: string): LucideIcon => (t.startsWith("When") ? Zap : /Daily|Every (Mon|Tue|Wed|Thu|Fri)/.test(t) ? Clock : CalendarClock);
-
-/** Integrations a step's wording names ("Square" is the POS). */
-const usedBy = (step: string, list: string[]) => list.filter((a) => step.includes(a) || (a === "POS" && /Square|POS/.test(step)));
 
 /** The integration's mark: real logos for the delivery apps, a small tile for the rest. */
 export function IntegrationMark({ name, size = 16 }: { name: string; size?: number }) {
@@ -93,65 +88,73 @@ export function WorkflowEditor({ id }: { id: string }) {
   return <Editor key={id} base={base} />;
 }
 
-// ───────── How it runs ─────────
+// ───────── The recipe ─────────
+// Owners don't read workflows, so the whole agent is one quiet vertical line, read top to bottom:
+// when it starts → each stage with its steps → what you get. No boxes inside boxes, no labels above
+// labels. Step numbers stay (small) so "remove step 2" in the chat still lines up.
 
-function FlowNode({ icon, kicker, label, onClick }: { icon: React.ReactNode; kicker: string; label: string; onClick?: () => void }) {
-  const Tag = onClick ? "button" : "div";
+/** First sentence of the overview, shown under the agent's name. */
+const headline = (o: string) => o.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? o;
+const shortWhen = (t: string) => t.replace(/^Every /, "").replace(/day, /, "days, ").replace(/:00 /, " ");
+
+function Node({ icon, last, children }: { icon: React.ReactNode; last?: boolean; children: React.ReactNode }) {
   return (
-    <Tag
-      {...(onClick ? { type: "button" as const, onClick } : {})}
-      className={cn(
-        "flex min-w-0 max-w-[220px] items-center gap-2.5 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) py-2 pr-3 pl-2 text-left",
-        onClick && "outline-none transition-colors hover:border-(--color-border-darker) hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
-      )}
-    >
-      {icon}
-      <span className="min-w-0">
-        <span className="block text-body-sm text-(--color-text-secondary)">{kicker}</span>
-        <span className="block text-body-sm font-medium text-(--color-text-primary)">{label}</span>
-      </span>
-    </Tag>
+    <li className="relative flex gap-4 pb-6 last:pb-0">
+      {!last && <span aria-hidden className="absolute top-9 bottom-1 left-[17px] w-px bg-(--color-border-default)" />}
+      <span className="relative z-10 grid size-9 shrink-0 place-items-center rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-secondary) [&_svg]:size-4">{icon}</span>
+      <div className="min-w-0 flex-1 pt-1.5">{children}</div>
+    </li>
   );
 }
 
-const Arrow = () => <ChevronRight aria-hidden className="size-4 shrink-0 text-(--color-text-tertiary)" />;
-
-function Flow({ w, onStage }: { w: Workflow; onStage: (i: number) => void }) {
-  const icon = (Icon: LucideIcon) => (
-    <span className={cn(tile, "size-8 [&_svg]:size-4")}>
-      <Icon aria-hidden />
-    </span>
-  );
-  return (
-    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 px-5 pb-5">
-      <FlowNode icon={icon(w.triggers.length ? triggerIcon(w.triggers[0]) : Zap)} kicker="When" label={w.triggers[0] ?? "When you ask"} />
-      <Arrow />
-      <FlowNode
-        icon={
-          w.integrations.length ? (
-            <span className="flex h-8 shrink-0 items-center gap-1">
-              {w.integrations.slice(0, 3).map((a) => (
-                <span key={a} className="flex">
-                  <IntegrationMark name={a} size={18} />
-                </span>
-              ))}
-            </span>
-          ) : (
-            icon(Download)
-          )
-        }
-        kicker="Reads"
-        label={w.integrations.length ? w.integrations.join(", ") : "Nothing yet"}
-      />
-      {w.groups.map((g, i) => (
-        <span key={i} className="contents">
-          <Arrow />
-          <FlowNode icon={icon(stageKind(g.title).Icon)} kicker={`Stage ${i + 1}`} label={g.title || "Untitled"} onClick={() => onStage(i)} />
+function Recipe({ w }: { w: Workflow }) {
+  const title = "text-body-md font-medium text-(--color-text-primary)";
+  const logos = (
+    <span className="inline-flex gap-1 align-middle">
+      {w.integrations.map((a) => (
+        <span key={a} title={a} className="inline-flex">
+          <IntegrationMark name={a} size={18} />
         </span>
       ))}
-      <Arrow />
-      <FlowNode icon={icon(w.deliver.dashboard ? LayoutDashboard : Mail)} kicker="Sends" label={["Chat", w.deliver.email && "email", w.deliver.dashboard && "dashboard"].filter(Boolean).join(", ")} />
-    </div>
+    </span>
+  );
+  // The apps sit on the first stage that reads data, or on their own line if none does.
+  const readAt = w.groups.findIndex((g) => stageKind(g.title).action === "Read data");
+  const gets = ["Chat", w.deliver.email && "email", w.deliver.dashboard && "dashboard"].filter(Boolean).join(" + ");
+  return (
+    <ol className="rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-5">
+      <Node icon={createElement(w.triggers[0] ? triggerIcon(w.triggers[0]) : Zap, { "aria-hidden": true })}>
+        <p className={title}>{w.triggers[0] ? shortWhen(w.triggers[0]) : "When you ask"}</p>
+      </Node>
+      {readAt < 0 && w.integrations.length > 0 && (
+        <Node icon={<Download aria-hidden />}>
+          <p className={cn(title, "flex items-center gap-2")}>Reads {logos}</p>
+        </Node>
+      )}
+      {w.groups.map((g, gi) => {
+        const { Icon } = stageKind(g.title);
+        const first = w.groups.slice(0, gi).reduce((a, x) => a + x.steps.length, 0);
+        return (
+          <Node key={gi} icon={<Icon aria-hidden />}>
+            <p className={cn(title, "flex flex-wrap items-center gap-2")}>
+              {g.title || "Untitled"}
+              {gi === readAt && w.integrations.length > 0 && logos}
+            </p>
+            <ol className="mt-1 space-y-0.5">
+              {g.steps.map((st, i) => (
+                <li key={i} className="flex gap-2 text-body-sm text-(--color-text-secondary)">
+                  <span className="w-3 shrink-0 text-right text-(--color-text-tertiary) tabular-nums">{first + i + 1}</span>
+                  <span className="min-w-0">{st || "Empty step"}</span>
+                </li>
+              ))}
+            </ol>
+          </Node>
+        );
+      })}
+      <Node last icon={w.deliver.dashboard ? <LayoutDashboard aria-hidden /> : <MessageSquare aria-hidden />}>
+        <p className={title}>You get a {gets}</p>
+      </Node>
+    </ol>
   );
 }
 
@@ -350,6 +353,7 @@ function Knowledge({ files, onChange }: { files: { name: string; size: number }[
 function Editor({ base }: { base: Workflow }) {
   const router = useRouter();
   const { open, saveWorkflow, runAgent, duplicateAgent, dashboards } = useAgents();
+  const limited = !!useAccount().account.limited;
   const [w, setW] = useState(base);
   const dash = dashboards.find((d) => d.workflow === w.id);
   const [toast, setToast] = useState<string | null>(null);
@@ -358,6 +362,8 @@ function Editor({ base }: { base: Workflow }) {
   const [draft, setDraft] = useState("");
   const [flash, setFlash] = useState<Area[]>([]);
   const [saved, setSaved] = useState<string | null>(null);
+  /** The numbered steps, inputs and files: hidden until asked for, or until the chat changes them. */
+  const [more, setMore] = useState(false);
   const log = useRef<HTMLUListElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
 
@@ -376,7 +382,10 @@ function Editor({ base }: { base: Workflow }) {
     if (next.kind !== "draft") saveWorkflow(next);
     setSaved(new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
     setFlash(areas);
-    if (areas[0]) document.getElementById(`area-${areas[0]}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const hidden = areas.includes("inputs");
+    if (hidden) setMore(true);
+    const target = areas[0] === "setup" ? "steps" : areas[0] === "overview" ? "name" : areas[0];
+    if (target) window.setTimeout(() => document.getElementById(`area-${target}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }), hidden ? 60 : 0);
   };
 
   const send = (text: string) => {
@@ -411,7 +420,6 @@ function Editor({ base }: { base: Workflow }) {
   };
 
   const status: { label: string; tone: "success" | "info" | "neutral" } = w.kind === "draft" ? { label: "Draft", tone: "info" } : w.state === "live" ? { label: "Live", tone: "success" } : { label: w.state === "idle" ? "Not live" : "Learning", tone: "neutral" };
-  const flat = stepsOf(w);
   const area = (a: Area) => cn("rounded-large transition-[box-shadow] duration-500", flash.includes(a) && "shadow-[0_0_0_2px_var(--color-primary),0_0_0_6px_color-mix(in_srgb,var(--color-primary)_18%,transparent)]");
   const ex = examples(w);
   const fresh = chat.length === 0;
@@ -510,19 +518,22 @@ function Editor({ base }: { base: Workflow }) {
           can't stretch the document and make the whole app scroll. */}
       <div className="relative min-w-0 flex-1 lg:overflow-y-auto">
         <div className="mx-auto w-full max-w-[880px] space-y-4 px-4 py-6 sm:px-6">
-          <header id="area-name" className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 p-1", area("name"))}>
+          <header id="area-name" className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 p-1", area("name"), area("overview"))}>
             {w.agent && <AgentAvatar agent={w.agent} size={44} />}
             <div className="min-w-0 flex-1 basis-56">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-subtitle-lg text-(--color-text-primary)">{w.title}</h1>
                 <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                {(saved || w.kind === "draft") && <span className="shrink-0 text-body-sm text-(--color-text-tertiary)">{saved ? `${w.kind === "draft" ? "Draft updated" : "Saved"} ${saved}` : "Not published yet"}</span>}
               </div>
-              <p className="mt-0.5 text-body-sm text-(--color-text-secondary)">{w.kind === "draft" ? (saved ? `Draft updated ${saved}` : "Not published yet") : saved ? `Saved ${saved}` : "Change it from the chat"}</p>
+              <p className="mt-0.5 text-body-md text-(--color-text-secondary)">{w.overview ? headline(w.overview) : "Tell me in the chat what this agent should do."}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="small" iconLeft={<Copy />} onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)}>
-                Duplicate
-              </Button>
+              {!limited && (
+                <Button size="small" iconLeft={<Copy />} onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)}>
+                  Duplicate
+                </Button>
+              )}
               {w.kind === "draft" && (
                 <Button size="small" iconLeft={<Rocket />} onClick={publish}>
                   Publish
@@ -534,133 +545,61 @@ function Editor({ base }: { base: Workflow }) {
             </div>
           </header>
 
-          <Section title="How it runs" sub={`${w.groups.length} ${w.groups.length === 1 ? "stage" : "stages"} · ${flat.length} ${flat.length === 1 ? "step" : "steps"}`}>
-            <Flow w={w} onStage={(i) => document.getElementById(`stage-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-          </Section>
-
-          <div id="area-overview" className={area("overview")}>
-            <Section title="Overview">
-              <p className="px-5 pb-5 text-body-md leading-relaxed text-(--color-text-primary)">{w.overview || <span className="text-(--color-text-tertiary)">No overview yet.</span>}</p>
-            </Section>
+          <div id="area-steps" className={cn(area("steps"), area("setup"))}>
+            <Recipe w={w} />
           </div>
 
-          <div id="area-steps" className={area("steps")}>
-            <Section title="Steps" sub="Numbered, so you can say “remove step 2” or “move step 3 up”.">
-              <div className="px-5 pb-5">
-                {w.groups.length === 0 && <p className="text-body-md text-(--color-text-secondary)">No steps yet. Tell me what the agent should do.</p>}
-                <ol>
-                  {w.groups.map((g, gi) => {
-                    const n = w.groups.slice(0, gi).reduce((a, x) => a + x.steps.length, 0);
-                    const { Icon, action } = stageKind(g.title);
-                    return (
-                      <li key={gi} id={`stage-${gi}`} className="relative flex scroll-mt-6 gap-3 pb-5 last:pb-0">
-                        {gi < w.groups.length - 1 && <span aria-hidden className="absolute top-9 bottom-0 left-[15px] w-px bg-(--color-border-default)" />}
-                        <span className={cn(tile, "relative z-10 size-8 border border-(--color-border-default) bg-(--color-background-secondary) [&_svg]:size-4")}>
-                          <Icon aria-hidden />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex min-h-8 flex-wrap items-center gap-x-2">
-                            <h3 className="text-body-md font-medium text-(--color-text-primary)">{g.title || "Untitled"}</h3>
-                            <span className="text-body-sm text-(--color-text-secondary)">{action}</span>
-                          </div>
-                          <ol className="mt-1 space-y-2">
-                            {g.steps.map((st, i) => {
-                              const uses = usedBy(st, w.integrations);
-                              return (
-                                <li key={i} className="flex items-start gap-2.5">
-                                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-circle border border-(--color-border-default) text-[11px] font-medium text-(--color-text-secondary) tabular-nums">{n + i + 1}</span>
-                                  <p className="min-w-0 flex-1 text-body-md text-(--color-text-primary)">
-                                    {st || <span className="text-(--color-text-tertiary)">Empty step</span>}
-                                    {uses.length > 0 && (
-                                      <span className="ml-2 inline-flex translate-y-0.5 gap-1 align-baseline">
-                                        {uses.map((a) => (
-                                          <span key={a} title={a} className="inline-flex">
-                                            <IntegrationMark name={a} size={14} />
-                                          </span>
-                                        ))}
-                                      </span>
-                                    )}
-                                  </p>
-                                </li>
-                              );
-                            })}
-                          </ol>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            </Section>
-          </div>
+          <button
+            type="button"
+            aria-expanded={more}
+            onClick={() => setMore((m) => !m)}
+            className="flex items-center gap-1.5 rounded-medium px-1 py-1 text-left text-body-sm text-(--color-text-secondary) outline-none hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+          >
+            <ChevronRight aria-hidden className={cn("size-3.5 transition-transform", more && "rotate-90")} />
+            {more ? "Hide details" : "More details"}
+          </button>
 
-          {w.inputs.length > 0 && (
-            <div id="area-inputs" className={area("inputs")}>
-              <Section title="Inputs" sub="Settings the agent reads each run.">
-                <div className="overflow-x-auto border-t border-(--color-border-default)">
-                  <table className="w-full min-w-[480px] text-left">
-                    <thead className="text-body-sm text-(--color-text-secondary)">
-                      <tr className="border-b border-(--color-border-default)">
-                        <th className="w-[30%] px-5 py-2.5 font-normal">Name</th>
-                        <th className="w-[14%] px-3 py-2.5 font-normal">Type</th>
-                        <th className="px-3 py-2.5 font-normal">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-(--color-border-default) text-body-md">
-                      {w.inputs.map((r, i) => (
-                        <tr key={i} className="align-top">
-                          <td className="px-5 py-3 font-medium text-(--color-text-primary)">{r.name}</td>
-                          <td className="px-3 py-3">
-                            <span className="rounded-small bg-(--color-neutral-lightest) px-2 py-0.5 text-body-sm text-(--color-text-secondary)">{r.type}</span>
-                          </td>
-                          <td className="px-3 py-3 text-(--color-text-secondary)">{r.desc}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {more && (
+            <div className="space-y-4">
+              {w.overview && w.overview !== headline(w.overview) && (
+                <Section title="About">
+                  <p className="px-5 pb-5 text-body-md leading-relaxed text-(--color-text-secondary)">{w.overview.slice(headline(w.overview).length).trim()}</p>
+                </Section>
+              )}
+              {w.inputs.length > 0 && (
+                <div id="area-inputs" className={area("inputs")}>
+                  <Section title="Inputs" sub="Settings the agent reads each run.">
+                    <div className="overflow-x-auto border-t border-(--color-border-default)">
+                      <table className="w-full min-w-[480px] text-left">
+                        <thead className="text-body-sm text-(--color-text-secondary)">
+                          <tr className="border-b border-(--color-border-default)">
+                            <th className="w-[30%] px-5 py-2.5 font-normal">Name</th>
+                            <th className="w-[14%] px-3 py-2.5 font-normal">Type</th>
+                            <th className="px-3 py-2.5 font-normal">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-(--color-border-default) text-body-md">
+                          {w.inputs.map((r, i) => (
+                            <tr key={i} className="align-top">
+                              <td className="px-5 py-3 font-medium text-(--color-text-primary)">{r.name}</td>
+                              <td className="px-3 py-3">
+                                <span className="rounded-small bg-(--color-neutral-lightest) px-2 py-0.5 text-body-sm text-(--color-text-secondary)">{r.type}</span>
+                              </td>
+                              <td className="px-3 py-3 text-(--color-text-secondary)">{r.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Section>
                 </div>
-              </Section>
+              )}
+
+              <div id="area-knowledge">
+                <Knowledge files={w.knowledge ?? []} onChange={(knowledge) => apply({ ...w, knowledge }, [])} />
+              </div>
             </div>
           )}
-
-          <div id="area-knowledge">
-            <Knowledge files={w.knowledge ?? []} onChange={(knowledge) => apply({ ...w, knowledge }, [])} />
-          </div>
-
-          <div id="area-setup" className={area("setup")}>
-            <Section title="Setup" sub="When it runs, what it reads and where results go.">
-              <dl className="divide-y divide-(--color-border-default) border-t border-(--color-border-default)">
-                {[
-                  { Icon: w.triggers[0] ? triggerIcon(w.triggers[0]) : Zap, label: "Runs", value: w.triggers.length ? w.triggers.join(" · ") : "When you ask" },
-                  {
-                    Icon: Plug,
-                    label: "Reads",
-                    value: w.integrations.length ? (
-                      <span className="flex flex-wrap gap-1.5">
-                        {w.integrations.map((a) => (
-                          <span key={a} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-1">
-                            <IntegrationMark name={a} size={16} />
-                            {a}
-                          </span>
-                        ))}
-                      </span>
-                    ) : (
-                      "Nothing yet"
-                    ),
-                  },
-                  { Icon: MessageSquare, label: "Sends to", value: list(["A chat", w.deliver.email && `an email to ${user.email}`, w.deliver.dashboard && (dash ? `the ${dash.title} dashboard` : "a dashboard")].filter(Boolean) as string[]) },
-                ].map(({ Icon, label, value }) => (
-                  <div key={label} className="flex items-start gap-3 px-5 py-3">
-                    <span className={cn(tile, "size-8 [&_svg]:size-4")}>
-                      <Icon aria-hidden />
-                    </span>
-                    <dt className="w-20 shrink-0 pt-1.5 text-body-sm text-(--color-text-secondary)">{label}</dt>
-                    <dd className="min-w-0 flex-1 pt-1 text-body-md text-(--color-text-primary)">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Section>
-          </div>
 
           {(dash?.pinned || w.thread) && (
             <div className="flex flex-wrap gap-x-4 gap-y-1 px-1">
