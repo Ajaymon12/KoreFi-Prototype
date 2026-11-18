@@ -1,6 +1,7 @@
 "use client";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePath } from "@/lib/mvp3/usePath";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Check, ChevronRight, Clock, Lock, Search, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,7 @@ import { FOLDERS } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
 import { useAgents } from "./AgentsProvider";
 import { BrandMark } from "./BrandMark";
+import { useAccount } from "./AccountSwitcher";
 import { AppCard, EmailCard, GUIDE, emailsFor, useOnboarding as useFirstVisit, type App } from "./Onboarding";
 
 // MVP 3 / Integrations, after ChatGPT's Apps directory and its "Connecting to Figma" flow (Mobbin):
@@ -97,8 +99,13 @@ function StatusLine({ c }: { c: Item }) {
 
 export function IntegrationsDirectory({ connections }: { connections: SourceConnection[] }) {
   const router = useRouter();
-  const path = usePathname();
+  const path = usePath();
   const appId = useSearchParams().get("app");
+  // A `limited` account (Masa Kitchen) has no Integrations page: a direct link goes back to its Home.
+  const limited = !!useAccount().account.limited;
+  useEffect(() => {
+    if (limited) router.replace("/mvp3/home");
+  }, [limited, router]);
   const shown = useMemo(() => [...connections].sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id)), [connections]);
   const onboarding = useFirstVisit();
   // A new sign-up's delivery apps start where the welcome chat left them; everything else is the seeded account.

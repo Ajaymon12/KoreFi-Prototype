@@ -8,6 +8,10 @@ import { BRAND, BRAND_LOGO, STORES, type Store } from "@/lib/finance/outlets";
 //    components/mvp3/Onboarding, where the agents connect the delivery apps with the owner (no sign-up screen).
 //    No reports have arrived, so there are no chats and every agent is learning; questions are answered on
 //    Taco Pros sample data, labelled as such.
+//  - Masa Kitchen: the same use case as Taco Pros (same 34 outlets, reports, Home, pinned dashboards and agents),
+//    but a locked-down workspace: no New chat, no Integrations, no creating or duplicating agents, and Settings
+//    shows only the email. See `limited`. Its dashboards are pinned by the KoreFi team (`teamPinned`), and like Taco Pros
+//    it always lands on Home.
 // Prototype: Saffron Grill borrows six Taco Pros outlets so its figures still come from the report data.
 
 export type AccountStage = "active" | "new";
@@ -22,6 +26,11 @@ export type Account = {
   agentsOff?: boolean;
   /** Gets the Home page (live agent summary, components/mvp3/AgentHome). Taco Pros only for now. */
   home?: boolean;
+  /** Locked-down workspace: no New chat, no Integrations, no new or duplicated agents, Settings shows email only. */
+  limited?: boolean;
+  /** The KoreFi team pinned its dashboards: labelled so, each dashboard's chat opens on a summary with suggestions,
+   *  and the empty chat (/mvp3) summarises them. It still lands on Home. */
+  teamPinned?: boolean;
   /** How much history KoreFi holds, shown in the switcher. */
   history: string;
 };
@@ -29,6 +38,7 @@ export type Account = {
 export const ACCOUNTS: Account[] = [
   { id: "tacopros", name: BRAND, logo: BRAND_LOGO, stores: STORES, stage: "active", home: true, history: "34 outlets · 2 years of reports" },
   { id: "saffron", name: "Saffron Grill", stores: STORES.slice(0, 6), stage: "active", agentsOff: true, history: "6 outlets · 6 months of reports" },
+  { id: "masa", name: "Masa Kitchen", stores: STORES, stage: "active", home: true, limited: true, teamPinned: true, history: "34 outlets · 2 years of reports" },
   { id: "littlepho", name: "Little Pho", stores: STORES, stage: "new", history: "Joined today · no reports yet" },
 ];
 

@@ -1,8 +1,9 @@
 "use client";
+import { usePath } from "@/lib/mvp3/usePath";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useDismiss } from "@/components/dashboard/useDismiss";
 import { Bot, Check, ChevronRight, CirclePlay, Clock, Plug, Copy, ExternalLink, Eye, EyeOff, Mail, MessageCircle, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
@@ -104,7 +105,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }
   const setApp = useCallback((a: App, s: AppState) => setApps((x) => ({ ...x, [a]: s })), []);
   const [touring, setTouring] = useState(false);
-  const path = usePathname();
+  const path = usePath();
   const router = useRouter();
 
   useEffect(() => {
@@ -131,7 +132,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (account.stage === "new" && path !== "/mvp3") router.push("/mvp3");
-    // Taco Pros (Account.home) lands on Home, unless a ?chat= link is opening one of its chats.
+    // Taco Pros and Masa Kitchen (Account.home) land on Home, on switching and on refresh, unless a ?chat= link is
+    // opening one of Taco Pros' chats.
     else if (account.home && path !== "/mvp3/home" && !new URLSearchParams(window.location.search).has("chat")) router.push("/mvp3/home");
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps

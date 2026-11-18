@@ -4,7 +4,11 @@ import { TYPICAL } from "@/lib/finance/costSettings";
 import { STORES, shortStore, type Store } from "@/lib/finance/outlets";
 import { APPS, appLabel, chargebacks, type AppKey } from "@/lib/finance/chargebacks";
 import { reconcile, type Recon } from "@/lib/finance/reconcile";
-import type { Automation } from "./dashboards";
+import type { Automation, CardRef } from "./dashboards";
+import { findOutlets, findOutletLoose, outletsLabel, setScopeStores } from "./outletScope";
+import { outletDive, versusUsual } from "./outletDive";
+import { appStatuses, asOfLabel, nextSteps } from "./payoutStatus";
+import * as FX from "./masaFixture";
 
 // MVP 3: KoreFi as always-on agents (after ChatGPT Dots, docs/chatgpt-dots-market-research.md).
 // Each agent watches one part of the business, posts an update when something changes, and answers
@@ -52,11 +56,27 @@ export const snapshot = () => (cache ??= build());
 // The outlets the figures cover: the account picked in the /mvp3 switcher (lib/mvp3/accounts). Taco Pros by default.
 let stores: readonly Store[] = STORES;
 export function setAccountStores(next: readonly Store[]) {
+  setScopeStores(next);
   if (next === stores) return;
   stores = next;
   cache = null;
 }
 const n = () => stores.length;
+/** "across 34 outlets", or "at Hyde Park" when a question is kept to one. */
+const where = () => (n() === 1 ? `at ${shortStore(stores[0])}` : `across ${n()} outlets`);
+
+/** Work out a reply on some of the restaurant's outlets only (a question that names them), then go back. */
+function scopedTo<T>(only: readonly Store[], fn: () => T): T {
+  const [s, c] = [stores, cache];
+  stores = only;
+  cache = null;
+  try {
+    return fn();
+  } finally {
+    stores = s;
+    cache = c;
+  }
+}
 
 function build() {
   const week = t(stores, LAST, LAST);
@@ -85,7 +105,7 @@ function build() {
 
 // ───────── Messages ─────────
 
-export type Stat = { label: string; value: string; tone?: "success" | "danger" };
+export type Stat = { label: string; value: string; tone?: "success" | "danger"; sub?: string };
 export type Row = { label: string; sub?: string; value: string; tone?: "success" | "danger" };
 export type AgentReply = {
   agent: AgentId;
@@ -101,6 +121,21 @@ export type AgentReply = {
   /** A schedule the owner set in the chat, confirmed as a card. */
   automation?: Automation;
   followUps?: string[];
+  /** A line under the stats with a coloured dot ("Damen: 1.3% of app sales, over your 1% limit."), and what the figures cover. */
+  look?: { tone: "danger" | "warning" | "success"; text: string };
+  /** The agent's name when it is a named job ("Payout reconciliation"), instead of its folder's. */
+  by?: string;
+  /** Replaces the report card's title and line under it. */
+  card?: { title: string; sub: string };
+  cover?: string;
+  /** Where the answer comes from, as a small line under it. */
+  source?: string;
+  /** The outlets the question named. The reply covers only these, and its report opens filtered to them. */
+  outlets?: Store[];
+  /** One outlet dug into ("Why is Damen high?"): its chargebacks open in the canvas. */
+  outlet?: Store;
+  /** The one-page sheet for that outlet's manager, ready to review and send. */
+  sheet?: boolean;
 };
 
 export function weeklyPnl(): AgentReply {
@@ -111,8 +146,8 @@ export function weeklyPnl(): AgentReply {
     agent: "finance",
     title: `You kept ${usd(week.all.moneyIn)} after fees last week`,
     lines: [
-      `Sales were ${usd(week.all.sales)} across ${n()} outlets, and the apps and card processors took ${usd(fees)}. That's ${pct(change)} on the week before.`,
-      `${shortStore(outlets[0].store)} kept the smallest share of its sales as profit over the last 4 weeks. I'll keep an eye on it.`,
+      `Sales were ${usd(week.all.sales)} ${where()}, and the apps and card processors took ${usd(fees)}. That's ${pct(change)} on the week before.`,
+      ...(n() > 1 ? [`${shortStore(outlets[0].store)} kept the smallest share of its sales as profit over the last 4 weeks. I'll keep an eye on it.`] : []),
     ],
     stats: [
       { label: "Sales", value: usd(week.all.sales) },
@@ -157,6 +192,73 @@ export function chargebackOutlets(): AgentReply {
   };
 }
 
+/** "Why is Damen high?": one outlet's last week, what went wrong and what to fix. Opens its orders in the canvas. */
+export function outletWhy(store: Store): AgentReply {
+  const d = outletDive(store);
+  if (d.fx)
+    return {
+      agent: "operations",
+      title: `${d.name} had ${d.n} orders with errors, ${versusUsual(d.n, d.usual)}`,
+      lines: [FX.DAMEN_WHY.text],
+      source: FX.DAMEN_WHY.source,
+      work: ["Read Damen's adjustments from all 3 apps for Nov 1–7", "Matched each charge to its order and dish", "Compared with its usual week and its worst weekdays"],
+      outlet: store,
+      followUps: [`Send this to ${d.name}'s manager`, "What is still to dispute?"],
+    };
+  if (!d.n)
+    return {
+      agent: "operations",
+      title: `${d.name} had no chargebacks last week`,
+      lines: [`Nothing was charged back at ${d.name} for ${d.week}, so there is nothing to look into.`],
+      work: [`Read ${d.name}'s delivery-app adjustments for ${d.week}`],
+      followUps: ["Which outlets get the most chargebacks?"],
+    };
+  return {
+    agent: "operations",
+    title: `${d.name} had ${d.n} orders with errors, ${versusUsual(d.n, d.usual)}`,
+    lines: [`${usd(d.charged)} was charged back at ${d.name} in ${d.week}, ${d.rate.toFixed(1)}% of its delivery-app sales. ${d.findings.join(" ")}`],
+    stats: [
+      { label: "Charged back", value: usd(d.charged), tone: "danger" },
+      { label: "Won back", value: usd(d.won), tone: "success" },
+      { label: "Being disputed", value: usd(d.open) },
+    ],
+    work: [`Read ${d.name}'s adjustments from all 3 apps for ${d.week}`, "Matched each charge to its order and dish", "Compared with its usual week and its worst weekdays", "Wrote what to fix"],
+    outlet: store,
+    followUps: [`Send this to ${d.name}'s manager`, "Which outlets get the most chargebacks?"],
+  };
+}
+
+/** The sheet for the outlet's manager: one page, that outlet only, what to fix and every order, no amounts. */
+export function outletSheet(store: Store): AgentReply {
+  const d = outletDive(store);
+  return {
+    agent: "operations",
+    title: `Here is the sheet for ${d.name}'s manager`,
+    lines: [`One page, ${d.name} only, with what to fix and every order. Amounts are left out.`],
+    work: [`Collected ${d.name}'s ${d.n} orders with errors`, "Left out the amounts", "Laid it out on one page"],
+    outlet: store,
+    sheet: true,
+    followUps: ["Which outlets get the most chargebacks?"],
+  };
+}
+
+/** Mid-week: which apps' reports are in and checked so far, and when each payout is due. */
+export function payoutStatusReply(): AgentReply {
+  const rows = appStatuses(LAST, stores, "mid");
+  const checked = rows.filter((r) => r.reportIn).length;
+  return {
+    agent: "finance",
+    title: checked === rows.length ? "Every app is checked" : `${checked} of ${rows.length} apps checked so far`,
+    lines: [
+      `Week of ${WEEK_LABEL} is still coming in, as of ${asOfLabel(LAST, "mid")}. No payout is late. ${nextSteps(LAST, stores).map((s) => `${s.day}: ${s.what}`).join(" ")}`,
+    ],
+    rows: rows.map((r) => ({ label: r.label, sub: `${r.orders} · ${r.payout}`, value: r.state === "waiting" ? "Waiting for report" : r.state === "paid" ? "Paid" : "Checked", tone: r.state === "paid" ? "success" : undefined })),
+    work: ["Read each app's report and payout schedule", "Matched the reports that are in to Square, by order ID", "Checked each payout against its usual day"],
+    report: "payouts",
+    followUps: ["Did every payout match Square?", "Which delivery app pays me more?"],
+  };
+}
+
 /** The Thursday payout update: one week, every app side by side (matched, in Square only, in the app only). */
 export function payoutReply(recons: Recon[], week: string): AgentReply {
   const sum = (f: (r: Recon) => number) => recons.reduce((n, r) => n + f(r), 0);
@@ -198,7 +300,7 @@ export function worstOutlets(): AgentReply {
   const { outlets } = snapshot();
   return {
     agent: "finance",
-    title: "Your 4 lowest-earning outlets",
+    title: `Your ${Math.min(4, n())} lowest-earning outlets`,
     lines: ["Profit as a share of sales over the last 4 weeks, after fees and your food and staff estimates. Same ranking as the Daily P&L dashboard."],
     rows: outlets.slice(0, 4).map((o) => ({ label: shortStore(o.store), sub: `${usd(o.all.profit)} profit on ${usd(o.all.sales)}`, value: `${(o.all.profit / (o.all.sales || 1) * 100).toFixed(1)}%`, tone: o.all.profit < 0 ? "danger" : undefined })),
     work: [`Built a P&L for each of ${n()} outlets`, "Ranked them by profit"],
@@ -237,13 +339,70 @@ export function growthLearning(): AgentReply {
 
 /** A first-time account has no reports yet, so it's answered on the Taco Pros sample, and says so. */
 
-/** A typed question → the agent and the reply that answers it. Prototype only: no model. */
+/** A typed question → the agent and the reply that answers it. Prototype only: no model.
+ *  A question that names outlets ("How did Hyde Park do?", "chargebacks in Wisconsin") is answered on those only. */
 export function answer(q: string): AgentReply {
+  const dive = outletDiveAsk(q);
+  if (dive) return dive;
+  const only = findOutlets(q, stores);
+  if (!only.length || only.length === stores.length) return route(q);
+  const label = outletsLabel(only);
+  return scopedTo(only, () => {
+    const r = route(q);
+    return { ...r, title: `${label}: ${r.title}`, work: [`Kept to ${label}`, ...r.work], outlets: only };
+  });
+}
+
+/** "Why is Damen high?", "dig into Hyde Park", "send Damen's sheet to its manager": one outlet, chargebacks. */
+function outletDiveAsk(q: string): AgentReply | null {
   const s = q.toLowerCase();
-  if (/(charge ?back|dispute|refund)/.test(s)) return /(outlet|store|where|most)/.test(s) ? chargebackOutlets() : chargebackUpdate();
+  const sheet = /(send|share|email|whatsapp).*(manager|sheet|store)|(manager|sheet).*(send|share)/.test(s);
+  const why = /(why|what.?s (going on|wrong)|dig into|look into|drill|errors? at|high)/.test(s);
+  if (!sheet && !why) return null;
+  if (/(payout|fee|commission|sales|profit|p&l)/.test(s)) return null;
+  const named = findOutlets(q, stores);
+  const only = named.length ? named : findOutletLoose(q, stores);
+  if (only.length !== 1) return null;
+  if (sheet) return outletSheet(only[0]);
+  return why ? outletWhy(only[0]) : null;
+}
+
+function route(q: string): AgentReply {
+  const s = q.toLowerCase();
+  // Ranking outlets needs more than one.
+  const many = n() > 1;
+  if (FX.masaFixture() && /missing/.test(s) && /(doordash|order)/.test(s))
+    return {
+      agent: "finance",
+      by: "Payout reconciliation",
+      title: "3 DoorDash orders are in Toast but not in DoorDash's report: $95.45",
+      lines: ["KoreFi has claimed all 3."],
+      rows: [
+        { label: "DD 4BGF", sub: "Damen · Sat, Nov 7", value: "$31.40" },
+        { label: "DD 26Y7", sub: "Montrose · Fri, Nov 6", value: "$27.85" },
+        { label: "DD HS8V", sub: "Halsted · Tue, Nov 3", value: "$36.20" },
+      ],
+      source: "DoorDash report of Mon, Nov 9, matched to Toast",
+      work: ["Compared DoorDash's report with Toast, by order ID"],
+      followUps: ["When is each payout due?"],
+    };
+  if (FX.masaFixture() && /(due|when is|when are)/.test(s) && /(payout|paid|pay\b)/.test(s))
+    return {
+      agent: "finance",
+      by: "Payout reconciliation",
+      title: "Grubhub pays Wednesday and DoorDash pays Thursday",
+      lines: ["Uber Eats paid on Monday; I'll confirm the amount when its report arrives on Wednesday. You'll get the full summary by email on Friday at 8 AM, and an alert sooner only if a payout does not arrive on its usual day."],
+      source: "From each app's usual schedule for Taco Pros",
+      work: ["Read each app's usual payout schedule"],
+      followUps: ["Which DoorDash orders are missing?"],
+    };
+  if (FX.masaFixture() && /(still|file|not filed)/.test(s) && /dispute/.test(s)) return { agent: "operations", title: FX.STILL_TO_DISPUTE.title, lines: [FX.STILL_TO_DISPUTE.text], source: FX.STILL_TO_DISPUTE.source, work: ["Read the KoreFi team's filing log"], followUps: ["Why is Damen high?"] };
+  if (FX.masaFixture() && /(denied|lost|declined)/.test(s)) return { agent: "operations", title: FX.DENIED.title, lines: [FX.DENIED.text], source: FX.DENIED.source, work: ["Read each app's dispute decisions"], followUps: ["What is still to dispute?"] };
+  if (/(charge ?back|dispute|refund)/.test(s)) return many && /(outlet|store|where|most)/.test(s) ? chargebackOutlets() : chargebackUpdate();
+  if (/(checked so far|still coming|which apps|when is|when are|when does|due|arrive|status)/.test(s) && /(payout|app|paid|pay\b|report)/.test(s)) return payoutStatusReply();
   if (/(payout|deposit|bank|missing|match|reconcil)/.test(s)) return payoutCheck();
   if (/(fee|commission|which app|pays? me more|promo)/.test(s)) return feesByApp();
-  if (/(worst|least|lowest|best|outlet|store|location)/.test(s)) return worstOutlets();
+  if (many && /(worst|least|lowest|best|outlet|store|location)/.test(s)) return worstOutlets();
   if (/(price|menu|pricing|competitor|growth)/.test(s)) return growthLearning();
   return weeklyPnl();
 }
@@ -253,7 +412,7 @@ export const SUGGESTIONS = ["Run Chargeback recovery", "How did we do last week?
 // ───────── Seeded threads (what the agents posted while you were away) ─────────
 
 export type Message =
-  | { id: string; role: "user"; text: string }
+  | { id: string; role: "user"; text: string; /** A dashboard card the owner pointed at, sent with the message. */ ref?: CardRef }
   | { id: string; role: "agent"; reply: AgentReply; at?: string }
   | { id: string; role: "agent"; pending: true; agent: AgentId; work: string[]; done: number };
 
@@ -281,6 +440,101 @@ export function seedThreads(): Thread[] {
     { id: "payout", title: `Payouts by app · ${WEEK_LABEL}`, agent: "finance", at: "Thu", unread: false, messages: [{ id: "p1", role: "agent", reply: pay, at: "Thu 8:00 AM" }] },
   ];
 }
+
+/** Masa Kitchen's opening 3PD Payouts message: the week as it is mid-week, word for word from the agent-journey prototype. */
+function fixturePayouts(): AgentReply {
+  return {
+    agent: "finance",
+    by: "Payout reconciliation",
+    title: "No payout is late. 2 of 3 apps checked so far",
+    lines: ["DoorDash is missing 3 orders ($95.45), already claimed."],
+    work: ["Read the DoorDash report that arrived Mon, Nov 9", "Read the daily Grubhub reports through Nov 7", "Matched both to Toast by order ID"],
+    report: "payouts",
+    card: { title: "Payout check", sub: "Nov 1–7 · in progress" },
+    followUps: ["Which DoorDash orders are missing?", "When is each payout due?"],
+  };
+}
+
+/** Masa Kitchen's opening Chargebacks message, as the prototype words it. */
+function fixtureChargebacks(): AgentReply {
+  const top = FX.flagged[0];
+  return {
+    agent: "operations",
+    by: "Chargeback recovery",
+    title: `Chargebacks cost you ${usd(FX.charged)} this week, ${usd(FX.charged - FX.USUAL)} more than usual`,
+    lines: [`${top.name} is over your ${FX.LIMIT}% limit.`],
+    work: ["Read the DoorDash, Uber Eats and Grubhub adjustment reports for Nov 1–7", "Matched each charge to its order and outlet", "Compared each outlet with its usual week", "Checked which disputes were won, denied or not filed yet"],
+    dashboard: "dash-chargebacks",
+    followUps: ["Why is Damen high?", "What is still to dispute?", "Send Damen's sheet to its manager"],
+  };
+}
+
+/** Masa Kitchen (the KoreFi team pinned its dashboards): each pinned dashboard's chat opens on one message, a summary
+ *  of the dashboard and a few suggestions. The owner hasn't asked anything yet. */
+export function teamPinnedThreads(): Thread[] {
+  return [
+    {
+      id: "cb",
+      title: "Chargebacks",
+      agent: "operations",
+      at: "Thu",
+      unread: false,
+      dashboard: "dash-chargebacks",
+      messages: [
+        {
+          id: "c1",
+          role: "agent",
+          at: "Thu 8:00 AM",
+          reply: fixtureChargebacks(),
+        },
+      ],
+    },
+    {
+      id: "payout",
+      title: "3PD Payouts",
+      agent: "finance",
+      at: "Thu",
+      unread: false,
+      messages: [{ id: "p1", role: "agent", at: "Tue, Nov 10", reply: fixturePayouts() }],
+    },
+  ];
+}
+
+/** Chats the Taco Pros owner had with the agents over the last month, newest first. `at` is the display time:
+ * a clock time is today, "Yesterday", then a date ("Nov 14") within the last 30 days. */
+export function historyThreads(): Thread[] {
+  const chat = (id: string, title: string, agent: AgentId, at: string, q: string): Thread => ({
+    id,
+    title,
+    agent,
+    at,
+    unread: false,
+    messages: [
+      { id: `${id}-q`, role: "user", text: q },
+      { id: `${id}-a`, role: "agent", reply: answer(q), at },
+    ],
+  });
+  return [
+    chat("h-today-1", "Which outlets did worst last week?", "finance", "11:20 AM", "Which outlets did worst last week?"),
+    chat("h-today-2", "Disputed chargebacks this week", "operations", "9:05 AM", "How many chargebacks did we dispute this week?"),
+    chat("h-yday-1", "DoorDash vs Uber Eats fees", "finance", "Yesterday", "Which delivery app pays me more after fees?"),
+    chat("h-yday-2", "Missing payouts check", "finance", "Yesterday", "Are any payouts missing from the bank?"),
+    chat("h-nov14", "How did we do last week?", "finance", "Nov 14", "How did we do last week?"),
+    chat("h-nov10", "Outlets with the most chargebacks", "operations", "Nov 10", "Which outlets get the most chargebacks?"),
+    chat("h-nov3", "Did every payout match Square?", "finance", "Nov 3", "Did every payout match Square?"),
+    chat("h-oct27", "Promo spend by app", "finance", "Oct 27", "How much did we spend on promos on each app?"),
+    chat("h-oct22", "Menu prices vs nearby restaurants", "finance", "Oct 22", "How do our menu prices compare with competitors?"),
+  ];
+}
+
+/** Which Recent chats group a thread's display time falls in. */
+export function chatBucket(at: string) {
+  if (at === "Now" || /\d:\d\d/.test(at)) return "Today";
+  if (at === "Yesterday") return "Yesterday";
+  if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(at)) return "Previous 30 days";
+  return "Older";
+}
+export const CHAT_BUCKETS = ["Today", "Yesterday", "Previous 30 days", "Older"] as const;
 
 // ───────── Folders (the home groups what each agent does) ─────────
 

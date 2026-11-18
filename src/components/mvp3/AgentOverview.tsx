@@ -1,11 +1,13 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarClock, ChevronRight, Copy, LayoutDashboard, Mail, Pencil, Play, Plug, Zap } from "lucide-react";
+import { ArrowLeft, CalendarClock, Copy, LayoutDashboard, Mail, Pencil, Play, Plug, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { StatusBadge } from "@/components/dashboard/primitives";
+import { ReportTable, type TableColumn } from "@/components/ui/ReportTable";
+import { CountTabs } from "@/components/ui/CountTabs";
 import { FOLDERS, type AgentReply } from "@/lib/mvp3/agents";
 import { isSchedule, type Workflow } from "@/lib/mvp3/workflows";
 import { runHistory, usd, type Run } from "@/lib/mvp3/runs";
@@ -13,12 +15,16 @@ import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { useOnboarding } from "./Onboarding";
 import { useAccount } from "./AccountSwitcher";
+import { EmailPreviewButton } from "./EmailPreview";
+import { ActivityLog } from "./ActivityLog";
+import { activityLog } from "@/lib/mvp3/activity";
 
 // A live agent's home (/mvp3/agent?id=chargebacks), kept to what the owner scans:
 //  - header: who it is, one line of what it does, Edit and Run;
 //  - one setup line: when it runs, what it reads, where results go;
 //  - totals over the run history (same figures as the runs below);
-//  - the runs, newest first. A row opens that run's chat.
+//  - two tabs: Runs (newest first, the MVP's ReportTable; a row opens that run's chat) and
+//    Activity: what the KoreFi team and the agent did each week (reports uploaded, disputes filed, dashboard updated).
 // Report-only: the numbers say what happened; the KoreFi team does every fix.
 
 const fmtDate = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -40,6 +46,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
   const { account } = useAccount();
   const noPast = sample || !!account.agentsOff;
   const history = useMemo(() => (noPast ? [] : runHistory(w.id, skill?.thread)), [noPast, w.id, skill?.thread]);
+  const activity = useMemo(() => activityLog(w.id, { account, agent: w.agent ?? "operations", dashboard: dash?.title }), [account, w.id, w.agent, dash?.title]);
 
   const rows: Row[] = useMemo(() => {
     // Runs started in this session: chats that begin with "Run <agent>".
@@ -65,6 +72,33 @@ export function AgentOverview({ w }: { w: Workflow }) {
     openRun({ id: r.id, thread: r.thread, week: r.week, reply: r.reply }, w);
     router.push("/mvp3");
   };
+  const [tab, setTab] = useState<"runs" | "activity">("runs");
+  const columns: TableColumn<Row>[] = [
+    {
+      key: "result",
+      header: "Result",
+      cell: (r) => <span className="font-medium text-(--color-text-primary)">{r.headline}</span>,
+      sub: (r) => (
+        <span className="flex flex-wrap items-center gap-2">
+          {r.at ? `${fmtDate(r.at)} · Week of ${r.week}` : `Just now · ${r.week}`}
+          {r.trigger === "manual" && <StatusBadge tone="neutral">Run by {user.firstName}</StatusBadge>}
+          {r.status === "running" && <StatusBadge tone="warning">Running</StatusBadge>}
+        </span>
+      ),
+      sort: (r) => r.at ?? Number.MAX_SAFE_INTEGER,
+    },
+    ...cols.map(
+      (c): TableColumn<Row> => ({
+        key: c,
+        header: c,
+        align: "right",
+        cell: (r) => {
+          const st = r.stats.find((s) => s.label === c);
+          return <span className={cn("font-medium whitespace-nowrap tabular-nums", toneText(st?.tone))}>{st?.value ?? "–"}</span>;
+        },
+      }),
+    ),
+  ];
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-(--color-background-primary)" style={{ ["--hue" as string]: w.hue ?? "var(--color-primary)" }}>
@@ -89,10 +123,12 @@ export function AgentOverview({ w }: { w: Workflow }) {
                 <Pencil aria-hidden />
                 Edit
               </Link>
-              <button type="button" onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)} className={btn}>
-                <Copy aria-hidden />
-                Duplicate
-              </button>
+              {!account.limited && (
+                <button type="button" onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)} className={btn}>
+                  <Copy aria-hidden />
+                  Duplicate
+                </button>
+              )}
               {!sample && <button
                 type="button"
                 onClick={() => {
@@ -123,6 +159,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
               <li className="inline-flex items-center gap-1.5">
                 <Mail className="size-4 text-(--hue)" aria-hidden />
                 Emails {ownerEmail}
+                <EmailPreviewButton workflow={w.id} label="Preview" className="ml-1" />
               </li>
             )}
             {dash && (
@@ -153,64 +190,35 @@ export function AgentOverview({ w }: { w: Workflow }) {
           </section>
         )}
 
-        {/* Runs */}
-        <section aria-labelledby="runs-h" className="space-y-3">
-          <h2 id="runs-h" className="flex items-baseline gap-2 text-body-md font-medium text-(--color-text-primary)">
-            Runs
-            <span className="font-normal text-(--color-text-secondary)">{rows.length}</span>
-          </h2>
-          <div className="overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
-            <table className="w-full text-left text-body-md">
-              <thead className="text-body-sm text-(--color-text-secondary)">
-                <tr className="border-b border-(--color-border-default)">
-                  <th className="px-4 py-2.5 font-normal">Result</th>
-                  {cols.map((c) => (
-                    <th key={c} className="hidden px-4 py-2.5 text-right font-normal md:table-cell">
-                      {c}
-                    </th>
-                  ))}
-                  <th className="w-px px-4 py-2.5">
-                    <span className="sr-only">Open</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-(--color-border-default)">
-                {rows.map((r) => (
-                  <tr key={r.id} onClick={() => go(r)} className="group cursor-pointer hover:bg-(--color-neutral-lightest)">
-                    <td className="max-w-0 px-4 py-3 md:max-w-none">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          go(r);
-                        }}
-                        className="block max-w-full truncate text-left font-medium text-(--color-text-primary) outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
-                      >
-                        {r.headline}
-                      </button>
-                      <span className="flex items-center gap-2 text-body-sm text-(--color-text-secondary)">
-                        {r.at ? `${fmtDate(r.at)} · Week of ${r.week}` : `Just now · ${r.week}`}
-                        {r.trigger === "manual" && <StatusBadge tone="neutral">Run by {user.firstName}</StatusBadge>}
-                        {r.status === "running" && <StatusBadge tone="warning">Running</StatusBadge>}
-                      </span>
-                    </td>
-                    {cols.map((c) => {
-                      const st = r.stats.find((s) => s.label === c);
-                      return (
-                        <td key={c} className={cn("hidden px-4 py-3 text-right font-medium whitespace-nowrap tabular-nums md:table-cell", toneText(st?.tone))}>
-                          {st?.value ?? "–"}
-                        </td>
-                      );
-                    })}
-                    <td className="px-4 py-3">
-                      <ChevronRight className="size-4 text-(--color-text-secondary) group-hover:text-(--color-text-primary)" aria-hidden />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {rows.length === 0 && <p className="px-4 py-12 text-center text-body-md text-(--color-text-secondary)">No runs yet. The first one starts once your reports are in.</p>}
-          </div>
+        {/* Runs and Activity, as tabs */}
+        <section className="space-y-4">
+          <CountTabs
+            label="Agent history"
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { key: "runs", label: "Runs", count: rows.length },
+              { key: "activity", label: "Activity" },
+            ]}
+          />
+          {tab === "runs" ? (
+            <ReportTable
+              columns={columns}
+              rows={rows}
+              rowKey={(r) => r.id}
+              noun="runs"
+              pageSize={10}
+              onRowClick={go}
+              empty="No runs yet. The first one starts once your reports are in."
+            />
+          ) : (
+            <div className="space-y-2">
+              <p className="text-body-sm text-(--color-text-secondary)">What the KoreFi team and this agent did</p>
+              <div className="rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
+                <ActivityLog items={activity} days={5} />
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>

@@ -44,7 +44,7 @@ const passes = (o: Outlet, r: Rule) => !r.values.length || r.values.includes(val
 export function matches(o: Outlet, f: OutletFilter, stats: OutletStats, skip?: Rule) {
   return f.quick.every((k) => QUICK.find((q) => q.key === k)?.test(o, stats) ?? true) && f.rules.every((r) => r === skip || passes(o, r));
 }
-export const filterStores = (f: OutletFilter, stats: OutletStats): Store[] => OUTLETS.filter((o) => matches(o, f, stats)).map((o) => o.store);
+export const filterStores = (f: OutletFilter, stats: OutletStats, within: Outlet[] = OUTLETS): Store[] => within.filter((o) => matches(o, f, stats)).map((o) => o.store);
 
 /** Filters in use: quick filters on, and rules with something picked. */
 export const activeCount = (f: OutletFilter) => f.quick.length + f.rules.filter((r) => r.values.length).length;

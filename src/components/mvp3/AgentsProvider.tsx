@@ -3,9 +3,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { user } from "@/lib/mockData";
 import type { Account } from "@/lib/mvp3/accounts";
 import { useAccount } from "./AccountSwitcher";
-import { FOLDERS, REPORTS, agentOf, answer, chargebackUpdate, payoutCheck, seedThreads, weeklyPnl, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
+import { FOLDERS, REPORTS, agentOf, answer, teamPinnedThreads, outletSheet, chargebackUpdate, payoutCheck, seedThreads, historyThreads, weeklyPnl, setAccountStores, type AgentReply, type Message, type ReportId, type Thread } from "@/lib/mvp3/agents";
 import { blankWorkflow, isSchedule, workflowOf, type Workflow } from "@/lib/mvp3/workflows";
-import { DEFAULT_CONFIG, customize, parseSchedule, scopeLabel, type Automation, type Dashboard } from "@/lib/mvp3/dashboards";
+import type { Store } from "@/lib/finance/outlets";
+import { setMasaFixture } from "@/lib/mvp3/masaFixture";
+import { findOutlets, outletsLabel } from "@/lib/mvp3/outletScope";
+import { DEFAULT_CONFIG, customize, dashData, dashStores, shortStore, parseSchedule, scopeSentence, widgetTitle, type Automation, type CardRef, type Dashboard } from "@/lib/mvp3/dashboards";
 
 // MVP 3's state, kept in the layout so chats, edited agents and dashboards survive moving between pages.
 //  - Chats: `active` null = a new chat (the home screen).
@@ -15,7 +18,17 @@ import { DEFAULT_CONFIG, customize, parseSchedule, scopeLabel, type Automation, 
 //  - The canvas is the report or dashboard docked right of the chat (the ChatGPT Dots split).
 // Prototype: all in memory.
 
-export type CanvasId = ReportId | `dash:${string}`;
+export type CanvasId = ReportId | `dash:${string}` | `outlet:${string}`;
+
+/** The first suggestion when the owner points at a card but asks for nothing the agent can do. */
+const CARD_ASKS: Record<NonNullable<CardRef["widget"]>, string> = {
+  kpis: "Only DoorDash",
+  trend: "Last 4 weeks",
+  apps: "Only DoorDash and Uber Eats",
+  outlets: "Top 10 outlets",
+  reasons: "Last 4 weeks",
+  recent: "Only Grubhub",
+};
 
 type Ctx = {
   threads: Thread[];
@@ -27,9 +40,17 @@ type Ctx = {
   ask: (question: string) => void;
   busy: boolean;
   canvas: CanvasId | null;
-  setCanvas: (r: CanvasId | null) => void;
+  /** `outlets`: open a report filtered to the outlets a reply was kept to ("How did Hyde Park do?"). */
+  setCanvas: (r: CanvasId | null, outlets?: Store[]) => void;
+  /** The outlets the open report starts filtered to, or null for all of the restaurant's. */
+  canvasOutlets: Store[] | null;
   expanded: boolean;
   setExpanded: (v: boolean) => void;
+  /** The dashboard card the owner pointed at ("Edit in chat"). It rides on their next message, then clears. */
+  pointed: CardRef | null;
+  setPointed: (r: CardRef | null) => void;
+  /** Report sections the owner asked to hide, by report and section title ("hide this" on a pointed card). */
+  hiddenCards: Partial<Record<ReportId, string[]>>;
   // agents
   getWorkflow: (id: string) => Workflow | null;
   saveWorkflow: (w: Workflow) => void;
@@ -48,6 +69,9 @@ type Ctx = {
   /** Pin (or unpin) a report the agent opened, e.g. the P&L Summary. Pinned reports are dashboards with `report`. */
   pinReport: (report: ReportId, pinned: boolean) => void;
   setAutomation: (id: string, a: Automation | undefined) => void;
+  /** Outlets whose one-page sheet went to their manager ("Send this to Damen's manager"). */
+  sheetsSent: Store[];
+  markSheetSent: (s: Store) => void;
   /** A restaurant with no reports yet: agents answer "no reports yet", never with another restaurant's figures. */
   sample: boolean;
 };
@@ -80,30 +104,69 @@ const where = (a: Automation, title: string, report = false) => [a.email && `ema
 /** The chats an account opens on: what its agents posted, or none for a restaurant that just joined or has no agent on yet. */
 function seedFor(account: Account) {
   setAccountStores(account.stores);
+  setMasaFixture(!!account.teamPinned);
   if (account.stage === "new" || account.agentsOff) return [];
   if (!account.home) return seedThreads();
-  // Taco Pros opens with Recent chats empty: its seeded chats only back the pinned dashboards and agent cards.
+  // Masa Kitchen: only the chats behind the dashboards the KoreFi team pinned, each a summary with suggestions.
+  if (account.teamPinned) return teamPinnedThreads().map((t) => ({ ...t, hidden: true }));
+  // Taco Pros' seeded agent chats stay out of Recent chats: they only back the pinned dashboards and agent cards.
   // The Chargebacks chat is where the Chargebacks dashboard was built, so asks there reshape it.
-  return seedThreads().map((t) => ({ ...t, hidden: true, unread: false, ...(t.id === "cb" ? { dashboard: "dash-chargebacks" } : {}) }));
+  const seeded = seedThreads().map((t) => ({ ...t, hidden: true, unread: false, ...(t.id === "cb" ? { dashboard: "dash-chargebacks" } : {}) }));
+  // Taco Pros also shows a month of past chats in Recent chats (today, yesterday, previous 30 days).
+  return account.id === "tacopros" ? [...historyThreads(), ...seeded] : seeded;
 }
 
 /** Taco Pros (Account.home) opens with two dashboards already pinned (Daily P&L is not live, so it isn't pinned), each built in one of its seeded chats. */
 function seedDashboards(account: Account): Dashboard[] {
   if (!account.home) return [];
   const thu = "Every Thursday, 8:00 AM";
+  // Masa Kitchen's are pinned by the KoreFi team, and labelled so.
+  const by = account.teamPinned ? { pinnedBy: "team" as const } : {};
   return [
-    { id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
-    { id: "report-payouts", title: REPORTS.payouts.title, workflow: "payouts", agent: "finance", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "payout", report: "payouts", automation: { schedule: thu, email: true, dashboard: true } },
+    { ...by, id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
+    { ...by, id: "report-payouts", title: REPORTS.payouts.title, workflow: "payouts", agent: "finance", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "payout", report: "payouts", automation: { schedule: thu, email: true, dashboard: true } },
   ];
+}
+
+// The open chat and what's beside it, kept for the browser tab, so a refresh on /mvp3 reopens it instead of the
+// empty chat (the chat isn't in the URL: ?chat= links belong to Taco Pros). Only chats that are seeded again on
+// load come back; a chat started in this session is gone after a refresh, like everything else in memory.
+const PLACE = "korefi.mvp3.place";
+type Place = { account: string; active: string | null; canvas: CanvasId | null };
+function readPlace(account: string): Place | null {
+  try {
+    const p = JSON.parse(window.sessionStorage.getItem(PLACE) ?? "null") as Place | null;
+    return p?.account === account ? p : null;
+  } catch {
+    return null;
+  }
 }
 
 export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const { account } = useAccount();
   const sample = account.stage === "new";
-  const [threads, setThreads] = useState<Thread[]>(() => seedFor(account));
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [canvas, setCanvasState] = useState<CanvasId | null>(null);
+  const [start] = useState(() => {
+    const ts = seedFor(account);
+    const p = readPlace(account.id);
+    const back = p?.active && ts.some((t) => t.id === p.active) ? p : null;
+    return { threads: ts, active: back?.active ?? null, canvas: back?.canvas ?? null };
+  });
+  const [threads, setThreads] = useState<Thread[]>(start.threads);
+  const [activeId, setActiveId] = useState<string | null>(start.active);
+  const [canvas, setCanvasState] = useState<CanvasId | null>(start.canvas);
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(PLACE, JSON.stringify({ account: account.id, active: activeId, canvas } satisfies Place));
+    } catch {
+      // Storage blocked: a refresh opens on the empty chat.
+    }
+  }, [account.id, activeId, canvas]);
+  const [canvasOutlets, setCanvasOutlets] = useState<Store[] | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [pointed, setPointed] = useState<CardRef | null>(null);
+  const [hiddenCards, setHiddenCards] = useState<Partial<Record<ReportId, string[]>>>({});
+  const [sheetsSent, setSheetsSent] = useState<Store[]>([]);
+  const markSheetSent = useCallback((s: Store) => setSheetsSent((xs) => (xs.includes(s) ? xs : [...xs, s])), []);
   const [workflows, setWorkflows] = useState<Record<string, Workflow>>({});
   const [dashboards, setDashboards] = useState<Dashboard[]>(() => seedDashboards(account));
   // Switching restaurant (top-bar AccountSwitcher) starts over on that account's chats and dashboards.
@@ -113,16 +176,24 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     setThreads(seedFor(account));
     setActiveId(null);
     setCanvasState(null);
+    setCanvasOutlets(null);
     setExpanded(false);
+    setPointed(null);
+    setHiddenCards({});
+    setSheetsSent([]);
     setDashboards(seedDashboards(account));
     setWorkflows({});
   }
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
 
-  const setCanvas = useCallback((r: CanvasId | null) => {
+  const setCanvas = useCallback((r: CanvasId | null, outlets?: Store[]) => {
     setCanvasState(r);
-    if (!r) setExpanded(false);
+    setCanvasOutlets(outlets?.length ? outlets : null);
+    if (!r) {
+      setExpanded(false);
+      setPointed(null);
+    }
   }, []);
 
   const open = useCallback(
@@ -141,19 +212,20 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const patch = (tid: string, f: (m: Message[]) => Message[]) => setThreads((ts) => ts.map((t) => (t.id === tid ? { ...t, messages: f(t.messages) } : t)));
 
   /** Post the user's message and a pending reply, fill the work log a step at a time, then swap in the answer. */
-  const play = useCallback((tid: string | null, q: string, reply: AgentReply, extra?: Partial<Thread>) => {
+  const play = useCallback((tid: string | null, q: string, reply: AgentReply, extra?: Partial<Thread>, ref?: CardRef) => {
     const pid = id();
+    const ask: Message = { id: id(), role: "user", text: q, ...(ref && { ref }) };
     const pending: Message = { id: pid, role: "agent", pending: true, agent: reply.agent, work: reply.work, done: 0 };
     let target = tid;
     if (!target) {
       target = id();
-      const t: Thread = { id: target, title: q.length > 42 ? q.slice(0, 40) + "…" : q, agent: reply.agent, at: "Now", unread: false, messages: [{ id: id(), role: "user", text: q }, pending], ...extra };
+      const t: Thread = { id: target, title: q.length > 42 ? q.slice(0, 40) + "…" : q, agent: reply.agent, at: "Now", unread: false, messages: [ask, pending], ...extra };
       setThreads((ts) => [t, ...ts]);
       setActiveId(target);
       setCanvasState(null);
     } else {
       const t2 = target;
-      setThreads((ts) => ts.map((t) => (t.id === t2 ? { ...t, ...extra, hidden: false, messages: [...t.messages, { id: id(), role: "user", text: q }, pending] } : t)));
+      setThreads((ts) => ts.map((t) => (t.id === t2 ? { ...t, ...extra, hidden: false, messages: [...t.messages, ask, pending] } : t)));
     }
     const done = target;
     reply.work.forEach((_, i) => {
@@ -163,7 +235,11 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       window.setTimeout(() => {
         patch(done, (m) => m.map((x) => (x.id === pid ? { id: pid, role: "agent", reply, at: now() } : x)));
         if (reply.dashboard) setCanvasState(`dash:${reply.dashboard}`);
-        else if (reply.report) setCanvasState(reply.report);
+        else if (reply.outlet) setCanvasState(`outlet:${reply.outlet}`);
+        else if (reply.report) {
+          setCanvasState(reply.report);
+          setCanvasOutlets(reply.outlets?.length ? reply.outlets : null);
+        }
       }, STEP_MS * (reply.work.length + 1)),
     );
   }, []);
@@ -226,13 +302,14 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         const d: Dashboard = existing ?? { id: dashId, title: "Chargebacks", workflow: w.id, agent, config: DEFAULT_CONFIG, pinned: false, updated: now() };
         const schedule = w.triggers.find(isSchedule);
         const base = chargebackUpdate();
+        const topOutlet = dashData(d.config).outlets[0]?.key;
         reply = {
           ...base,
           work,
           report: undefined,
           dashboard: dashId,
           lines: [...base.lines, existing ? "I refreshed your Chargebacks dashboard with this run." : "I built a Chargebacks dashboard from this run. Tell me what to change, and pin it to your sidebar if you want to keep it."],
-          followUps: ["Only show DoorDash", "Add why orders get charged back", "Every Thursday at 8 AM, email me this and update the dashboard", "Pin it to my sidebar"],
+          followUps: ["Only show DoorDash", ...(topOutlet ? [`Only show ${shortStore(topOutlet)}`] : []), "Add why orders get charged back", "Every Thursday at 8 AM, email me this and update the dashboard", "Pin it to my sidebar"],
         };
         const next = { ...d, updated: now(), automation: d.automation ?? (schedule && w.deliver.dashboard ? { schedule, ...w.deliver } : undefined) };
         setDashboards((ds) => (existing ? ds.map((x) => (x.id === dashId ? next : x)) : [...ds, next]));
@@ -338,23 +415,53 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       const q = text.trim();
       if (!q) return;
       const thread = threads.find((t) => t.id === activeId);
+      // A pointed-at card goes with this message only.
+      const ref = pointed ?? undefined;
+      setPointed(null);
 
       // No reports yet: say so. Never answer with another restaurant's numbers.
       if (sample) {
-        play(activeId, q, noReportsYet(thread ? agentOf(thread.agent).id : answer(q).agent, account.name));
+        play(activeId, q, noReportsYet(thread ? agentOf(thread.agent).id : answer(q).agent, account.name), undefined, ref);
         return;
       }
 
       // In a chat that built a dashboard, a request about the dashboard reshapes it.
-      const dash = thread?.dashboard ? dashboards.find((d) => d.id === thread.dashboard) : undefined;
-      const c = dash ? customize(q, dash) : null;
+      // A pointed-at card names its dashboard and narrows "remove this" / "move it up" to that card.
+      // A pointed-at report section: the agent can hide it, or bring hidden ones back. The report itself is fixed.
+      if (ref?.report) {
+        const r = ref.report;
+        const hidden = hiddenCards[r] ?? [];
+        const agent = thread ? agentOf(thread.agent).id : dashboards.find((d) => d.report === r)?.agent ?? answer(q).agent;
+        const s = q.toLowerCase();
+        if (/(show|bring back|unhide|restore).*(all|hidden|cards|back)/.test(s) && hidden.length) {
+          setHiddenCards((h) => ({ ...h, [r]: [] }));
+          play(activeId, q, { agent, title: `Showing every card on ${REPORTS[r].title}`, lines: [`Brought back ${hidden.join(", ")}.`], work: [`Updated ${REPORTS[r].title}`], report: r }, undefined, ref);
+        } else if (/(remove|hide|drop|delete|take out|get rid|don.?t need|no more)/.test(s)) {
+          setHiddenCards((h) => ({ ...h, [r]: [...new Set([...(h[r] ?? []), ref.title])] }));
+          play(activeId, q, { agent, title: `Hid ${ref.title}`, lines: [`${ref.title} is off ${REPORTS[r].title}, here and on your sidebar. Ask me to show it again any time.`], work: [`Updated ${REPORTS[r].title}`], report: r, followUps: ["Show all cards again"] }, undefined, ref);
+        } else {
+          play(activeId, q, {
+            agent,
+            title: `About ${ref.title}`,
+            lines: [`I can hide this card from ${REPORTS[r].title}, or bring hidden cards back. Changing what's inside a report card isn't something I can do yet.`],
+            work: [`Looked at ${ref.title}`],
+            report: r,
+            followUps: ["Hide this card", ...(hidden.length ? ["Show all cards again"] : [])],
+          }, undefined, ref);
+        }
+        return;
+      }
+      const dashId = ref?.dash ?? thread?.dashboard;
+      const dash = dashId ? dashboards.find((d) => d.id === dashId) : undefined;
+      const c = dash ? customize(q, dash, ref?.widget) : null;
       if (dash && c) {
         const title = c.title ?? dash.title;
         setDashboards((ds) => ds.map((d) => (d.id === dash.id ? { ...d, config: c.config, title, pinned: c.pin ?? d.pinned, updated: now() } : d)));
         if (c.automation) setAutomation(dash.id, c.automation);
+        const kept = c.config.stores.length ? ` It covers ${outletsLabel(dashStores(c.config))} only.` : "";
         const lines = c.automation
-          ? [`Every run I'll ${where(c.automation, title)}.${c.automation.dashboard ? " It's pinned to your sidebar." : ""} You can change this in the agent's Triggers.`]
-          : [`Now showing ${scopeLabel(c.config).toLowerCase()}.${c.pin ? " It's in your sidebar under Dashboards." : ""}`];
+          ? [`Every run I'll ${where(c.automation, title)}.${kept}${c.automation.dashboard ? " It's pinned to your sidebar." : ""} You can change this in the agent's Triggers.`]
+          : [`Now showing ${scopeSentence(c.config)}.${c.pin ? " It's in your sidebar under Dashboards." : ""}`];
         play(activeId, q, {
           agent: dash.agent,
           title: c.automation ? `Done. ${c.automation.schedule}` : c.changes.length === 1 ? c.changes[0] : "Dashboard updated",
@@ -363,7 +470,19 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
           dashboard: dash.id,
           automation: c.automation,
           followUps: c.automation ? ["Add the latest chargebacks", "Top 10 outlets"] : dash.pinned || c.pin ? ["Every Thursday at 8 AM, email me this and update the dashboard"] : ["Pin it to my sidebar"],
-        });
+        }, undefined, ref);
+        return;
+      }
+      // Pointed at a card but asked for nothing it can do: say what it can change about that card.
+      if (dash && ref?.widget) {
+        const t = widgetTitle(ref.widget);
+        play(activeId, q, {
+          agent: dash.agent,
+          title: `About ${t}`,
+          lines: [`I can remove this card, move it up or down, or narrow it to one app, some outlets or fewer weeks (that changes the whole dashboard).`],
+          work: [`Looked at ${t}`],
+          followUps: [CARD_ASKS[ref.widget], "Move it to the top", "Remove it"],
+        }, undefined, ref);
         return;
       }
 
@@ -401,9 +520,17 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         if (w) return runAgent(w);
       }
 
-      play(activeId, q, answer(q));
+      // "Send this to the manager" right after an outlet's reply means that outlet.
+      const lastOutlet = thread && [...thread.messages].reverse().find((m) => m.role === "agent" && "reply" in m && m.reply.outlet);
+      const dived = lastOutlet && "reply" in lastOutlet ? lastOutlet.reply.outlet : undefined;
+      if (dived && /(send|share|email|whatsapp).*(manager|sheet)|(manager|sheet).*(send|share)/i.test(q) && !findOutlets(q, [dived]).length) {
+        play(activeId, q, outletSheet(dived), undefined, ref);
+        return;
+      }
+
+      play(activeId, q, answer(q), undefined, ref);
     },
-    [activeId, threads, dashboards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account.name],
+    [activeId, threads, dashboards, pointed, hiddenCards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account.name],
   );
 
   const ask = useCallback(
@@ -418,8 +545,8 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const active = threads.find((t) => t.id === activeId) ?? null;
   const busy = !!active?.messages.some((m) => "pending" in m);
   const value = useMemo<Ctx>(
-    () => ({ threads, active, open, newChat, send, ask, busy, canvas, setCanvas, expanded, setExpanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sample }),
-    [threads, active, open, newChat, send, ask, busy, canvas, setCanvas, expanded, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sample],
+    () => ({ threads, active, open, newChat, send, ask, busy, canvas, setCanvas, canvasOutlets, expanded, setExpanded, pointed, setPointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample }),
+    [threads, active, open, newChat, send, ask, busy, canvas, setCanvas, canvasOutlets, expanded, pointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample],
   );
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;
 }

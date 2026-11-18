@@ -42,7 +42,7 @@ export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
     const y = e.currentTarget.scrollTop > (table.current?.offsetTop ?? 0);
     if (x !== scrolled.x || y !== scrolled.y) setScrolled({ x, y });
   };
-  const pnl = usePnl(outlets.filtered ? outlets.stores : null, range);
+  const pnl = usePnl(outlets.subset ? outlets.stores : null, range);
   const { t, recon, edit } = pnl;
   const none = outlets.stores.length === 0;
   const groups = ["all", ...outlets.stores];
@@ -78,7 +78,7 @@ export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
         </div>
         {/* Phones: what the report covers, one line that opens the filters */}
         <button type="button" onClick={() => setSheet("filter")} className="sticky left-0 flex h-11 w-full items-center gap-1.5 px-4 text-left text-body-md text-(--color-text-secondary) outline-none focus-visible:bg-(--color-neutral-lightest) md:hidden">
-          <span className="truncate">{outlets.filtered ? `${outlets.stores.length} outlets` : "All outlets"} · {(PRESETS.find((p) => p.range[0] === range[0] && p.range[1] === range[1]) ?? { label: "Custom range" }).label}</span>
+          <span className="truncate">{outlets.filtered ? `${outlets.stores.length} of ${outlets.universe.length} outlets` : "All outlets"} · {(PRESETS.find((p) => p.range[0] === range[0] && p.range[1] === range[1]) ?? { label: "Custom range" }).label}</span>
           <span className="ml-auto shrink-0 text-(--color-text-clickable)">Change</span>
         </button>
         {none ? (

@@ -4,13 +4,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PinOff } from "lucide-react";
 import { useAgents } from "./AgentsProvider";
 import { AgentDashboard, ScheduleControl } from "./AgentDashboard";
-import { REPORT_VIEW } from "./reportViews";
+import { ReportView } from "./reportViews";
 import { AgentChatButton } from "./AgentChatButton";
+import { PointLayer } from "./PointLayer";
 
 // A pinned dashboard, full page. "Customise in chat" goes back to the chat it was built in.
 export function DashboardPage() {
   const id = useSearchParams().get("id");
-  const { dashboards, open, setCanvas, runAgent, getWorkflow, pinReport } = useAgents();
+  const { dashboards, open, setCanvas, runAgent, getWorkflow, pinReport, setPointed } = useAgents();
   const router = useRouter();
   const d = dashboards.find((x) => x.id === id);
   if (!d)
@@ -48,13 +49,40 @@ export function DashboardPage() {
             />
           )}
         </div>
-        <div className="flex min-h-0 flex-1 flex-col [&>div:first-child]:pr-[460px]">{REPORT_VIEW[report]()}</div>
+        {/* Pointing at a card here opens the chat it came from, report beside it, card in the composer. */}
+        <PointLayer
+          report={report}
+          className="flex min-h-0 flex-1 flex-col [&>div:first-child]:pr-[460px]"
+          onPoint={
+            d.thread
+              ? (r) => {
+                  open(d.thread!);
+                  setCanvas(report);
+                  setPointed(r);
+                  router.push("/mvp3");
+                }
+              : undefined
+          }
+        >
+          <ReportView report={report} />
+        </PointLayer>
       </div>
     );
   }
   return (
     <AgentDashboard
       d={d}
+      // On the full page, pointing at a card opens its chat with the dashboard beside it and the card in the composer.
+      onPoint={
+        d.thread
+          ? (r) => {
+              open(d.thread!);
+              setCanvas(`dash:${d.id}`);
+              setPointed(r);
+              router.push("/mvp3");
+            }
+          : undefined
+      }
       actions={
         <AgentChatButton
           agent={d.agent}

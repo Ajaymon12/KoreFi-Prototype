@@ -1,11 +1,13 @@
 import { LAST, WEEKS } from "@/components/finance/PnlStory";
 import { APPS, appLabel, chargebacks, type AppKey, type Chargeback } from "@/lib/finance/chargebacks";
-import { shortStore } from "@/lib/finance/outlets";
+import { shortStore, type Store } from "@/lib/finance/outlets";
 import type { AgentId, ReportId } from "./agents";
+import { accountStores, findOutlets, outletsLabel } from "./outletScope";
 
 // MVP 3: the dashboard an agent builds when it runs (Chargeback recovery → "Chargebacks").
 // The owner shapes it in the chat ("only DoorDash", "add reasons", "last 4 weeks"), pins it to the
-// sidebar, and can put it on a schedule ("every Thursday at 8 AM, email me and update the dashboard").
+// sidebar, and can put it on a schedule. It covers the open restaurant's outlets, or the ones the owner names
+// ("only Hyde Park", "without Wisconsin"); a schedule keeps that scope, so the email covers the same outlets. ("every Thursday at 8 AM, email me and update the dashboard").
 // Figures come from the same chargebacks() as the /mvp2 Chargeback report, so they match it.
 // Prototype: no model, a keyword parser reads the request.
 
@@ -21,7 +23,12 @@ export const WIDGETS: { id: WidgetId; title: string; words: RegExp }[] = [
 ];
 export const widgetTitle = (id: WidgetId) => WIDGETS.find((w) => w.id === id)!.title;
 
-export type DashConfig = { weeks: number; apps: AppKey[]; widgets: WidgetId[]; topN: number };
+/** A card the owner pointed at ("Edit in chat"), attached to their next message. Either a block on an
+ *  agent-built dashboard (`dash` + `widget`) or a section of a report (`report`, found by its title). */
+export type CardRef = { title: string } & ({ dash: string; widget: WidgetId; report?: undefined } | { report: ReportId; dash?: undefined; widget?: undefined });
+
+/** `stores`: the outlets the owner kept it to, empty = every outlet of the restaurant. */
+export type DashConfig = { weeks: number; apps: AppKey[]; widgets: WidgetId[]; topN: number; stores: Store[] };
 export type Automation = { schedule: string; email: boolean; dashboard: boolean };
 export type Dashboard = {
   id: string;
@@ -37,20 +44,29 @@ export type Dashboard = {
   thread?: string;
   /** A pinned /mvp2 report (P&L Summary, Payouts…) instead of the agent's own blocks. */
   report?: ReportId;
+  /** Pinned by the KoreFi team for the owner (Masa Kitchen), not by the owner in a chat. */
+  pinnedBy?: "team";
   /** Built on Taco Pros sample data for a restaurant with no reports yet. Labelled, and can't be pinned or scheduled. */
   sample?: boolean;
 };
 
-export const DEFAULT_CONFIG: DashConfig = { weeks: 13, apps: [], widgets: ["kpis", "trend", "apps", "outlets"], topN: 5 };
+export const DEFAULT_CONFIG: DashConfig = { weeks: 13, apps: [], widgets: ["kpis", "trend", "apps", "outlets"], topN: 5, stores: [] };
 
 // ───────── Figures ─────────
 
 const sum = (xs: Chargeback[], k: "amount" | "wonBack" = "amount") => xs.reduce((n, c) => n + c[k], 0);
 const isOpen = (c: Chargeback) => c.status === "disputing" || c.status === "new";
 
+/** The outlets a dashboard covers: the ones it's kept to, within the open restaurant (all of them by default). */
+export function dashStores(cfg: DashConfig): readonly Store[] {
+  const mine = accountStores();
+  const kept = mine.filter((s) => cfg.stores.includes(s));
+  return kept.length ? kept : mine;
+}
+
 export function dashData(cfg: DashConfig) {
   const from = Math.max(0, LAST - cfg.weeks + 1);
-  const all = chargebacks(WEEKS, from, LAST);
+  const all = chargebacks(WEEKS, from, LAST, dashStores(cfg));
   const rows = cfg.apps.length ? all.filter((c) => cfg.apps.includes(c.app)) : all;
   const won = rows.filter((c) => c.status === "won");
   const decided = rows.filter((c) => !isOpen(c));
@@ -79,7 +95,10 @@ export function dashData(cfg: DashConfig) {
 }
 
 export const appsLabel = (apps: AppKey[]) => (apps.length === 0 || apps.length === APPS.length ? "All apps" : apps.map(appLabel).join(" and "));
-export const scopeLabel = (cfg: DashConfig) => `Last ${cfg.weeks} weeks · ${appsLabel(cfg.apps)}`;
+const keptTo = (cfg: DashConfig) => (cfg.stores.length ? outletsLabel(dashStores(cfg)) : null);
+export const scopeLabel = (cfg: DashConfig) => [`Last ${cfg.weeks} weeks`, appsLabel(cfg.apps), keptTo(cfg) ?? "All outlets"].join(" · ");
+/** For a sentence: "last 13 weeks, all apps, Hyde Park only". */
+export const scopeSentence = (cfg: DashConfig) => [`last ${cfg.weeks} weeks`, appsLabel(cfg.apps).toLowerCase(), keptTo(cfg) ? `${keptTo(cfg)} only` : "all outlets"].join(", ");
 export { shortStore };
 
 // ───────── Reading a request ─────────
@@ -110,10 +129,11 @@ const APP_WORDS: [RegExp, AppKey][] = [
 
 export type Customised = { config: DashConfig; title?: string; pin?: boolean; automation?: Automation; changes: string[] };
 
-/** What a chat message asks of the dashboard, or null when it isn't about the dashboard. */
-export function customize(text: string, d: Dashboard): Customised | null {
+/** What a chat message asks of the dashboard, or null when it isn't about the dashboard.
+ *  `focus`: the card the owner pointed at, so "remove this" or "move it up" needs no card name. */
+export function customize(text: string, d: Dashboard, focus?: WidgetId): Customised | null {
   const s = text.toLowerCase();
-  const cfg: DashConfig = { ...d.config, apps: [...d.config.apps], widgets: [...d.config.widgets] };
+  const cfg: DashConfig = { ...d.config, apps: [...d.config.apps], widgets: [...d.config.widgets], stores: [...(d.config.stores ?? [])] };
   const changes: string[] = [];
   const out: Customised = { config: cfg, changes };
 
@@ -140,6 +160,23 @@ export function customize(text: string, d: Dashboard): Customised | null {
       changes.push(cfg.apps.length ? `Only ${appsLabel(cfg.apps)}` : "All apps");
     }
 
+    // Outlets: "only Hyde Park", "add Old Town", "without Wisconsin", "all outlets again".
+    const places = findOutlets(text);
+    const everyOutlet = /\b(all|every) (the |my )?(outlets?|stores?|locations?)\b/.test(s);
+    const mine = accountStores();
+    if (places.length) {
+      const current = cfg.stores.length ? cfg.stores : [...mine];
+      const adding = /\b(add|also|include|plus)\b/.test(s) && cfg.stores.length > 0;
+      const next = removing ? current.filter((x) => !places.includes(x)) : adding ? [...new Set([...cfg.stores, ...places])] : places;
+      if (next.length) {
+        cfg.stores = next.length === mine.length ? [] : next;
+        changes.push(cfg.stores.length ? `Only ${outletsLabel(cfg.stores)}` : "All outlets");
+      }
+    } else if (everyOutlet && cfg.stores.length) {
+      cfg.stores = [];
+      changes.push("All outlets");
+    }
+
     const w = s.match(/\b(\d{1,2})\s*weeks?\b/);
     const weeks = w ? Number(w[1]) : /last month|past month|4 weeks/.test(s) ? 4 : /quarter|3 months|13 weeks/.test(s) ? 13 : null;
     if (weeks) {
@@ -156,7 +193,7 @@ export function customize(text: string, d: Dashboard): Customised | null {
 
     for (const wd of WIDGETS) {
       if (!wd.words.test(s)) continue;
-      if (wd.id === "outlets" && top) continue;
+      if (wd.id === "outlets" && (top || places.length || everyOutlet)) continue;
       const has = cfg.widgets.includes(wd.id);
       if (removing && has) {
         cfg.widgets = cfg.widgets.filter((x) => x !== wd.id);
@@ -164,6 +201,28 @@ export function customize(text: string, d: Dashboard): Customised | null {
       } else if (!removing && !has) {
         cfg.widgets.push(wd.id);
         changes.push(`Added ${wd.title.toLowerCase()}`);
+      }
+    }
+
+    // The pointed-at card: "remove this", "move it to the top", "show 10" (outlets) act on it.
+    if (focus && cfg.widgets.includes(focus)) {
+      const t = widgetTitle(focus).toLowerCase();
+      const named = WIDGETS.some((wd) => wd.words.test(s));
+      if (removing && !named) {
+        cfg.widgets = cfg.widgets.filter((x) => x !== focus);
+        changes.push(`Removed ${t}`);
+      } else if (/(move|put|bring).*(up|top|first)|to the top/.test(s)) {
+        cfg.widgets = [focus, ...cfg.widgets.filter((x) => x !== focus)];
+        changes.push(`Moved ${t} to the top`);
+      } else if (/(move|put).*(down|bottom|last|end)/.test(s)) {
+        cfg.widgets = [...cfg.widgets.filter((x) => x !== focus), focus];
+        changes.push(`Moved ${t} to the bottom`);
+      } else if (focus === "outlets" && !top) {
+        const n = s.match(/\b(\d{1,2})\b/);
+        if (n && !w) {
+          cfg.topN = Math.min(15, Math.max(1, Number(n[1])));
+          changes.push(`Top ${cfg.topN} outlets`);
+        }
       }
     }
 

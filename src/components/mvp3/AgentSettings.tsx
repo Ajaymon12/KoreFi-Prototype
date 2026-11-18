@@ -10,6 +10,7 @@ import { AGENTS, type AgentId } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
 import { StatusDot } from "./Mvp3Sidebar";
 import { formatPhone, useOnboarding } from "./Onboarding";
+import { useAccount } from "./AccountSwitcher";
 
 // MVP 3 / Settings: how each agent reaches the owner. Dots' lesson for restaurants is that a text
 // ("3 disputes won, $412 back") beats another dashboard, so each agent picks where and how often it pings.
@@ -49,6 +50,25 @@ export function AgentSettings() {
   };
   const dismiss = useCallback(() => setSaved(false), []);
   const patch = (id: AgentId, p: Partial<Pref>) => setPrefs((x) => ({ ...x, [id]: { ...x[id], ...p } }));
+  const limited = !!useAccount().account.limited;
+
+  // A `limited` account (Masa Kitchen) sees only the email its updates go to.
+  if (limited)
+    return (
+      <>
+        <PageHeader title="Settings" />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[720px] px-4 py-8 sm:px-6">
+            <dl className="rounded-large border border-(--color-border-default) text-body-md">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <dt className="text-(--color-text-secondary)">Email</dt>
+                <dd className="truncate text-(--color-text-primary)">{email}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </>
+    );
 
   return (
     <>

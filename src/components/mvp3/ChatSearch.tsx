@@ -1,12 +1,14 @@
 "use client";
+import { usePath } from "@/lib/mvp3/usePath";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Search, SquarePen, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Message, Thread } from "@/lib/mvp3/agents";
+import { CHAT_BUCKETS, chatBucket, type Message, type Thread } from "@/lib/mvp3/agents";
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
+import { useAccount } from "./AccountSwitcher";
 
 // "Search chats", as in ChatGPT: a centred dialog with the search field on top, "New chat" first, then every chat
 // grouped by when it was last active. Typing filters on titles and on what was said; a match inside a chat shows
@@ -30,14 +32,8 @@ const useOpen = () =>
     () => false,
   );
 
-/** Threads carry a display time: a clock time or "Now" is today, then "Yesterday", then a weekday. */
-function bucket(at: string) {
-  if (at === "Now" || /\d:\d\d/.test(at)) return "Today";
-  if (at === "Yesterday") return "Yesterday";
-  if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(at)) return "Previous 7 days";
-  return "Older";
-}
-const ORDER = ["Today", "Yesterday", "Previous 7 days", "Older"];
+const bucket = chatBucket;
+const ORDER: readonly string[] = CHAT_BUCKETS;
 
 const textOf = (m: Message) => ("text" in m ? m.text : "reply" in m ? [m.reply.title, ...m.reply.lines].join(" ") : "");
 
@@ -77,7 +73,9 @@ type Row = { kind: "new" } | { kind: "chat"; t: Thread; hit: ReturnType<typeof s
 
 function Dialog({ onClose }: { onClose: () => void }) {
   const { threads, open, newChat } = useAgents();
-  const path = usePathname();
+  // A `limited` account (Masa Kitchen) can't start a new chat.
+  const noNew = !!useAccount().account.limited;
+  const path = usePath();
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -106,7 +104,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
     return ORDER.filter((g) => out.has(g)).map((g) => ({ label: g, rows: out.get(g)! }));
   }, [threads, query]);
   // "New chat" leads the list until a search is typed.
-  const rows: Row[] = [...(query ? [] : [{ kind: "new" } as Row]), ...groups.flatMap((g) => g.rows)];
+  const rows: Row[] = [...(query || noNew ? [] : [{ kind: "new" } as Row]), ...groups.flatMap((g) => g.rows)];
   const cur = Math.min(sel, Math.max(rows.length - 1, 0));
 
   const choose = (r: Row) => {
@@ -130,7 +128,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
   };
 
   const rowCls = (on: boolean) => cn("flex w-full items-center gap-3 rounded-large px-3 py-2.5 text-left outline-none", on ? "bg-(--color-neutral-light)" : "hover:bg-(--color-neutral-lightest)");
-  let i = query ? 0 : 1;
+  let i = query || noNew ? 0 : 1;
 
   return (
     <div data-module="mvp" className="fixed inset-0 z-[60] flex items-start justify-center bg-black/30 px-4 pt-[12vh] motion-safe:animate-page-in" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -158,7 +156,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <ul ref={list} id="chat-search-list" role="listbox" aria-label="Chats" className="min-h-0 flex-1 overflow-y-auto p-2">
-          {!query && (
+          {!query && !noNew && (
             <li role="option" id="chat-search-0" data-i={0} aria-selected={cur === 0} onMouseEnter={() => setSel(0)} onClick={() => choose({ kind: "new" })} className={cn(rowCls(cur === 0), "cursor-pointer")}>
               <span className="grid size-7 place-items-center rounded-circle border border-(--color-border-default) text-(--color-text-primary)">
                 <SquarePen className="size-3.5" aria-hidden />

@@ -1,20 +1,27 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUp, Bike, Bot, MoreHorizontal, Pencil, Check, ChevronDown, Copy, FileText, Landmark, Maximize2, Minimize2, Pin, PinOff, Plus, ShieldCheck, Sparkles, TrendingUp, X } from "lucide-react";
+import { ArrowUp, Bike, Bot, History, MoreHorizontal, Pencil, Check, ChevronDown, Copy, FileText, Landmark, Maximize2, Minimize2, Pin, PinOff, Plus, ShieldCheck, Sparkles, TrendingUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { FOLDERS, REPORTS, SUGGESTIONS, agentOf, seedThreads, type AgentId, type AgentReply, type Message, type ReportId } from "@/lib/mvp3/agents";
 import { useAgents, type CanvasId } from "./AgentsProvider";
+import type { Store } from "@/lib/finance/outlets";
+import { outletsLabel } from "@/lib/mvp3/outletScope";
 import { useDismiss } from "@/components/dashboard/useDismiss";
 import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { AgentAvatar, StepOrb, type AvatarMood } from "./AgentAvatar";
 import { AgentFolders } from "./AgentFolders";
 import { useAccount } from "./AccountSwitcher";
-import { AgentDashboard, AutomationCard, DashboardCard, SampleBanner, SampleTag, ScheduleControl } from "./AgentDashboard";
-import { REPORT_VIEW } from "./reportViews";
+import { AgentDashboard, AutomationCard, CardChip, DashboardCard, SampleBanner, SampleTag, ScheduleControl } from "./AgentDashboard";
+import { ReportView } from "./reportViews";
+import { ActivityLog } from "./ActivityLog";
+import { PinnedSummary } from "./PinnedSummary";
+import { OutletCard, OutletPanel, SheetCard } from "./OutletDive";
+import { activityLog } from "@/lib/mvp3/activity";
+import { PointLayer } from "./PointLayer";
 import { Welcome, useOnboarding } from "./Onboarding";
 
 // MVP 3's main area. With no chat open it's the home: a greeting, the composer, and the agents with
@@ -25,6 +32,13 @@ const iconBtn = "grid size-7 place-items-center rounded-medium text-(--color-tex
 // Home suggestions: ChatGPT's icon pills, one icon per SUGGESTIONS entry (same order).
 const suggestion = "inline-flex items-center gap-2 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3.5 py-2 text-body-md text-(--color-text-primary) outline-none transition-colors hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) disabled:opacity-50";
 const SUGGESTION_ICONS = [ShieldCheck, TrendingUp, Landmark, Bike];
+/** A restaurant whose dashboards the KoreFi team pinned (Masa Kitchen): asks about those dashboards. */
+const PINNED_SUGGESTIONS = [
+  { text: "What changed on chargebacks this week?", Icon: ShieldCheck },
+  { text: "Which outlets get the most chargebacks?", Icon: Bike },
+  { text: "Did every payout match Square?", Icon: Landmark },
+  { text: "How did we do last week?", Icon: TrendingUp },
+];
 const chip = "rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3 py-1.5 text-left text-body-sm text-(--color-text-primary) outline-none transition-colors hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) disabled:opacity-50";
 
 /** An agent's face (bot-avatars via AgentAvatar). Kept as AgentMark so every call site stays the same. */
@@ -40,15 +54,16 @@ const MAX_FIELD = 200;
 
 /** `intercept` sees the text first; returning true means it was handled (the onboarding chat answers its own questions). */
 export function Composer({ placeholder, onSend, intercept }: { placeholder?: string; onSend?: () => void; intercept?: (text: string) => boolean }) {
-  const { send, busy } = useAgents();
+  const { send, busy, pointed, setPointed } = useAgents();
   const [text, setText] = useState("");
   const [file, setFile] = useState<string | null>(null);
   const [tall, setTall] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Focus on mount, and again when a dashboard card is pointed at so the owner can type straight away.
   useEffect(() => {
     ref.current?.focus();
-  }, []);
+  }, [pointed]);
   // Grow with the text up to MAX_FIELD, then scroll.
   useEffect(() => {
     const el = ref.current;
@@ -109,7 +124,7 @@ export function Composer({ placeholder, onSend, intercept }: { placeholder?: str
           go();
         }
       }}
-      placeholder={placeholder ?? "Ask your agents anything"}
+      placeholder={pointed && !intercept ? "What should change on this card?" : (placeholder ?? "Ask your agents anything")}
       aria-label="Message your agents"
       className={cn("block min-w-0 resize-none bg-transparent py-1.5 text-body-lg text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)", tall ? "w-full px-2" : "flex-1 px-1")}
     />
@@ -122,9 +137,14 @@ export function Composer({ placeholder, onSend, intercept }: { placeholder?: str
       }}
       className={cn(
         "border border-(--color-border-default) bg-(--color-background-secondary) p-2 shadow-[0_4px_16px_rgb(0_0_0/0.06),0_0_1px_rgb(0_0_0/0.12)]",
-        tall || file ? "rounded-[24px]" : "rounded-[28px]",
+        tall || file || pointed ? "rounded-[24px]" : "rounded-[28px]",
       )}
     >
+      {pointed && !intercept && (
+        <div className="px-1 pb-2">
+          <CardChip r={pointed} onRemove={() => setPointed(null)} />
+        </div>
+      )}
       <input ref={fileRef} type="file" accept=".csv,.xlsx,.pdf" hidden onChange={(e) => setFile(e.target.files?.[0]?.name ?? null)} />
       {file && (
         <div className="px-1 pb-2">
@@ -191,15 +211,15 @@ function WorkLog({ steps, done, live = false }: { steps: string[]; done: number;
   );
 }
 
-function ReportCard({ report }: { report: ReportId }) {
-  const { canvas, setCanvas, dashboards } = useAgents();
+function ReportCard({ report, outlets, card }: { report: ReportId; outlets?: Store[]; card?: { title: string; sub: string } }) {
+  const { canvas, canvasOutlets, setCanvas, dashboards } = useAgents();
   const pinned = dashboards.some((d) => d.id === `report-${report}` && d.pinned);
-  const on = canvas === report;
-  const r = REPORTS[report];
+  const on = canvas === report && (canvasOutlets ?? []).join("|") === (outlets ?? []).join("|");
+  const r = card ?? REPORTS[report];
   return (
     <button
       type="button"
-      onClick={() => setCanvas(on ? null : report)}
+      onClick={() => setCanvas(on ? null : report, outlets)}
       aria-pressed={on}
       className={cn(
         "flex w-full max-w-sm items-center gap-3 rounded-large border bg-(--color-background-secondary) p-2.5 text-left outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
@@ -214,7 +234,7 @@ function ReportCard({ report }: { report: ReportId }) {
           {r.title}
           {pinned && <Pin className="size-3 text-(--color-text-secondary)" aria-label="Pinned" />}
         </span>
-        <span className="block truncate text-body-sm text-(--color-text-secondary)">{r.sub}</span>
+        <span className="block truncate text-body-sm text-(--color-text-secondary)">{outlets?.length ? (/all outlets/i.test(r.sub) ? r.sub.replace(/all outlets/i, outletsLabel(outlets)) : `${r.sub} · ${outletsLabel(outlets)}`) : r.sub}</span>
       </span>
       <span className="shrink-0 pr-1 text-body-sm text-(--color-text-clickable)">{on ? "Open" : "View"}</span>
     </button>
@@ -232,12 +252,12 @@ function Reply({ reply, at }: { reply: AgentReply; at?: string }) {
       <AgentMark agent={reply.agent} size={32} />
       <div className="min-w-0 flex-1 space-y-3">
         <p className="flex items-center gap-2 pt-1 text-body-sm text-(--color-text-secondary)">
-          <span className="font-medium text-(--color-text-primary)">{a.name}</span>
+          <span className="font-medium text-(--color-text-primary)">{reply.by ?? a.name}</span>
           {at && <span>{at}</span>}
         </p>
         <WorkLog steps={reply.work} done={reply.work.length} />
         <div className="space-y-1.5">
-          <p className="text-subtitle-sm font-medium text-(--color-text-primary)">{reply.title}</p>
+          <p className="text-subtitle-md font-medium text-(--color-text-primary)">{reply.title}</p>
           {reply.lines.map((l) => (
             <p key={l} className="text-body-md text-(--color-text-secondary)">
               {l}
@@ -245,14 +265,24 @@ function Reply({ reply, at }: { reply: AgentReply; at?: string }) {
           ))}
         </div>
         {reply.stats && (
-          <dl className="grid grid-cols-3 divide-x divide-(--color-border-default) rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
-            {reply.stats.map((s) => (
-              <div key={s.label} className="min-w-0 px-3 py-2.5">
-                <dt className="truncate text-body-sm text-(--color-text-secondary)">{s.label}</dt>
-                <dd className={cn("text-subtitle-md font-medium tabular-nums", tone(s.tone))}>{s.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <div className="overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
+            <dl className="grid grid-cols-3 divide-x divide-(--color-border-default)">
+              {reply.stats.map((s) => (
+                <div key={s.label} className="min-w-0 px-3 py-2.5">
+                  <dt className="truncate text-body-sm text-(--color-text-secondary)">{s.label}</dt>
+                  <dd className={cn("text-subtitle-md font-medium tabular-nums", tone(s.tone))}>{s.value}</dd>
+                  {s.sub && <dd className="truncate text-body-sm text-(--color-text-secondary)">{s.sub}</dd>}
+                </div>
+              ))}
+            </dl>
+            {reply.look && (
+              <p className="flex items-center gap-2 border-t border-(--color-border-default) px-3 py-2 text-body-md text-(--color-text-primary)">
+                <span aria-hidden className={cn("size-2 shrink-0 rounded-circle", reply.look.tone === "danger" ? "bg-(--color-danger-darker,#c92a2a)" : reply.look.tone === "success" ? "bg-(--color-text-success)" : "bg-(--color-warning-darker,#a45a00)")} />
+                {reply.look.text}
+              </p>
+            )}
+            {reply.cover && <p className="border-t border-(--color-border-default) bg-(--color-neutral-lightest) px-3 py-1.5 text-body-sm text-(--color-text-secondary)">{reply.cover}</p>}
+          </div>
         )}
         {reply.rows && (
           <dl className="divide-y divide-(--color-border-default) rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
@@ -267,9 +297,16 @@ function Reply({ reply, at }: { reply: AgentReply; at?: string }) {
             ))}
           </dl>
         )}
+        {reply.source && (
+          <p className="flex items-center gap-1.5 text-body-sm text-(--color-text-secondary)">
+            <span aria-hidden className="size-1.5 rounded-circle bg-(--color-text-success)" />
+            {reply.source}
+          </p>
+        )}
         {reply.automation && (reply.report ? <AutomationCard a={reply.automation} title={REPORTS[reply.report].title} runs={a.name} kind="report" /> : <AutomationCard a={reply.automation} title={dash?.title ?? "Chargebacks"} />)}
         {dash && <DashboardCard d={dash} />}
-        {reply.report && <ReportCard report={reply.report} />}
+        {reply.outlet && (reply.sheet ? <SheetCard store={reply.outlet} /> : <OutletCard store={reply.outlet} />)}
+        {reply.report && <ReportCard report={reply.report} outlets={reply.outlets} card={reply.card} />}
         <div className="flex items-center gap-0.5">
           <button
             type="button"
@@ -302,7 +339,8 @@ function Reply({ reply, at }: { reply: AgentReply; at?: string }) {
 function Bubble({ m }: { m: Message }) {
   if (m.role === "user")
     return (
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-1.5">
+        {m.ref && <CardChip r={m.ref} className="max-w-[80%]" />}
         <p className="max-w-[80%] rounded-[18px] bg-(--color-neutral-light) px-3.5 py-2 text-body-md text-(--color-text-primary)">{m.text}</p>
       </div>
     );
@@ -326,7 +364,7 @@ function Bubble({ m }: { m: Message }) {
 
 /** `width`: the width the owner dragged the panel to (px), or null for the default split. */
 function Canvas({ id, width }: { id: CanvasId; width: number | null }) {
-  const { setCanvas, expanded, setExpanded, dashboards, pinReport, sample } = useAgents();
+  const { setCanvas, canvasOutlets, expanded, setExpanded, dashboards, pinReport, sample } = useAgents();
   // A dragged width wins over the default 1 : 1.4 split, but always leaves the chat at least 360px.
   const sized = width && !expanded ? { flex: "0 0 auto", width: `min(${width}px, calc(100% - 360px))` } : undefined;
   const tools = (
@@ -339,11 +377,13 @@ function Canvas({ id, width }: { id: CanvasId; width: number | null }) {
       </button>
     </>
   );
-  // Split view: the dashboard is the white surface, flush with the app frame, beside the chat on its grey workspace,
-  // so it reads as the document the chat produced, not a second column of the same page.
+  // Split view: the dashboard is a raised white sheet floating on the chat's grey workspace, with an orange top edge
+  // that matches the open card in the chat, so it reads as the thing the chat made, not a second column of the page.
   const sheet = cn(
     "flex min-w-0 flex-col overflow-hidden bg-(--color-background-secondary) motion-safe:animate-page-in",
-    expanded ? "flex-1" : "hidden flex-[1.4] border-l border-(--color-border-default) lg:flex",
+    expanded
+      ? "flex-1"
+      : "hidden flex-[1.4] lg:my-2 lg:mr-2 lg:relative lg:flex lg:rounded-large lg:border lg:border-(--color-border-default) lg:before:absolute lg:before:inset-x-0 lg:before:top-0 lg:before:z-10 lg:before:h-[3px] lg:before:bg-(--module-line) lg:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.18)]",
   );
   if (id.startsWith("dash:")) {
     const d = dashboards.find((x) => `dash:${x.id}` === id);
@@ -351,6 +391,14 @@ function Canvas({ id, width }: { id: CanvasId; width: number | null }) {
     return (
       <aside aria-label={d.title} className={sheet} style={sized}>
         <AgentDashboard d={d} actions={tools} padRight />
+      </aside>
+    );
+  }
+  if (id.startsWith("outlet:")) {
+    const store = id.slice("outlet:".length) as Store;
+    return (
+      <aside aria-label="Outlet chargebacks" className={sheet} style={sized}>
+        <OutletPanel store={store} tools={tools} />
       </aside>
     );
   }
@@ -375,7 +423,9 @@ function Canvas({ id, width }: { id: CanvasId; width: number | null }) {
             <SampleBanner />
           </div>
         )}
-        <div className={cn("flex min-h-0 flex-1 flex-col", sample ? "" : pinned?.pinned ? "[&>div:first-child]:pr-[380px]" : "[&>div:first-child]:pr-[200px]")}>{REPORT_VIEW[report]()}</div>
+        <PointLayer report={report} off={sample} className={cn("flex min-h-0 flex-1 flex-col", sample ? "" : pinned?.pinned ? "[&>div:first-child]:pr-[380px]" : "[&>div:first-child]:pr-[200px]")}>
+          <ReportView report={report} outlets={canvasOutlets} />
+        </PointLayer>
       </div>
     </aside>
   );
@@ -392,29 +442,30 @@ function Home() {
   const { threads, open, send, busy } = useAgents();
   const { account } = useAccount();
   const fresh = account.stage === "new";
+  // Masa Kitchen: the KoreFi team pinned its dashboards, so the empty chat opens on their summary.
+  const pinnedHome = !!account.teamPinned && !fresh;
+  const suggestions = pinnedHome ? PINNED_SUGGESTIONS : SUGGESTIONS.map((text, i) => ({ text, Icon: SUGGESTION_ICONS[i] ?? Sparkles }));
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col gap-10 px-4 pb-10 sm:px-6 md:max-lg:gap-[100px]">
         {/* The hero sits in the optical centre of the first screen, like ChatGPT's empty chat. */}
         <div className="flex min-h-[62vh] flex-col justify-end gap-7 pb-2 md:max-lg:min-h-[51.5vh]">
           <h1 className="text-center text-page-title font-normal text-(--color-text-primary) sm:text-[28px]">
-            {fresh ? `Welcome, ${user.firstName}. Your agents are getting to know ${account.name}.` : `${greeting()}, ${user.firstName}. What should we look into?`}
+            {fresh ? `Welcome, ${user.firstName}. Your agents are getting to know ${account.name}.` : pinnedHome ? `${greeting()}, ${user.firstName}. Here’s where ${account.name} stands.` : `${greeting()}, ${user.firstName}. What should we look into?`}
           </h1>
+          {pinnedHome && <PinnedSummary />}
           {fresh && <p className="-mt-4 text-center text-body-lg text-(--color-text-secondary)">Your first reports usually arrive 2 to 3 days after your apps are connected. Your agents will post here when they do.</p>}
           <div>
             <div data-tour="composer">
               <Composer />
             </div>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s, i) => {
-                const Icon = SUGGESTION_ICONS[i] ?? Sparkles;
-                return (
-                  <button key={s} type="button" disabled={busy} onClick={() => send(s)} className={suggestion}>
-                    <Icon className="size-4 text-(--color-text-secondary)" aria-hidden />
-                    {s}
-                  </button>
-                );
-              })}
+              {suggestions.map(({ text, Icon }) => (
+                <button key={text} type="button" disabled={busy} onClick={() => send(text)} className={suggestion}>
+                  <Icon className="size-4 text-(--color-text-secondary)" aria-hidden />
+                  {text}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -482,8 +533,47 @@ function AgentMenu({ wid }: { wid: string }) {
   );
 }
 
+/** The chat header's Activity button: the log of what the KoreFi team and this chat's agent did each week.
+ *  An icon, so the chat's title keeps the room. The panel hangs from the chat column (the nearest `relative`),
+ *  not the button, so it never runs off the column's left edge. */
+function ActivityButton({ wid, agent, dashboard }: { wid?: string; agent: AgentId; dashboard?: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useDismiss(ref, open, () => setOpen(false));
+  const { account } = useAccount();
+  const items = useMemo(() => (open ? activityLog(wid, { account, agent, dashboard }) : []), [open, wid, account, agent, dashboard]);
+  return (
+    <div ref={ref} className="shrink-0">
+      <button
+        type="button"
+        aria-label="Activity"
+        title="Activity"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn("grid size-8 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)", open && "bg-(--color-neutral-light) text-(--color-text-primary)")}
+      >
+        <History className="size-4" aria-hidden />
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Activity" className="absolute top-12 right-3 left-3 z-30 ml-auto flex max-h-[min(480px,calc(100%-64px))] max-w-[340px] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-(--color-border-default) py-2.5 pr-2 pl-4">
+            <p className="text-body-md font-medium text-(--color-text-primary)">Activity</p>
+            <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="grid size-7 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ActivityLog items={items} days={3} compact />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ThreadView() {
-  const { active, canvas, expanded } = useAgents();
+  const { active, canvas, expanded, dashboards } = useAgents();
   const end = useRef<HTMLDivElement>(null);
   const count = active?.messages.length ?? 0;
   const last = active?.messages[count - 1];
@@ -500,25 +590,31 @@ function ThreadView() {
     <section
       aria-label={active.title}
       className={cn(
-        "min-w-0 flex-1 flex-col",
+        "relative min-w-0 flex-1 flex-col",
         expanded && canvas ? "hidden" : "flex",
+        // Beside the floating sheet, the chat starts at the sheet's top edge so the two headers line up.
+        canvas && !expanded && "lg:pt-[9px]",
       )}
     >
       <header className={cn("flex h-11 shrink-0 items-center gap-2 border-b border-(--color-border-default) px-4", canvas && !expanded && "lg:border-b-transparent")}>
         <AgentMark agent={active.agent} size={24} />
         <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{active.title}</h1>
-        <span className="hidden shrink-0 text-body-sm text-(--color-text-secondary) sm:inline">· {a.name}</span>
-        {wid && <AgentMenu wid={wid} />}
+        {/* With a dashboard beside the chat the column is narrow: the title gets the room. */}
+        <span className={cn("hidden shrink-0 text-body-sm text-(--color-text-secondary)", !canvas && "sm:inline")}>· {a.name}</span>
+        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+          <ActivityButton wid={wid} agent={active.agent} dashboard={dashboards.find((d) => (wid && d.workflow === wid) || d.id === active.dashboard)?.title} />
+          {wid && <AgentMenu wid={wid} />}
+        </div>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className={cn("mx-auto flex w-full flex-col gap-6 px-4 py-6", canvas ? "max-w-[560px]" : "max-w-[720px] sm:px-6")}>
+        <div className={cn("mx-auto flex w-full flex-col gap-6 px-6 py-6", canvas ? "max-w-[560px]" : "max-w-[720px]")}>
           {active.messages.map((m) => (
             <Bubble key={m.id} m={m} />
           ))}
           <div ref={end} />
         </div>
       </div>
-      <div className={cn("mx-auto w-full shrink-0 px-4 pb-4", canvas ? "max-w-[560px]" : "max-w-[720px] sm:px-6")}>
+      <div className={cn("mx-auto w-full shrink-0 px-6 pb-4", canvas ? "max-w-[560px]" : "max-w-[720px]")}>
         <Composer placeholder={`Reply to ${a.name}`} />
         <ComposerNote />
       </div>
@@ -543,7 +639,7 @@ export function AgentWorkspace() {
   const [width, setWidth] = useCanvasWidth();
   const split = !!(active && canvas) && !expanded;
   return (
-    <div ref={box} className={cn("flex min-h-0 min-w-0 flex-1 transition-colors", split && "lg:bg-(--color-background-primary)")}>
+    <div ref={box} className={cn("flex min-h-0 min-w-0 flex-1 transition-colors", split && "lg:bg-(--gray-300)")}>
       {active ? <ThreadView /> : stage === "welcome" ? <Welcome /> : <Home />}
       {split && <ResizeHandle box={box} width={width} onWidth={setWidth} />}
       {active && canvas && <Canvas id={canvas} width={width} />}
