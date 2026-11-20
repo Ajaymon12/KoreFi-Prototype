@@ -224,3 +224,71 @@ export const UNMATCHED: Unmatched[] = [
 export const UNPAID = UNMATCHED.reduce((n, x) => n + x.amount, 0);
 export const usd2 = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const usd0 = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+// ───────── The Overview's week review (Eggholic review layout, 2026-11-20) ─────────
+// Everything below is counted from CHARGES, so it follows the outlet filter and adds up to the figures above.
+
+export const REASONS = ["Missing item", "Wrong item", "Food quality", "Never arrived"] as const;
+/** The sample week runs Sun, Nov 1 to Sat, Nov 7. */
+export const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const dayIndex = (day: string) => Number(day.split(" ").pop()) - 1;
+const chargesAt = (names: readonly string[]) => CHARGES.filter((x) => names.includes(x.outlet));
+const sum = (xs: FxCharge[]) => xs.reduce((n, x) => n + x.amount, 0);
+const most = <T,>(xs: T[]) => {
+  const m = new Map<T, number>();
+  xs.forEach((x) => m.set(x, (m.get(x) ?? 0) + 1));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+};
+
+/** Dispute status of these outlets' charges, in $: won, awaiting, denied, still to dispute. */
+export function statusFor(names: readonly string[]) {
+  const xs = chargesAt(names);
+  const of = (s: string) => sum(xs.filter((x) => x.status === s));
+  const won = of("Won"), wait = of("Awaiting decision"), denied = of("Denied"), todo = of("Still to dispute");
+  return { won, wait, denied, todo, disputed: won + wait + denied };
+}
+/** Orders per reason at one outlet, in REASONS order. */
+export const reasonsFor = (outlet: string) => REASONS.map((r) => CHARGES.filter((x) => x.outlet === outlet && x.reason === r).length);
+/** Orders per day (Sun–Sat) at one outlet. */
+export function daysFor(outlet: string) {
+  const d = WEEK_DAYS.map(() => 0);
+  CHARGES.filter((x) => x.outlet === outlet).forEach((x) => d[dayIndex(x.day)]++);
+  return d;
+}
+/** Items charged back at one outlet, most first, with the reason given most often. */
+export function itemsFor(outlet: string) {
+  const xs = CHARGES.filter((x) => x.outlet === outlet);
+  return most(xs.map((x) => x.item)).map(([item, n]) => ({ item, n, reason: most(xs.filter((x) => x.item === item).map((x) => x.reason))[0][0] }));
+}
+/** The item charged back most often across these outlets, and where (null unless it came up 3+ times at 2+ outlets). */
+export function repeatItem(names: readonly string[]) {
+  const xs = chargesAt(names);
+  const top = most(xs.map((x) => x.item))[0];
+  if (!top || top[1] < 3) return null;
+  const at = most(xs.filter((x) => x.item === top[0]).map((x) => x.outlet)).map(([outlet, n]) => ({ outlet, n }));
+  if (at.length < 2) return null;
+  const why = most(xs.filter((x) => x.item === top[0]).map((x) => x.reason)).map(([r, n]) => ({ r, n }));
+  return { item: top[0], n: top[1], at, why };
+}
+/** Orders, charged back and won back per app, for these outlets. */
+export function byApp(names: readonly string[]) {
+  const xs = chargesAt(names);
+  return (["doordash", "uber", "grubhub"] as AppKey[])
+    .map((app) => {
+      const a = xs.filter((x) => x.app === app);
+      return { app, orders: a.length, charged: Math.round(sum(a)), won: Math.round(sum(a.filter((x) => x.status === "Won"))) };
+    })
+    .filter((a) => a.orders > 0);
+}
+/** The outlets most of the money comes from: biggest first until they cover 75%, at most 3. */
+export function focusOutlets(rows: readonly FxOutlet[]) {
+  const total = rows.reduce((n, x) => n + x.charged, 0);
+  const out: FxOutlet[] = [];
+  let cum = 0;
+  for (const x of [...rows].filter((r) => r.charged).sort((a, b) => b.charged - a.charged)) {
+    if (out.length >= 3 || cum >= 0.75 * total) break;
+    out.push(x);
+    cum += x.charged;
+  }
+  return out;
+}

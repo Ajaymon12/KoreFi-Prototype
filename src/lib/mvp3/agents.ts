@@ -383,7 +383,7 @@ export function answer(q: string): AgentReply {
 /** "Why is Damen high?", "dig into Hyde Park", "send Damen's sheet to its manager": one outlet, chargebacks. */
 function outletDiveAsk(q: string): AgentReply | null {
   const s = q.toLowerCase();
-  const sheet = /(send|share|email|whatsapp).*(manager|sheet|store)|(manager|sheet).*(send|share)/.test(s);
+  const sheet = /(send|share|email).*(manager|sheet|store)|(manager|sheet).*(send|share)/.test(s);
   const why = /(why|what.?s (going on|wrong)|dig into|look into|drill|errors? at|high)/.test(s);
   if (!sheet && !why) return null;
   if (/(payout|fee|commission|sales|profit|p&l)/.test(s)) return null;
@@ -475,13 +475,8 @@ function fixturePayouts(): AgentReply {
     agent: "finance",
     by: "Payout reconciliation",
     style: "opening",
-    title: `All three apps have paid for ${FX.WEEK}. You received ${usd(FX.PAID)}, ${usd(FX.PAID_UP)} more than last week.`,
+    title: `Payouts for ${FX.WEEK} are in. 2,417 of ${FX.ORDERS.toast.toLocaleString("en-US")} orders matched, and 4 issues are worth a look.`,
     lines: [],
-    looks: [
-      { tone: "warning", text: `${FX.ORDERS.unpaid} orders in Toast weren't paid: ${FX.usd2(FX.UNPAID)}` },
-      { tone: "warning", text: `Uber Eats kept ${FX.kept(FX.PAY[1])}% of sales, over your ${FX.PAY_LIMIT}% limit` },
-    ],
-    cover: "Bank deposits not checked",
     action: "ue-9qx4",
     work: ["Read the DoorDash, Uber Eats and Grubhub payout reports for Nov 1–7", "Matched every Toast delivery order to its payout by order ID", "Checked each app's commission against your plan", "Checked each payout arrived on its usual day"],
     report: "payouts",
@@ -497,10 +492,8 @@ function fixtureChargebacks(): AgentReply {
     agent: "operations",
     by: "Chargeback recovery",
     style: "opening",
-    title: `Your chargebacks for ${FX.WEEK} are in. They cost you ${usd(FX.charged)}, ${usd(FX.charged - FX.USUAL)} more than a usual week, and we've won back ${usd(FX.CBST.won)} so far.`,
+    title: `Your chargebacks for ${FX.WEEK} cost you ${usd(FX.charged)}, ${usd(FX.charged - FX.USUAL)} more than a usual week. ${top.name} is the one to look at.`,
     lines: [],
-    looks: [{ tone: "danger", text: `${top.name}: ${FX.rateLabel(top)} of app sales, over your ${FX.LIMIT}% limit` }],
-    cover: `All 3 app reports in · ${usd(FX.CBST.todo)} still to dispute, KoreFi is filing it`,
     work: ["Read the DoorDash, Uber Eats and Grubhub adjustment reports for Nov 1–7", "Matched each charge to its order and outlet", "Compared each outlet with its usual week", "Checked which disputes were won, denied or not filed yet"],
     dashboard: "dash-chargebacks",
     followUps: ["Why is Damen high?", "What is still to dispute?", "Send Damen's sheet to its manager"],

@@ -71,7 +71,7 @@ function chargebackReply(q: string): AgentReply | null {
       `${FX.usd0(FX.CBST.todo)} on ${FX.TODO.length} orders isn't filed yet.`,
       ["All are inside the apps' deadlines: 14 days on DoorDash, 30 days on Uber Eats and Grubhub. You'll see the result in next Thursday's review."],
       "From the KoreFi team's filing log",
-      ["Why is Damen high?", "What was denied?"],
+      ["Why is Damen high?", "What was denied?", "Send Damen's sheet to its manager"],
       { dashboard: "dash-chargebacks", view: "todo", work: ["Read the KoreFi team's filing log"] },
     );
   if (/denied|declined|lost/.test(s))

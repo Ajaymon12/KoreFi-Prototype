@@ -180,10 +180,10 @@ export function SheetModal({ store, onClose }: { store: Store; onClose: () => vo
       <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-(--color-border-default) px-5 py-3">
         {sent ? (
           <p className="flex items-center gap-1.5 text-body-md text-(--color-text-success)">
-            <Check className="size-4" aria-hidden /> Sent to {d.name}&apos;s manager as a PDF, by email and WhatsApp.
+            <Check className="size-4" aria-hidden /> Sent to {d.name}&apos;s manager as a PDF by email.
           </p>
         ) : (
-          <p className="text-body-sm text-(--color-text-secondary)">Sends as a PDF by email and WhatsApp.</p>
+          <p className="text-body-sm text-(--color-text-secondary)">Sends as a PDF by email.</p>
         )}
         {sent ? (
           <button type="button" onClick={onClose} className={btn}>

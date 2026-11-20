@@ -31,7 +31,7 @@ export type Workflow = {
   hue?: string;
 };
 
-export type Channel = "email" | "whatsapp";
+export type Channel = "email";
 export type PayoutSettings = {
   /** Owner (Jane), Finance manager (Priya), Outlet managers: whether each gets it, and how. */
   people: Record<"owner" | "finance" | "managers", { on: boolean; how: Channel }>;

@@ -1,21 +1,21 @@
 "use client";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { cn } from "@/lib/utils";
 import { Toast } from "@/components/ui/Toast";
 import * as FX from "@/lib/mvp3/masaFixture";
-import type { Channel, PayoutSettings, Workflow } from "@/lib/mvp3/workflows";
+import type { PayoutSettings, Workflow } from "@/lib/mvp3/workflows";
 import { useAgents } from "./AgentsProvider";
 import { useAccount } from "./AccountSwitcher";
 import { AgentAvatar } from "./AgentAvatar";
 import { focusRing } from "@/components/mvp3/styles";
 
 // Payout reconciliation's edit page (leadership flow 4, 2026-11-20). Two parts, plain controls, not a form builder:
-//  A. Settings the owner can change: who gets it (and how), when, and the limit for what the apps keep.
+//  A. Settings the owner can change: who gets it by email, when, and the limit for what the apps keep.
 //  B. Instructions: the agent's default prompt, as editable text.
 // A preview on the right shows the message the chosen person gets, and follows every change (35% drops the Uber Eats
 // flag). Save and Cancel only: no Publish, Test, typed inputs or stages. The other agents keep the WorkflowEditor.
@@ -78,7 +78,7 @@ export function PayoutEditor({ base }: { base: Workflow }) {
   const dismiss = useCallback(() => setToast(null), []);
   const dirty = JSON.stringify(s) !== JSON.stringify(saved);
 
-  const setPerson = (k: Person, patch: Partial<{ on: boolean; how: Channel }>) => setS((x) => ({ ...x, people: { ...x.people, [k]: { ...x.people[k], ...patch } } }));
+  const setPerson = (k: Person, patch: Partial<{ on: boolean }>) => setS((x) => ({ ...x, people: { ...x.people, [k]: { ...x.people[k], ...patch } } }));
   const setSection = (i: number, body: string) => setS((x) => ({ ...x, instructions: x.instructions.map((sec, j) => (j === i ? { ...sec, body } : sec)) }));
   const shown = s.people[viewing].on ? viewing : (PEOPLE.find((p) => s.people[p.key].on)?.key ?? null);
 
@@ -117,23 +117,6 @@ export function PayoutEditor({ base }: { base: Workflow }) {
                           <input type="checkbox" checked={s.people[p.key].on} onChange={(e) => setPerson(p.key, { on: e.target.checked })} className="size-4 accent-(--color-primary)" />
                           {p.label}
                         </label>
-                        {s.people[p.key].on && (
-                          <span role="radiogroup" aria-label={`How ${p.label} gets it`} className="inline-flex rounded-medium border border-(--color-border-default) p-0.5">
-                            {(["email", "whatsapp"] as Channel[]).map((c) => (
-                              <button
-                                key={c}
-                                type="button"
-                                role="radio"
-                                aria-checked={s.people[p.key].how === c}
-                                onClick={() => setPerson(p.key, { how: c })}
-                                className={cn("inline-flex h-7 items-center gap-1.5 rounded-small px-2.5 text-body-sm", s.people[p.key].how === c ? "bg-(--color-neutral-light) font-medium text-(--color-text-primary)" : "text-(--color-text-secondary)", focusRing)}
-                              >
-                                {c === "email" ? <Mail className="size-3.5" aria-hidden /> : <MessageCircle className="size-3.5" aria-hidden />}
-                                {c === "email" ? "Email" : "WhatsApp"}
-                              </button>
-                            ))}
-                          </span>
-                        )}
                       </li>
                     ))}
                   </ul>
@@ -206,7 +189,7 @@ export function PayoutEditor({ base }: { base: Workflow }) {
                 </button>
               ))}
             </div>
-            {shown ? <Preview who={shown} how={s.people[shown].how} s={s} restaurant={account.name} /> : <p className="text-body-md text-(--color-text-secondary)">No one gets it. Tick someone under Who gets it.</p>}
+            {shown ? <Preview who={shown} s={s} restaurant={account.name} /> : <p className="text-body-md text-(--color-text-secondary)">No one gets it. Tick someone under Who gets it.</p>}
           </div>
         </aside>
       </div>
@@ -225,7 +208,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 /** The message one person gets, from the sample payout week. The Uber Eats flag shows only while 34% is over the limit. */
-function Preview({ who, how, s, restaurant }: { who: Person; how: Channel; s: PayoutSettings; restaurant: string }) {
+function Preview({ who, s, restaurant }: { who: Person; s: PayoutSettings; restaurant: string }) {
   const ue = FX.PAY[1];
   const flag = FX.kept(ue) > s.limit;
   const person = PEOPLE.find((p) => p.key === who)!;
@@ -245,18 +228,6 @@ function Preview({ who, how, s, restaurant }: { who: Person; how: Channel; s: Pa
     ],
     [s.limit],
   );
-
-  if (how === "whatsapp")
-    return (
-      <div className="rounded-large bg-[#e7ddd3] p-4">
-        <p className="mb-2 text-center text-body-sm text-[#54656f]">WhatsApp · {when}</p>
-        <div className="ml-auto max-w-[88%] space-y-2 rounded-large rounded-tr-small bg-white px-3 py-2 text-body-md text-[#111b21] shadow-sm">
-          <p>Hi {person.name.replace("'s manager", "")}, {lead}</p>
-          {!outlet && flag && <p>⚠️ {look}</p>}
-          <p className="text-[#027eb5] underline">Open in KoreFi</p>
-        </div>
-      </div>
-    );
 
   return (
     <article className="overflow-hidden rounded-large border border-(--color-border-default) bg-white text-(--color-text-primary) shadow-sm">

@@ -577,7 +577,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       // "Send this to the manager" right after an outlet's reply means that outlet.
       const lastOutlet = thread && [...thread.messages].reverse().find((m) => m.role === "agent" && "reply" in m && m.reply.outlet);
       const dived = lastOutlet && "reply" in lastOutlet ? lastOutlet.reply.outlet : undefined;
-      if (dived && /(send|share|email|whatsapp).*(manager|sheet)|(manager|sheet).*(send|share)/i.test(q) && !findOutlets(q, [dived]).length) {
+      if (dived && /(send|share|email).*(manager|sheet)|(manager|sheet).*(send|share)/i.test(q) && !findOutlets(q, [dived]).length) {
         play(activeId, q, outletSheet(dived), undefined, ref);
         return;
       }

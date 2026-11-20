@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useDismiss } from "@/components/dashboard/useDismiss";
-import { Bot, Check, ChevronRight, CirclePlay, Clock, Plug, Copy, ExternalLink, Eye, EyeOff, Mail, MessageCircle, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
+import { Bot, Check, ChevronRight, CirclePlay, Clock, Plug, Copy, ExternalLink, Eye, EyeOff, Mail, MessagesSquare, MonitorSmartphone, Smartphone, UserRoundCog, X } from "lucide-react";
 import { ThinkingOrb } from "thinking-orbs";
 import { cn } from "@/lib/utils";
 import { asset } from "@/lib/asset";
@@ -56,7 +56,7 @@ type Ctx = {
   welcomeSnap: WelcomeSnap | null;
   saveWelcome: (s: WelcomeSnap) => void;
   startTour: () => void;
-  /** Where SMS and WhatsApp updates go. Empty until a new owner adds it (welcome chat or Settings). */
+  /** Where SMS updates go. Empty until a new owner adds it (welcome chat or Settings). */
   phone: string;
   setPhone: (p: string) => void;
 };
@@ -449,7 +449,7 @@ type Entry =
   | { id: number; kind: "email" }
   | { id: number; kind: "guide"; app: App }
   | { id: number; kind: "settings"; label?: string }
-  | { id: number; kind: "phone"; channel: "text" | "WhatsApp" }
+  | { id: number; kind: "phone" }
   | { id: number; kind: "reach" }
   | { id: number; kind: "summary" }
     | { id: number; kind: "tour" };
@@ -459,7 +459,6 @@ type WelcomeSnap = { log: Entry[]; queue: Draft[]; agents?: string[] | null; pic
 /** One-tap answers to "how should we reach you?". */
 const REACH = [
   { label: "Text", Icon: Smartphone },
-  { label: "WhatsApp", Icon: MessageCircle },
   { label: "Email", Icon: Mail },
   { label: "Just here", Icon: MessagesSquare },
 ] as const;
@@ -591,15 +590,15 @@ export function Welcome() {
       post({ kind: "user", text: r });
       const after = " You can change this any time in Settings.";
       say(
-        ...((r === "Text" || r === "WhatsApp"
+        ...((r === "Text"
           ? [
-              { kind: "text", text: `Done. We'll ${r === "Text" ? "text you" : "message you on WhatsApp"} when something changes. What's your mobile number?` },
-              { kind: "phone", channel: r === "Text" ? "text" : "WhatsApp" },
+              { kind: "text", text: "Done. We'll text you when something changes. What's your mobile number?" },
+              { kind: "phone" },
             ]
           : r === "Email"
             ? [{ kind: "text", text: `Done. We'll email ${profile.email} when something changes.${after}` }]
             : [{ kind: "text", text: `Done. Updates will stay right here in your chats.${after}` }]) as Draft[]),
-        ...(r === "Text" || r === "WhatsApp" ? [] : ([{ kind: "text", text: "Here's where things stand." }, { kind: "summary" }] as Draft[])),
+        ...(r === "Text" ? [] : ([{ kind: "text", text: "Here's where things stand." }, { kind: "summary" }] as Draft[])),
         { kind: "tour" },
       );
     },
@@ -608,7 +607,7 @@ export function Welcome() {
 
   /** The number from the phone card: posted as the owner's answer, confirmed, and the tour offer kept last. */
   const savePhone = useCallback(
-    (p: string, channel: "text" | "WhatsApp") => {
+    (p: string) => {
       setPhone(p);
       setLog((l) => l.filter((e) => e.kind !== "tour"));
       setQueue((q) => q.filter((d) => d.kind !== "tour"));
@@ -616,7 +615,7 @@ export function Welcome() {
       // A number can be changed later; only the first save adds the summary.
       const first = !log.some((e) => e.kind === "summary") && !queue.some((d) => d.kind === "summary");
       say(
-        { kind: "text", text: `Saved. We'll ${channel === "text" ? `text ${p}` : `message ${p} on WhatsApp`} when something changes. You can change it any time in Settings.` },
+        { kind: "text", text: `Saved. We'll text ${p} when something changes. You can change it any time in Settings.` },
         ...(first ? ([{ kind: "text", text: "Here's where things stand." }, { kind: "summary" }] as Draft[]) : []),
         { kind: "tour" },
       );
@@ -728,7 +727,7 @@ export function Welcome() {
           </Link>
         );
       case "phone":
-        return <PhoneCard key={e.id} saved={phone} onSave={(p) => savePhone(p, e.channel)} />;
+        return <PhoneCard key={e.id} saved={phone} onSave={savePhone} />;
       case "reach":
         return (
           <div key={e.id} role="group" aria-label="How should we reach you?" className="flex flex-wrap gap-1.5 motion-safe:animate-page-in">
@@ -827,7 +826,7 @@ export function Welcome() {
 /** "Which delivery apps do you sell on?" — tap the apps, then Continue. Frozen once answered. */
 /** The wrap-up: what's set up, what the KoreFi team does next, and where to go from here. */
 function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { agents: string[]; apps: App[]; todo: App[]; reach: Reach | null; phone: string; email: string; onLeave: () => void }) {
-  const reachText = reach === "Email" ? `Email to ${email}` : reach === "Text" ? `Text to ${phone}` : reach === "WhatsApp" ? `WhatsApp to ${phone}` : "Here in your chats";
+  const reachText = reach === "Email" ? `Email to ${email}` : reach === "Text" ? `Text to ${phone}` : "Here in your chats";
   const setup = [
     { label: "Agents on", value: agents.length ? list(agents.map((id) => starter(id).name)) : "None yet" },
     { label: "Delivery apps", value: apps.length ? `${names(apps)} · KoreFi is verifying` : "Not connected yet", sub: todo.length ? `${names(todo)} still to add` : undefined },
@@ -1155,7 +1154,7 @@ const STEPS: Step[] = [
   { target: "agents", title: "Your agents", body: "Finance, Operations and Growth each watch one part of the business. Open one to see its steps, its runs and when it checks in." },
   { target: "workspace", title: "Chats and agents", body: "Start a new chat, find an old one with ⌘K, or open Agents to change what each one does and when it runs." },
   { target: "chats", title: "Updates land here", body: "Every agent update is a chat. Unread ones are bold with a dot. Dashboards you pin show up above them." },
-  { target: "settings", title: "Integrations and Settings", body: "See what's connected, and choose where agents reach you: in the app, SMS, WhatsApp or email." },
+  { target: "settings", title: "Integrations and Settings", body: "See what's connected, and choose where agents reach you: in the app, SMS or email." },
 ];
 
 const PAD = 6;

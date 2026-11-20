@@ -16,7 +16,7 @@ import { useAccount } from "./AccountSwitcher";
 // ("3 disputes won, $412 back") beats another dashboard, so each agent picks where and how often it pings.
 // Prototype: saved in memory only.
 
-const CHANNELS = ["In app", "SMS", "WhatsApp", "Email"] as const;
+const CHANNELS = ["In app", "SMS", "Email"] as const;
 type Channel = (typeof CHANNELS)[number];
 type Pref = { on: boolean; channels: Channel[]; cadence: string };
 
@@ -129,7 +129,7 @@ export function AgentSettings() {
               <div id="phone" className="flex scroll-mt-6 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2">
                 <dt>
                   <label htmlFor="phone-input" className="text-(--color-text-secondary)">
-                    Phone (SMS, WhatsApp)
+                    Phone (SMS)
                   </label>
                 </dt>
                 <dd className="min-w-0">
