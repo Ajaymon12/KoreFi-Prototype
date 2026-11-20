@@ -9,6 +9,7 @@ import { CHAT_BUCKETS, chatBucket, type Message, type Thread } from "@/lib/mvp3/
 import { useAgents } from "./AgentsProvider";
 import { AgentAvatar } from "./AgentAvatar";
 import { useAccount } from "./AccountSwitcher";
+import { dialogSurface, iconButton, scrim } from "@/components/mvp3/styles";
 
 // "Search chats", as in ChatGPT: a centred dialog with the search field on top, "New chat" first, then every chat
 // grouped by when it was last active. Typing filters on titles and on what was said; a match inside a chat shows
@@ -131,8 +132,8 @@ function Dialog({ onClose }: { onClose: () => void }) {
   let i = query || noNew ? 0 : 1;
 
   return (
-    <div data-module="mvp" className="fixed inset-0 z-[60] flex items-start justify-center bg-black/30 px-4 pt-[12vh] motion-safe:animate-page-in" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label="Search chats" onKeyDown={onKey} className="flex max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-xlarge border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_24px_64px_-12px_rgb(0_0_0/0.3)]">
+    <div data-module="mvp" className={cn(scrim, "z-[60] flex items-start justify-center px-4 pt-[12vh] motion-safe:animate-page-in")} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-label="Search chats" onKeyDown={onKey} className={cn(dialogSurface, "flex max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden")}>
         <div className="flex items-center gap-3 border-b border-(--color-border-default) px-4">
           <Search className="size-4 shrink-0 text-(--color-text-secondary)" aria-hidden />
           <input
@@ -150,7 +151,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
             aria-activedescendant={rows.length ? `chat-search-${cur}` : undefined}
             className="h-14 min-w-0 flex-1 bg-transparent text-body-lg text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)"
           />
-          <button type="button" aria-label="Close search" onClick={onClose} className="grid size-8 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+          <button type="button" aria-label="Close search" onClick={onClose} className={cn(iconButton, "size-8")}>
             <X className="size-4" aria-hidden />
           </button>
         </div>

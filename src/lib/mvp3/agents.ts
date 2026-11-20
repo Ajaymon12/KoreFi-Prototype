@@ -36,7 +36,7 @@ export const agentOf = (id: AgentId) => AGENTS.find((a) => a.id === id)!;
 
 export const REPORTS: Record<ReportId, { title: string; sub: string }> = {
   pnl: { title: "Daily P&L", sub: "Last 4 weeks · all outlets" },
-  payouts: { title: "3PD Payouts", sub: "DoorDash, Uber Eats, Grubhub" },
+  payouts: { title: "Delivery payouts", sub: "DoorDash, Uber Eats, Grubhub" },
   chargebacks: { title: "Chargeback Overview", sub: "Last 13 weeks · all apps" },
   overview: { title: "Overview", sub: "Revenue by outlet" },
 };
@@ -109,6 +109,28 @@ export type Stat = { label: string; value: string; tone?: "success" | "danger"; 
 export type Row = { label: string; sub?: string; value: string; tone?: "success" | "danger" };
 export type AgentReply = {
   agent: AgentId;
+  /** A friendly opening line. With one, the title and lines read as one plain sentence under it, not a headline. */
+  greeting?: string;
+  /** How the reply reads (leadership flows, 2026-11-20). "opening": the agent's first message, one plain sentence with
+   *  the headline number, then `looks` and `cover`. "answer": a reply to a prompt, a bold one-line answer, one or two
+   *  sentences, then a grey `source` line. Left out: the older headline style. */
+  style?: "opening" | "answer";
+  /** Up to two "needs a look" lines, each with a coloured dot. */
+  looks?: { tone: "danger" | "warning"; text: string }[];
+  /** What the dashboard beside the chat switches to with this reply ("todo", "denied", "unmatched", "uber"). */
+  view?: string;
+  /** An action card only the owner can answer (Masa's payout week: "ue-9qx4"). */
+  action?: "ue-9qx4";
+  /** A small table in the reply (an uploaded file read back). */
+  table?: { head: string[]; rows: string[][] };
+  /** What the agent needs from the owner, ticked off as each arrives. */
+  checklist?: { label: string; done: boolean }[];
+  /** Open the outlet sheet's preview as soon as the reply lands. */
+  autoOpen?: boolean;
+  /** Any other canvas this reply opens beside the chat ("order:devon"). */
+  canvasId?: string;
+  /** A later message the agent posts on its own after this one (next week's reminder), with its own time. */
+  followOn?: AgentReply & { at?: string };
   title: string;
   lines: string[];
   stats?: Stat[];
@@ -136,7 +158,12 @@ export type AgentReply = {
   outlet?: Store;
   /** The one-page sheet for that outlet's manager, ready to review and send. */
   sheet?: boolean;
+  /** Documents the agent needs from the owner (labor leakage), each ticked off once its file is in. */
+  docs?: DocRequest[];
 };
+
+export type LaborDoc = "timesheets" | "payroll" | "schedule";
+export type DocRequest = { kind: LaborDoc; label: string; hint: string; required: boolean; /** The file that covers it, once added. */ file?: string };
 
 export function weeklyPnl(): AgentReply {
   const { week, prev, outlets } = snapshot();
@@ -154,7 +181,7 @@ export function weeklyPnl(): AgentReply {
       { label: "Net after fees", value: usd(week.all.moneyIn) },
       { label: "Profit (estimate)", value: usd(week.all.profit) },
     ],
-    work: [`Read ${n()} Square sales summaries`, `Read ${n() * 3} delivery-app payout reports`, "Applied your food and staff cost settings", "Compared with the week before"],
+    work: [`Read ${n()} Toast sales summaries`, `Read ${n() * 3} delivery-app payout reports`, "Applied your food and staff cost settings", "Compared with the week before"],
     report: "pnl",
     followUps: ["Which outlets made the least?", "How much did the apps take in fees?"],
   };
@@ -253,13 +280,13 @@ export function payoutStatusReply(): AgentReply {
       `Week of ${WEEK_LABEL} is still coming in, as of ${asOfLabel(LAST, "mid")}. No payout is late. ${nextSteps(LAST, stores).map((s) => `${s.day}: ${s.what}`).join(" ")}`,
     ],
     rows: rows.map((r) => ({ label: r.label, sub: `${r.orders} · ${r.payout}`, value: r.state === "waiting" ? "Waiting for report" : r.state === "paid" ? "Paid" : "Checked", tone: r.state === "paid" ? "success" : undefined })),
-    work: ["Read each app's report and payout schedule", "Matched the reports that are in to Square, by order ID", "Checked each payout against its usual day"],
+    work: ["Read each app's report and payout schedule", "Matched the reports that are in to Toast, by order ID", "Checked each payout against its usual day"],
     report: "payouts",
-    followUps: ["Did every payout match Square?", "Which delivery app pays me more?"],
+    followUps: ["Did every payout match Toast?", "Which delivery app pays me more?"],
   };
 }
 
-/** The Thursday payout update: one week, every app side by side (matched, in Square only, in the app only). */
+/** The Thursday payout update: one week, every app side by side (matched, in Toast only, in the app only). */
 export function payoutReply(recons: Recon[], week: string): AgentReply {
   const sum = (f: (r: Recon) => number) => recons.reduce((n, r) => n + f(r), 0);
   const off = (r: Recon) => r.posOnly.orders + r.appOnly.orders;
@@ -268,25 +295,25 @@ export function payoutReply(recons: Recon[], week: string): AgentReply {
   const worst = [...recons].sort((a, b) => offAmt(b) - offAmt(a))[0];
   return {
     agent: "finance",
-    title: orders ? `${orders} delivery orders don't match Square` : "Every payout matched Square",
+    title: orders ? `${orders} delivery orders don't match Toast` : "Every payout matched Toast",
     lines: [
       orders
-        ? `Week of ${week}, all 3 apps compared with Square. ${appLabel(worst.app as AppKey)} had the most orders on only one side (${off(worst)} orders, ${usd(offAmt(worst))}). The KoreFi team is checking these with the apps.`
-        : `Week of ${week}: every DoorDash, Uber Eats and Grubhub order matched its Square record and payout.`,
+        ? `Week of ${week}, all 3 apps compared with Toast. ${appLabel(worst.app as AppKey)} had the most orders on only one side (${off(worst)} orders, ${usd(offAmt(worst))}). The KoreFi team is checking these with the apps.`
+        : `Week of ${week}: every DoorDash, Uber Eats and Grubhub order matched its Toast record and payout.`,
     ],
     stats: [
       { label: "Matched", value: usd(sum((r) => r.matched)), tone: "success" },
-      { label: "In Square only", value: usd(sum((r) => r.posOnly.amount)), tone: "danger" },
+      { label: "In Toast only", value: usd(sum((r) => r.posOnly.amount)), tone: "danger" },
       { label: "In app only", value: usd(sum((r) => r.appOnly.amount)) },
     ],
     // Platform by platform: what matched, and what's on only one side.
     rows: recons.map((r) => ({
       label: appLabel(r.app as AppKey),
-      sub: off(r) ? `${usd(r.matched)} matched · ${r.posOnly.orders} in Square only (${usd(r.posOnly.amount)}) · ${r.appOnly.orders} in app only (${usd(r.appOnly.amount)})` : `${usd(r.matched)} matched · nothing off`,
+      sub: off(r) ? `${usd(r.matched)} matched · ${r.posOnly.orders} in Toast only (${usd(r.posOnly.amount)}) · ${r.appOnly.orders} in app only (${usd(r.appOnly.amount)})` : `${usd(r.matched)} matched · nothing off`,
       value: off(r) ? `${off(r)} off` : "All matched",
       tone: off(r) ? "danger" : "success",
     })),
-    work: ["Read the week's Square delivery orders", "Read the payout report from DoorDash, Uber Eats and Grubhub", "Matched every order to its payout line", "Compared the 3 apps"],
+    work: ["Read the week's Toast delivery orders", "Read the payout report from DoorDash, Uber Eats and Grubhub", "Matched every order to its payout line", "Compared the 3 apps"],
     report: "payouts",
     followUps: ["How did we do last week?", "Which delivery app pays me more?"],
   };
@@ -333,7 +360,7 @@ export function growthLearning(): AgentReply {
     agent: "growth",
     title: "I'm still learning your menu",
     lines: ["I'm comparing your menu prices with restaurants near each outlet. My first pricing report will be ready in about 2 weeks, and I'll post it here."],
-    work: ["Read your Square menu", `Found restaurants near ${n()} outlets`],
+    work: ["Read your Toast menu", `Found restaurants near ${n()} outlets`],
   };
 }
 
@@ -407,12 +434,12 @@ function route(q: string): AgentReply {
   return weeklyPnl();
 }
 
-export const SUGGESTIONS = ["Run Chargeback recovery", "How did we do last week?", "Did every payout match Square?", "Which delivery app pays me more?"];
+export const SUGGESTIONS = ["Run Chargeback recovery", "How did we do last week?", "Did every payout match Toast?", "Which delivery app pays me more?", "Where am I losing money on labor?"];
 
 // ───────── Seeded threads (what the agents posted while you were away) ─────────
 
 export type Message =
-  | { id: string; role: "user"; text: string; /** A dashboard card the owner pointed at, sent with the message. */ ref?: CardRef }
+  | { id: string; role: "user"; text: string; /** A dashboard card the owner pointed at, sent with the message. */ ref?: CardRef; /** Files added with the message. */ files?: string[] }
   | { id: string; role: "agent"; reply: AgentReply; at?: string }
   | { id: string; role: "agent"; pending: true; agent: AgentId; work: string[]; done: number };
 
@@ -442,27 +469,38 @@ export function seedThreads(): Thread[] {
 }
 
 /** Masa Kitchen's opening 3PD Payouts message: the week as it is mid-week, word for word from the agent-journey prototype. */
+/** Masa Kitchen's opening payout message: the complete week, Fri, Nov 13 (leadership flows, 2026-11-20). */
 function fixturePayouts(): AgentReply {
   return {
     agent: "finance",
     by: "Payout reconciliation",
-    title: "No payout is late. 2 of 3 apps checked so far",
-    lines: ["DoorDash is missing 3 orders ($95.45), already claimed."],
-    work: ["Read the DoorDash report that arrived Mon, Nov 9", "Read the daily Grubhub reports through Nov 7", "Matched both to Toast by order ID"],
+    style: "opening",
+    title: `All three apps have paid for ${FX.WEEK}. You received ${usd(FX.PAID)}, ${usd(FX.PAID_UP)} more than last week.`,
+    lines: [],
+    looks: [
+      { tone: "warning", text: `${FX.ORDERS.unpaid} orders in Toast weren't paid: ${FX.usd2(FX.UNPAID)}` },
+      { tone: "warning", text: `Uber Eats kept ${FX.kept(FX.PAY[1])}% of sales, over your ${FX.PAY_LIMIT}% limit` },
+    ],
+    cover: "Bank deposits not checked",
+    action: "ue-9qx4",
+    work: ["Read the DoorDash, Uber Eats and Grubhub payout reports for Nov 1–7", "Matched every Toast delivery order to its payout by order ID", "Checked each app's commission against your plan", "Checked each payout arrived on its usual day"],
     report: "payouts",
-    card: { title: "Payout check", sub: "Nov 1–7 · in progress" },
-    followUps: ["Which DoorDash orders are missing?", "When is each payout due?"],
+    card: { title: "Payouts", sub: "Nov 1–7 · 7 outlets · all apps" },
+    followUps: ["Which orders weren't paid?", "Why did Uber Eats keep 34%?", "Did every payout arrive?"],
   };
 }
 
-/** Masa Kitchen's opening Chargebacks message, as the prototype words it. */
+/** Masa Kitchen's opening Chargebacks message (leadership flows, 2026-11-20): the result first, no greeting. */
 function fixtureChargebacks(): AgentReply {
   const top = FX.flagged[0];
   return {
     agent: "operations",
     by: "Chargeback recovery",
-    title: `Chargebacks cost you ${usd(FX.charged)} this week, ${usd(FX.charged - FX.USUAL)} more than usual`,
-    lines: [`${top.name} is over your ${FX.LIMIT}% limit.`],
+    style: "opening",
+    title: `Your chargebacks for ${FX.WEEK} are in. They cost you ${usd(FX.charged)}, ${usd(FX.charged - FX.USUAL)} more than a usual week, and we've won back ${usd(FX.CBST.won)} so far.`,
+    lines: [],
+    looks: [{ tone: "danger", text: `${top.name}: ${FX.rateLabel(top)} of app sales, over your ${FX.LIMIT}% limit` }],
+    cover: `All 3 app reports in · ${usd(FX.CBST.todo)} still to dispute, KoreFi is filing it`,
     work: ["Read the DoorDash, Uber Eats and Grubhub adjustment reports for Nov 1–7", "Matched each charge to its order and outlet", "Compared each outlet with its usual week", "Checked which disputes were won, denied or not filed yet"],
     dashboard: "dash-chargebacks",
     followUps: ["Why is Damen high?", "What is still to dispute?", "Send Damen's sheet to its manager"],
@@ -491,11 +529,11 @@ export function teamPinnedThreads(): Thread[] {
     },
     {
       id: "payout",
-      title: "3PD Payouts",
+      title: "Payouts",
       agent: "finance",
-      at: "Thu",
+      at: "Fri",
       unread: false,
-      messages: [{ id: "p1", role: "agent", at: "Tue, Nov 10", reply: fixturePayouts() }],
+      messages: [{ id: "p1", role: "agent", at: "Fri 8:00 AM", reply: fixturePayouts() }],
     },
   ];
 }
@@ -521,7 +559,7 @@ export function historyThreads(): Thread[] {
     chat("h-yday-2", "Missing payouts check", "finance", "Yesterday", "Are any payouts missing from the bank?"),
     chat("h-nov14", "How did we do last week?", "finance", "Nov 14", "How did we do last week?"),
     chat("h-nov10", "Outlets with the most chargebacks", "operations", "Nov 10", "Which outlets get the most chargebacks?"),
-    chat("h-nov3", "Did every payout match Square?", "finance", "Nov 3", "Did every payout match Square?"),
+    chat("h-nov3", "Did every payout match Toast?", "finance", "Nov 3", "Did every payout match Toast?"),
     chat("h-oct27", "Promo spend by app", "finance", "Oct 27", "How much did we spend on promos on each app?"),
     chat("h-oct22", "Menu prices vs nearby restaurants", "finance", "Oct 22", "How do our menu prices compare with competitors?"),
   ];
@@ -553,7 +591,7 @@ export const FOLDERS: Folder[] = [
     agent: "operations",
     label: "Operations",
     hue: "#F2784B",
-    skills: [{ id: "chargebacks", name: "Chargeback recovery", blurb: "Finds every error charge on your delivery apps, disputes it for you, and shows which items and locations cause repeats.", state: "live", cadence: "Email every Thursday", access: APPS_3PD, thread: "cb" }],
+    skills: [{ id: "chargebacks", name: "Chargeback recovery", blurb: "Finds every error charge on your delivery apps and shows which items and locations cause repeats. The KoreFi team disputes each one.", state: "live", cadence: "Email every Thursday", access: APPS_3PD, thread: "cb" }],
   },
   {
     agent: "finance",
@@ -561,7 +599,7 @@ export const FOLDERS: Folder[] = [
     hue: "#6C74E6",
     skills: [
       { id: "payouts", name: "Payout reconciliation", blurb: "Checks every order the delivery apps report against your POS. Flags orders that are missing, wrong in amount or paid short.", state: "live", cadence: "Email every Thursday", access: [...APPS_3PD, "POS"], thread: "payout" },
-      { id: "journal-entries", name: "Auto journal entries", blurb: "Turns matched orders into accounting entries automatically and shows where the gaps are.", state: "idle", cadence: "Daily, 8:00 AM", access: [...APPS_3PD, "POS", "QuickBooks"] },
+      { id: "journal-entries", name: "Auto journal entries", blurb: "Prepares accounting entries from matched orders for your bookkeeper, and shows where the gaps are.", state: "idle", cadence: "Daily, 8:00 AM", access: [...APPS_3PD, "POS", "QuickBooks"] },
       { id: "three-way-recon", name: "3-way reconciliation", blurb: "Adds the bank: confirms the money the apps owe you for delivered orders actually reached your account.", state: "idle", cadence: "Every Friday, after the week's payouts", access: [...APPS_3PD, "POS", "Bank account"] },
     ],
   },
@@ -583,8 +621,8 @@ export const FOLDERS: Folder[] = [
     skills: [
       { id: "labor-forecast", name: "Labor forecast", blurb: "Tells you how many staff to have each day and shift, based on past sales and past staffing.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", "Payroll"] },
       { id: "labor-leakage", name: "Labor leakage", blurb: "Shows which days or weeks you were overstaffed for your sales, and what the extra hours cost.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", "Payroll"] },
-      { id: "schedule", name: "Schedule generation", blurb: "Builds the weekly shift schedule from the forecast, your labor target and compliance rules.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", "Payroll"] },
-      { id: "payroll", name: "Payroll disbursement", blurb: "Works out staff pay from approved hours, including leave and overtime, ready to release.", state: "idle", cadence: "Every Friday, after the week's payouts", access: ["Payroll", "Bank account"] },
+      { id: "schedule", name: "Schedule generation", blurb: "Suggests a weekly shift schedule from the forecast, your labor target and compliance rules, for your managers to use.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", "Payroll"] },
+      { id: "payroll", name: "Payroll disbursement", blurb: "Checks staff pay against approved hours, including leave and overtime, and flags anything that looks off before payday.", state: "idle", cadence: "Every Friday, after the week's payouts", access: ["Payroll", "Bank account"] },
     ],
   },
   {
@@ -594,7 +632,7 @@ export const FOLDERS: Folder[] = [
     skills: [
       { id: "consumption", name: "Consumption tracking", blurb: "Turns sales into ingredients used, so you see where cost and waste go. Also checks every supplier bill.", state: "idle", cadence: "Every Monday, 8:00 AM", access: ["POS", INV] },
       { id: "inventory-forecast", name: "Inventory forecast", blurb: "Tells you how much of each ingredient to have each week, based on sales and your recipes.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
-      { id: "auto-ordering", name: "Auto ordering", blurb: "Drafts supplier orders by comparing the forecast with what is on hand.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
+      { id: "auto-ordering", name: "Auto ordering", blurb: "Shows what to order from each supplier by comparing the forecast with what is on hand.", state: "idle", cadence: "Every Thursday, 8:00 AM", access: ["POS", INV] },
       { id: "price-variance", name: "Price discovery", blurb: "Shows where you pay more than you should for an ingredient, and which suppliers offer better prices.", state: "idle", cadence: "Monthly, 1st at 8:00 AM", access: [INV] },
     ],
   },
@@ -614,7 +652,7 @@ export const FOLDERS: Folder[] = [
 export type Draft = { id: string; title: string; blurb: string; by: string; updated?: string; steps: { group: string; items: string[] }[] };
 
 export const DRAFTS: Draft[] = [
-  { id: "d1", title: "Weekly outlet scorecard", blurb: "Ranks every outlet each Monday on sales, fees kept and chargebacks, and flags the ones that slipped.", by: "Ajay mon", updated: "Last updated 2 days ago", steps: [{ group: "Read the week", items: ["Read last week's Square sales for every outlet.", "Read the delivery-app payout reports."] }, { group: "Score outlets", items: ["Rank outlets by share of sales kept after fees.", "Flag outlets that dropped 5 places or more."] }] },
+  { id: "d1", title: "Weekly outlet scorecard", blurb: "Ranks every outlet each Monday on sales, fees kept and chargebacks, and flags the ones that slipped.", by: "Ajay mon", updated: "Last updated 2 days ago", steps: [{ group: "Read the week", items: ["Read last week's Toast sales for every outlet.", "Read the delivery-app payout reports."] }, { group: "Score outlets", items: ["Rank outlets by share of sales kept after fees.", "Flag outlets that dropped 5 places or more."] }] },
   { id: "d2", title: "Missing-item watch", blurb: "Spots items that are charged back again and again, so the KoreFi team can fix the cause with the outlet.", by: "Ajay mon", steps: [] },
   { id: "d3", title: "Delivery fee check", blurb: "Compares the commission each app charged with the rate in your contract and flags orders charged too much.", by: "Ajay mon", updated: "Last updated a week ago", steps: [{ group: "Compare fees", items: ["Read the commission rate in each app contract.", "Work out the rate charged on every order.", "List orders charged above the contract rate."] }] },
   { id: "d4", title: "Promo payback", blurb: "Shows which app promotions paid for themselves in new orders and which only cost margin.", by: "Ajay mon", steps: [] },

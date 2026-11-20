@@ -1,0 +1,66 @@
+/* Theme bridge: points Astryx tokens at KoreFi Foundation tokens (src/app/foundation.css).
+   - Unlayered on purpose: it must beat Astryx's `@layer astryx-theme` values.
+   - Declared on :root, .light, .dark so each alias re-resolves in the active scope (dark mode follows ours).
+   - Tokens with the SAME name in both systems (--color-text-primary / -secondary / -disabled / -success / -warning)
+     are not redeclared; Foundation's unlayered :root value already wins.
+   Token names verified with `npx astryx docs tokens/*`. */
+:root,
+.light,
+.dark {
+  /* Accent = brand. primary-solid keeps white text at AA (see docs/mvp3-design-system-audit.md #2). */
+  --color-accent: var(--color-primary-solid);
+  --color-accent-muted: var(--color-brand-lightest);
+  --color-on-accent: #fff;
+  --color-text-accent: var(--color-text-clickable);
+  --color-icon-accent: var(--color-text-clickable);
+
+  /* Surfaces */
+  --color-background-body: var(--color-background-primary);
+  --color-background-surface: var(--color-background-secondary);
+  --color-background-card: var(--color-background-secondary);
+  --color-background-popover: var(--color-background-secondary);
+  --color-background-muted: var(--color-neutral-lightest);
+  --color-neutral: var(--color-neutral-light);
+  --color-overlay: rgb(0 0 0 / 0.4); /* scrim spec UI-DIALOG-002 */
+
+  /* Text and icons */
+  --color-text-info: var(--color-text-information);
+  --color-text-error: var(--color-text-danger);
+  --color-icon-primary: var(--color-text-primary);
+  --color-icon-secondary: var(--color-text-secondary);
+  --color-icon-disabled: var(--color-text-disabled);
+
+  /* Borders and tracks */
+  --color-border: var(--color-border-default);
+  --color-border-emphasized: var(--color-border-darker);
+  --color-skeleton: var(--color-neutral-light);
+  --color-track: var(--color-neutral-light);
+
+  /* Status: strong fill, pale fill, text on pale fill */
+  --color-info: var(--color-info-default);
+  --color-info-muted: var(--color-info-lightest);
+  --color-on-info-muted: var(--color-info-darkest);
+  --color-success: var(--color-success-default);
+  --color-success-muted: var(--color-success-lightest);
+  --color-on-success-muted: var(--color-success-darkest);
+  --color-warning: var(--color-warning-default);
+  --color-warning-muted: var(--color-warning-lightest);
+  --color-on-warning-muted: var(--color-warning-darkest);
+  --color-error: var(--color-danger-default);
+  --color-error-muted: var(--color-danger-lightest);
+  --color-on-error-muted: var(--color-danger-darkest);
+
+  /* Focus ring */
+  --focus-outline-color: var(--color-focus-primary);
+
+  /* Shape: Astryx inner/element/container -> our small/medium/large; chat/page -> xlarge */
+  --radius-inner: var(--radius-small);
+  --radius-element: var(--radius-medium);
+  --radius-container: var(--radius-large);
+  --radius-page: var(--radius-xlarge);
+  --radius-chat: var(--radius-xlarge);
+
+  /* Type */
+  --font-family-body: var(--font-sans);
+  --font-family-heading: var(--font-sans);
+}

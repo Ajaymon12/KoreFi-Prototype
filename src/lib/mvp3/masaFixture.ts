@@ -129,7 +129,98 @@ export const DENIED = {
   source: "From each app's dispute decisions",
 };
 
-// ───────── 3PD Payouts (journey 5 of the prototype: the week mid-week) ─────────
+// ───────── Every charge of the week (leadership flows, 2026-11-20) ─────────
+// All 33 orders, so the dashboard's charges table can filter to "Still to dispute". They add up to every figure above:
+// outlets ($397 / $216), apps (DoorDash 20 · $248 · $139, Uber Eats 10 · $112 · $62, Grubhub 3 · $37 · $15), What went
+// wrong (15 / 8 / 6 / 4), and statuses (won $216, awaiting $41, denied $28 on 2 orders, still to dispute $112 on 9).
+
+export type FxCharge = { outlet: string; day: string; app: AppKey; item: string; reason: string; amount: number; status: string };
+const c = (outlet: string, day: string, app: "dd" | "ue" | "gh", item: string, reason: string, amount: number, status: string): FxCharge => ({ outlet, day, app: APP[app], item, reason, amount, status });
+export const CHARGES: FxCharge[] = [
+  ...DAMEN.map(([day, app, item, reason, amount, status]) => c("Damen", day, app, item, reason, amount, status)),
+  c("Oak Park", "Mon, Nov 2", "dd", "Burrito bowl", "Missing item", 12.5, "Won"),
+  c("Oak Park", "Tue, Nov 3", "dd", "Chips & Queso", "Missing item", 6.5, "Won"),
+  c("Oak Park", "Wed, Nov 4", "dd", "Steak taco plate", "Wrong item", 14, "Won"),
+  c("Oak Park", "Thu, Nov 5", "ue", "Quesadilla", "Wrong item", 17, "Won"),
+  c("Oak Park", "Fri, Nov 6", "ue", "Horchata", "Missing item", 5, "Still to dispute"),
+  c("Oak Park", "Sat, Nov 7", "dd", "Family taco pack", "Never arrived", 15.5, "Still to dispute"),
+  c("Oak Park", "Sat, Nov 7", "ue", "Family taco pack", "Food quality", 21.5, "Awaiting decision"),
+  c("Montrose", "Sun, Nov 1", "ue", "Burrito bowl", "Missing item", 12.5, "Won"),
+  c("Montrose", "Tue, Nov 3", "dd", "Steak taco plate", "Wrong item", 14, "Won"),
+  c("Montrose", "Wed, Nov 4", "dd", "Chips & Queso", "Missing item", 7, "Won"),
+  c("Montrose", "Thu, Nov 5", "ue", "Horchata", "Missing item", 4.5, "Won"),
+  c("Montrose", "Fri, Nov 6", "dd", "Family taco pack", "Never arrived", 30, "Still to dispute"),
+  c("Halsted", "Mon, Nov 2", "dd", "Quesadilla", "Wrong item", 11, "Won"),
+  c("Halsted", "Wed, Nov 4", "ue", "Burrito bowl", "Food quality", 17, "Won"),
+  c("Halsted", "Thu, Nov 5", "dd", "Carnitas bowl", "Food quality", 14.5, "Denied"),
+  c("Halsted", "Sat, Nov 7", "dd", "Burrito bowl", "Never arrived", 12.5, "Still to dispute"),
+  c("Gurnee", "Tue, Nov 3", "gh", "Steak taco plate", "Wrong item", 15, "Won"),
+  c("Gurnee", "Fri, Nov 6", "dd", "Chips & Queso", "Missing item", 8.5, "Still to dispute"),
+  c("Gurnee", "Sat, Nov 7", "gh", "Burrito bowl", "Never arrived", 8.5, "Awaiting decision"),
+];
+export const TODO = CHARGES.filter((x) => x.status === "Still to dispute");
+/** The same 33 orders as table rows, for the dashboard's Transactions tab, so its "Not Disputed" filter shows the 9
+ *  orders ($112) the chat names. Order IDs are made up per app, in the style of each app's portal. */
+const ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const orderId = (app: AppKey, i: number) => {
+  let n = (i + 7) * 2654435761;
+  let s = "";
+  for (let k = 0; k < 4; k++) {
+    s += ID_CHARS[Math.abs(n) % ID_CHARS.length];
+    n = Math.floor(n / ID_CHARS.length) + k * 97;
+  }
+  return `${app === "doordash" ? "DD" : app === "uber" ? "UE" : "GH"}-${s}`;
+};
+export const CHARGE_ROWS: Chargeback[] = CHARGES.map((x, i) => ({
+  id: orderId(x.app, i),
+  store: FX_OUTLETS.find((f) => f.name === x.outlet)!.store,
+  app: x.app,
+  week: LAST,
+  date: `2026-11-0${Number(x.day.split(" ").pop())}`,
+  amount: x.amount,
+  wonBack: x.status === "Won" ? x.amount : 0,
+  status: STATUS[x.status],
+  reason: x.reason === "Food quality" ? "Quality issue" : x.reason === "Never arrived" ? "Order never arrived" : x.reason,
+  item: x.item,
+  detail: x.item,
+}));
+
+export const DENIED_ORDERS = CHARGES.filter((x) => x.status === "Denied");
+
+/** "Which items at Damen?": how often each dish came up in Damen's 14 charges, most first. */
+export const DAMEN_ITEMS: [string, number][] = Object.entries(
+  DAMEN.reduce<Record<string, number>>((m, [, , item]) => ({ ...m, [item]: (m[item] ?? 0) + 1 }), {}),
+).sort((a, b) => b[1] - a[1]);
+
+// ───────── 3PD Payouts: the complete week, emailed Fri, Nov 13 (leadership flows, 2026-11-20) ─────────
+// A 2-way check: Toast orders against each app's report and payout. Bank deposits are not checked.
 
 export const PAY_APP = { dd: "DoorDash", ue: "Uber Eats", gh: "Grubhub" } as const;
 export type PayKey = keyof typeof PAY_APP;
+
+export const PAY_LIMIT = 30;
+export type PayRow = { app: PayKey; orders: number; paidOn: string; sales: number; commission: number; rate: number; promos: number; ads: number; chargebacks: number; paid: number; up: number; trend: number[] };
+export const PAY: PayRow[] = [
+  { app: "dd", orders: 1322, paidOn: "Thu, Nov 12", sales: 34400, commission: 7568, rate: 22, promos: 960, ads: 0, chargebacks: 109, paid: 25763, up: 640, trend: [75, 75, 75, 75] },
+  { app: "ue", orders: 804, paidOn: "Mon, Nov 9", sales: 20900, commission: 5643, rate: 27, promos: 790, ads: 580, chargebacks: 50, paid: 13837, up: 1120, trend: [69, 68, 68, 66] },
+  { app: "gh", orders: 294, paidOn: "Wed, Nov 11", sales: 7640, commission: 1528, rate: 20, promos: 110, ads: 0, chargebacks: 22, paid: 5980, up: 200, trend: [78, 78, 78, 78] },
+];
+export const PAID = PAY.reduce((n, x) => n + x.paid, 0);
+export const PAY_SALES = PAY.reduce((n, x) => n + x.sales, 0);
+export const PAID_UP = PAY.reduce((n, x) => n + x.up, 0);
+/** What each app kept, as a share of its sales (Uber Eats 34%). */
+export const kept = (x: PayRow) => Math.round(((x.sales - x.paid) / x.sales) * 100);
+/** What the apps kept overall, as the email writes it (27.6%). */
+export const KEPT_ALL = `${(((PAY_SALES - PAID) / PAY_SALES) * 100).toFixed(1)}%`;
+export const ORDERS = { toast: 2420, paid: 2416, unpaid: 4 };
+
+export type Unmatched = { id: string; outlet: string; day: string; app: PayKey; amount: number; status: "Claimed" | "Needs you" };
+export const UNMATCHED: Unmatched[] = [
+  { id: "DD 4BGF", outlet: "Damen", day: "Sat, Nov 7", app: "dd", amount: 31.4, status: "Claimed" },
+  { id: "DD 26Y7", outlet: "Montrose", day: "Fri, Nov 6", app: "dd", amount: 27.85, status: "Claimed" },
+  { id: "DD HS8V", outlet: "Halsted", day: "Tue, Nov 3", app: "dd", amount: 36.2, status: "Claimed" },
+  { id: "UE 9QX4", outlet: "Oak Park", day: "Sat, Nov 7", app: "ue", amount: 24.1, status: "Needs you" },
+];
+export const UNPAID = UNMATCHED.reduce((n, x) => n + x.amount, 0);
+export const usd2 = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const usd0 = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;

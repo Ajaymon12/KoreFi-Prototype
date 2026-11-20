@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, Check, FileText, MessageSquare, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/dashboard/primitives";
@@ -11,6 +12,7 @@ import type { Store } from "@/lib/finance/outlets";
 import { outletDive, versusUsual } from "@/lib/mvp3/outletDive";
 import { useAgents } from "./AgentsProvider";
 import { Modal } from "./Modal";
+import { Button, buttonVariants } from "@/components/ui/Button";
 
 // MVP 3 / Chargebacks, one outlet ("Why is Damen high?" → its orders → send to the manager). The panel opens
 // in the canvas beside the chat: what to fix, then every order charged back. "Send to manager" opens the one-page sheet
@@ -31,7 +33,7 @@ const CHARGE_COLUMNS: TableColumn<Chargeback>[] = [
   { key: "amount", header: "Amount", align: "right", cell: (c) => usd2(c.amount) },
   { key: "status", header: "Status", cell: (c) => <StatusBadge tone={TONE[c.status]}>{STATUS_LABEL[c.status]}</StatusBadge> },
 ];
-const btn = "inline-flex h-8 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-3.5";
+const btn = cn(buttonVariants({ type: "default", size: "small" }), "[&_svg]:size-4");
 
 function Fixes({ store, sheet = false }: { store: Store; sheet?: boolean }) {
   const d = outletDive(store);
@@ -50,7 +52,7 @@ function Fixes({ store, sheet = false }: { store: Store; sheet?: boolean }) {
 }
 
 /** The canvas panel for one outlet. `tools` are the canvas's expand and close buttons. */
-export function OutletPanel({ store, tools }: { store: Store; tools?: React.ReactNode }) {
+export function OutletPanel({ store, tools, headerTo }: { store: Store; tools?: React.ReactNode; headerTo?: HTMLElement | null }) {
   const d = outletDive(store);
   const { setCanvas, dashboards, sheetsSent } = useAgents();
   const [sheet, setSheet] = useState(false);
@@ -65,16 +67,22 @@ export function OutletPanel({ store, tools }: { store: Store; tools?: React.Reac
   ];
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border-default) bg-(--color-background-secondary) py-1 pr-2 pl-4">
-        <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{d.name} · chargebacks</h1>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button type="button" onClick={() => setSheet(true)} className={btn}>
-            {sent ? <Check aria-hidden /> : <Send aria-hidden />}
-            {sent ? "Sent to manager" : "Send to manager"}
-          </button>
-          {tools}
-        </div>
-      </header>
+      {(() => {
+        const bar = (
+          <>
+            <h2 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{d.name} · chargebacks</h2>
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <button type="button" onClick={() => setSheet(true)} className={btn}>
+                {sent ? <Check aria-hidden /> : <Send aria-hidden />}
+                {sent ? "Sent to manager" : "Send to manager"}
+              </button>
+              {tools}
+            </div>
+          </>
+        );
+        if (headerTo !== undefined) return headerTo && createPortal(bar, headerTo);
+        return <header className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border-default) bg-(--color-background-secondary) py-1 pr-2 pl-4">{bar}</header>;
+      })()}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[960px] space-y-4 px-6 py-6">
           {dash && (
@@ -182,9 +190,9 @@ export function SheetModal({ store, onClose }: { store: Store; onClose: () => vo
             Done
           </button>
         ) : (
-          <button type="button" onClick={() => markSheetSent(store)} className="inline-flex h-9 items-center gap-1.5 rounded-medium bg-(--color-primary) px-3.5 text-body-md font-medium text-white outline-none hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-focus-primary)">
-            <Send className="size-4" aria-hidden /> Send to {d.name}&apos;s manager
-          </button>
+          <Button type="primary" size="small" className="[&_svg]:size-4" iconLeft={<Send aria-hidden />} onClick={() => markSheetSent(store)}>
+            Send to {d.name}&apos;s manager
+          </Button>
         )}
       </footer>
     </Modal>
@@ -215,9 +223,10 @@ export function OutletCard({ store }: { store: Store }) {
 }
 
 /** The chat card for the manager sheet: review it, then send. */
-export function SheetCard({ store }: { store: Store }) {
+/** `autoOpen`: open the preview as soon as the card appears (the chat's "Send Damen's sheet to its manager"). */
+export function SheetCard({ store, autoOpen = false }: { store: Store; autoOpen?: boolean }) {
   const { sheetsSent } = useAgents();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const d = outletDive(store);
   const sent = sheetsSent.includes(store);
   return (

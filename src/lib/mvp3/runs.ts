@@ -53,7 +53,7 @@ function chargebackRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" 
       title: headline,
       lines: [`The apps charged back ${rows.length} orders in the week of ${WEEKS[i].label}. The KoreFi team disputed them and is still waiting on ${open.length}. There's nothing you need to do.`],
       stats: metrics.map((m) => ({ label: m.label, value: usd(m.value), tone: m.tone })),
-      work: ["Read the new adjustment report from DoorDash, Uber Eats and Grubhub", "Matched each chargeback to its order in Square", "Checked dispute status with the KoreFi team", "Emailed you the summary"],
+      work: ["Read the new adjustment report from DoorDash, Uber Eats and Grubhub", "Matched each chargeback to its order in Toast", "Checked dispute status with the KoreFi team", "Emailed you the summary"],
       report: "chargebacks",
     },
   };
@@ -65,10 +65,10 @@ function payoutRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" | "t
   const posOnly = recons.reduce((n, r) => n + r.posOnly.amount, 0);
   const appOnly = recons.reduce((n, r) => n + r.appOnly.amount, 0);
   const orders = recons.reduce((n, r) => n + r.posOnly.orders + r.appOnly.orders, 0);
-  const headline = orders ? `${orders} orders don't match Square` : "Every payout matched Square";
+  const headline = orders ? `${orders} orders don't match Toast` : "Every payout matched Toast";
   const metrics: Metric[] = [
     { label: "Matched", value: matched, tone: "success", money: true },
-    { label: "In Square only", value: posOnly, tone: "danger", money: true },
+    { label: "In Toast only", value: posOnly, tone: "danger", money: true },
     { label: "In app only", value: appOnly, money: true },
   ];
   return {
@@ -100,7 +100,7 @@ function pnlRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" | "trig
       title: headline,
       lines: [`Sales were ${usd(t.all.sales)} in the week of ${WEEKS[i].label}, and the apps and card processors took ${usd(fees)}. ${best.label} kept the biggest share of its sales.`],
       stats: metrics.map((m) => ({ label: m.label, value: usd(m.value), tone: m.tone })),
-      work: ["Read the week's Square sales", "Read the payout report from each app", "Applied your food and staff cost settings", "Emailed you the P&L by channel"],
+      work: ["Read the week's Toast sales", "Read the payout report from each app", "Applied your food and staff cost settings", "Emailed you the P&L by channel"],
       report: "pnl",
     },
   };

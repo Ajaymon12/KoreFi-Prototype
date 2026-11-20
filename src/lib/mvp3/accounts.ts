@@ -33,12 +33,18 @@ export type Account = {
   teamPinned?: boolean;
   /** How much history KoreFi holds, shown in the switcher. */
   history: string;
+  /** The data sources KoreFi has for this restaurant (agent `access` names). An agent reading anything else asks the
+   *  owner for it on Run instead of running (lib/mvp3/flows). */
+  has?: string[];
+  /** The agent page's "Has" line. */
+  hasLabel?: string;
 };
+const DATA = ["DoorDash", "Uber Eats", "Grubhub", "POS"];
 
 export const ACCOUNTS: Account[] = [
-  { id: "tacopros", name: BRAND, logo: BRAND_LOGO, stores: STORES, stage: "active", home: true, history: "34 outlets · 2 years of reports" },
-  { id: "saffron", name: "Saffron Grill", stores: STORES.slice(0, 6), stage: "active", agentsOff: true, history: "6 outlets · 6 months of reports" },
-  { id: "masa", name: "Masa Kitchen", stores: STORES, stage: "active", home: true, limited: true, teamPinned: true, history: "34 outlets · 2 years of reports" },
+  { id: "tacopros", name: BRAND, logo: BRAND_LOGO, stores: STORES, stage: "active", home: true, history: "34 outlets · 2 years of reports", has: DATA, hasLabel: "Toast sales and delivery-app reports, last 2 years" },
+  { id: "saffron", name: "Saffron Grill", stores: STORES.slice(0, 6), stage: "active", agentsOff: true, history: "6 outlets · 6 months of reports", has: DATA, hasLabel: "Toast sales, last 6 months" },
+  { id: "masa", name: "Masa Kitchen", stores: STORES, stage: "active", home: true, limited: true, teamPinned: true, history: "34 outlets · 2 years of reports", has: DATA, hasLabel: "Toast sales and delivery-app reports, last 2 years" },
   { id: "littlepho", name: "Little Pho", stores: STORES, stage: "new", history: "Joined today · no reports yet" },
 ];
 

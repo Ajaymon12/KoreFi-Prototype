@@ -16,7 +16,7 @@ const PAYOUT_PRESETS = [{ label: "Last week", range: [LAST, LAST] as [number, nu
 // The real /mvp2 reports an agent can open, shared by the chat's canvas and a pinned report's page.
 const REPORT_VIEW: Record<ReportId, () => React.ReactNode> = {
   pnl: () => <PnlSummary title={REPORTS.pnl.title} />,
-  payouts: () => <PayoutReport presets={PAYOUT_PRESETS} />,
+  payouts: () => <PayoutReport presets={PAYOUT_PRESETS} title={REPORTS.payouts.title} pos="Toast" />,
   chargebacks: () => <ChargebackReport />,
   overview: () => <OverviewReport />,
 };

@@ -28,6 +28,8 @@ export type TableColumn<T> = {
   width?: string;
   /** Pin the column to the right edge while the table scrolls sideways (a row's action). */
   pinRight?: boolean;
+  /** Stick to the left edge while the table scrolls sideways (an ID column). */
+  pinLeft?: boolean;
 };
 
 export type TableFilter<T> = { key: string; label: string; value: (row: T) => string };
@@ -66,14 +68,19 @@ type Props<T> = {
   /** Checkbox per row (and select-all for the page) for bulk actions; the caller holds the keys. */
   selection?: { keys: Set<string>; onChange: (keys: Set<string>) => void; label: (row: T) => string };
   className?: string;
+  /** The P&L table's look (PnlTable): a hairline on every cell, a short grey header, 44px rows. */
+  grid?: boolean;
 };
 
 /** A right-pinned cell: opaque, with a soft edge so rows sliding under it read as covered. */
 const PIN = "sticky right-0 z-[1] bg-inherit shadow-[-8px_0_8px_-8px_rgb(0_0_0/0.12)]";
+/** The P&L's cell hairline. The last column skips its right line so it doesn't double the card's edge. */
+const GRID = "border-r border-b border-(--gray-400) last:border-r-0";
+const PIN_LEFT = "sticky left-0 z-[1] bg-inherit shadow-[8px_0_8px_-8px_rgb(0_0_0/0.12)]";
 
 type Sort = { key: string; dir: "asc" | "desc" } | null;
 
-export function ReportTable<T>({ columns, rows, rowKey, title, description, search, searchPlaceholder = "Search…", filters = [], actions, pageSize = 10, noun = "rows", initialSort, onRowClick, selectedKey, empty = "Nothing to show.", selection, chips, viewColumn = true, fill = false, rowClassName, className }: Props<T>) {
+export function ReportTable<T>({ columns, rows, rowKey, title, description, search, searchPlaceholder = "Search…", filters = [], actions, pageSize = 10, noun = "rows", initialSort, onRowClick, selectedKey, empty = "Nothing to show.", selection, chips, viewColumn = true, fill = false, rowClassName, className, grid = false }: Props<T>) {
   const showView = !!onRowClick && viewColumn;
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<Record<string, string | null>>({});
@@ -182,9 +189,9 @@ export function ReportTable<T>({ columns, rows, rowKey, title, description, sear
       )}
 
       <div className={cn(fill ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto", hasToolbar && !fill && "mt-4")}>
-        <table className="w-full whitespace-nowrap">
+        <table className={cn("w-full whitespace-nowrap", grid && "border-separate border-spacing-0")}>
           <thead>
-            <tr className={cn("h-[42px] border-b border-(--gray-300) bg-(--gray-200) text-body-sm text-(--color-text-secondary)", !hasToolbar && title && "border-t", fill && "sticky top-0 z-[2] shadow-[0_1px_0_var(--gray-300)] [&>th]:bg-(--gray-200)")}>
+            <tr className={cn(grid ? "text-body-sm text-(--color-text-primary) [&>th]:h-[34px] [&>th]:bg-(--gray-200)" : "h-[42px] border-b border-(--gray-300) bg-(--gray-200) text-body-sm text-(--color-text-secondary)", !hasToolbar && title && "border-t", fill && "sticky top-0 z-[2] shadow-[0_1px_0_var(--gray-300)] [&>th]:bg-(--gray-200)")}>
               {selection && (
                 <th scope="col" className="w-px pr-1 pl-4">
                   <Checkbox aria-label="Select all on this page" checked={allPicked} mixed={!allPicked && somePicked} onChange={togglePage} />
@@ -194,7 +201,7 @@ export function ReportTable<T>({ columns, rows, rowKey, title, description, sear
                 const active = sort?.key === c.key ? sort.dir : null;
                 const Icon = active === "asc" ? ArrowUp : active === "desc" ? ArrowDown : ArrowUpDown;
                 return (
-                  <th key={c.key} scope="col" aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : undefined} className={cn("px-3 font-normal first:pl-4 last:pr-4", c.align === "right" ? "text-right" : "text-left", c.width, c.pinRight && PIN)}>
+                  <th key={c.key} scope="col" aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : undefined} className={cn("px-3 font-normal first:pl-4 last:pr-4", grid && GRID, c.align === "right" ? "text-right" : "text-left", c.width, c.pinRight && PIN, c.pinLeft && PIN_LEFT)}>
                     {c.sort ? (
                       // Label then icon, always (Figma: "File ⇅", Mercury: "Amount ⇅"); tighter on right-aligned figures so the icon stays with its own column.
                       <button type="button" onClick={() => toggleSort(c.key)} className={cn("inline-flex items-center rounded-small outline-none hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)", c.align === "right" ? "gap-1.5" : "gap-3", active && "text-(--color-text-primary)")}>
@@ -233,7 +240,7 @@ export function ReportTable<T>({ columns, rows, rowKey, title, description, sear
                   tabIndex={onRowClick ? 0 : undefined}
                   aria-selected={onRowClick ? selected : undefined}
                   className={cn(
-                    "group/tr border-b border-(--gray-300) bg-(--color-background-secondary) last:border-b-0",
+                    grid ? "group/tr bg-(--color-background-secondary)" : "group/tr border-b border-(--gray-300) bg-(--color-background-secondary) last:border-b-0",
                     onRowClick && "cursor-pointer outline-none transition-colors hover:bg-(--gray-200) focus-visible:bg-(--gray-200) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-focus-primary)",
                     rowClassName?.(row),
                     (selected || selection?.keys.has(key)) && "bg-(--brand-200) hover:bg-(--brand-200)",
@@ -245,7 +252,7 @@ export function ReportTable<T>({ columns, rows, rowKey, title, description, sear
                     </td>
                   )}
                   {columns.map((c) => (
-                    <td key={c.key} className={cn("h-[52px] px-3 py-3 first:pl-4 last:pr-4", c.align === "right" ? "text-right" : "text-left", c.width, c.pinRight && PIN)}>
+                    <td key={c.key} className={cn(grid ? cn(GRID, "h-11 px-3 py-1.5 align-middle first:pl-4 last:pr-4") : "h-[52px] px-3 py-3 first:pl-4 last:pr-4", c.align === "right" ? "text-right" : "text-left", c.width, c.pinRight && PIN, c.pinLeft && PIN_LEFT)}>
                       {c.cell(row)}
                       {c.sub && <div className="mt-1 text-body-sm text-(--color-text-secondary)">{c.sub(row)}</div>}
                     </td>
@@ -267,7 +274,7 @@ export function ReportTable<T>({ columns, rows, rowKey, title, description, sear
       </div>
 
       {shown.length > 0 && (
-        <footer className={cn("flex flex-wrap items-center justify-between gap-3 border-t border-(--gray-300) px-4", fill ? "shrink-0 py-2.5" : "py-4")}>
+        <footer className={cn("flex flex-wrap items-center justify-between gap-3 px-4", !grid && "border-t border-(--gray-300)", fill ? "shrink-0 py-2.5" : "py-4")}>
           <p className="text-body-md text-(--color-text-primary)">
             Showing {start + 1}–{start + visible.length} of {shown.length} {noun}
           </p>

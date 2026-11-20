@@ -19,7 +19,18 @@ export type Email = {
   /** "Thu, Oct 1, 8:00 AM" */
   sentAt: string;
   lead: string;
-  cells: { label: string; value: string; sub: string; tone?: Tone }[];
+  /** Left out for a short email (the chargebacks email: no tiles, the PDF holds the detail). */
+  cells?: { label: string; value: string; sub: string; tone?: Tone }[];
+  /** "Needs a look" paragraphs; **text** is bold. */
+  looks?: string[];
+  /** The order only the owner can answer (Masa's payout week), as a Yes/No card. */
+  action?: boolean;
+  /** Replaces "or see the … attached" beside the button ("Full review attached (PDF)"). */
+  attachmentLine?: string;
+  /** A small table under the lead (the payouts email: orders and mismatches by app). */
+  table?: { head: string[]; rows: string[][] };
+  /** The last line ("Nothing is needed from you."). */
+  closing?: string;
   look?: { title: string; tag: string; body: string; amount: string; amountSub: string };
   note?: string;
   /** A "New" item under the note ("Chips & Queso at Damen: 3 complaints"). */
@@ -38,32 +49,77 @@ const signed = (n: number) => `${n < 0 ? "−" : "+"}${usd(Math.abs(n))}`;
 /** The workflow ids that email a dashboard. */
 export const emailKindOf = (workflow: string): EmailKind | null => (workflow === "chargebacks" ? "chargebacks" : workflow === "payouts" ? "payouts" : null);
 
-/** Masa Kitchen's Thursday email, word for word from the agent-journey prototype (lib/mvp3/masaFixture). */
+/** Masa Kitchen's Thursday chargebacks email (leadership flow 1, 2026-11-20): short, read on a phone. No tiles, no
+ *  per-outlet list; the 2-page PDF attached holds the detail. **text** is bold. */
 function fixtureChargebackEmail(restaurant: string): Email {
   const top = FX.flagged[0];
   return {
     kind: "chargebacks",
-    subject: `${restaurant} chargebacks, ${FX.WEEK}: ${usd(FX.charged)} · ${FX.flagged.length} outlet to look at`,
+    subject: `${restaurant} chargebacks, ${FX.WEEK}: ${usd(FX.charged)} charged, ${usd(FX.CBST.won)} won back`,
     sentAt: "Thu, Nov 12, 8:00 AM",
-    lead: `Chargebacks cost you ${usd(FX.charged)} this week, ${usd(FX.charged - FX.USUAL)} more than your usual ${usd(FX.USUAL)}. We won back ${usd(FX.CBST.won)} (${FX.WON_SHARE}% of what we disputed), and ${usd(FX.CBST.todo)} is still to dispute.`,
-    cells: [
-      { label: "Charged back", value: usd(FX.charged), sub: `▲ ${usd(FX.charged - FX.USUAL)} vs usual`, tone: "danger" },
-      { label: "Won back", value: usd(FX.CBST.won), sub: `${FX.WON_SHARE}% of ${usd(FX.DISPUTED)} disputed`, tone: "success" },
-      { label: "Still to dispute", value: usd(FX.CBST.todo), sub: "not filed yet" },
-    ],
-    look: {
-      title: top.name,
-      tag: `${FX.rateLabel(top)} of app sales`,
-      body: `Over your ${FX.LIMIT}% limit. ${top.errors} orders with errors, up from its usual ${top.usual}. 6 were on Wednesday and Thursday, its usual worst days.`,
-      amount: usd(top.charged),
-      amountSub: "this week",
-    },
-    note: `Everything else is under ${FX.LIMIT}%: ${FX.fine.map((x) => `${x.name} ${FX.rateLabel(x)}`).join(", ")}.`,
-    fresh: "Chips & Queso at Damen: 3 complaints (2 in October).",
-    footer: `Your alert limit: ${FX.LIMIT}% of app sales. Reply to this email to change it. Sent by your Chargeback recovery agent.`,
+    lead: `Chargebacks cost you **${usd(FX.charged)}** for ${FX.WEEK}, ${usd(FX.charged - FX.USUAL)} more than your usual ${usd(FX.USUAL)}. We've won back **${usd(FX.CBST.won)}** so far and are filing disputes for the other ${usd(FX.CBST.todo)}.`,
+    looks: [`**${top.name}: ${usd(top.charged)}, ${FX.rateLabel(top)} of app sales** (your limit is ${FX.LIMIT}%). ${top.errors} orders with errors, up from its usual ${top.usual}.`],
+    note: `All other outlets are under ${FX.LIMIT}%.`,
+    footer: "",
     cta: "Open in KoreFi",
     attachment: "PDF",
+    attachmentLine: "Full review attached (PDF)",
     agent: "Chargeback recovery",
+  };
+}
+
+/** The same email in a quiet week, when no outlet is over the limit (leadership flow 1). Not used by the demo week. */
+export function quietChargebackEmail(restaurant = "Masa Kitchen", charged = 290): Email {
+  return {
+    kind: "chargebacks",
+    subject: `${restaurant} chargebacks, ${FX.WEEK}: ${usd(charged)} charged`,
+    sentAt: "Thu, Nov 12, 8:00 AM",
+    lead: `Chargebacks for ${FX.WEEK} were **${usd(charged)}**, below your usual ${usd(FX.USUAL)}. No outlet is over your ${FX.LIMIT}% limit. Nothing is needed from you.`,
+    footer: "",
+    cta: "Open in KoreFi",
+    attachment: "PDF",
+    attachmentLine: "Full review attached (PDF)",
+    agent: "Chargeback recovery",
+  };
+}
+
+/** Masa Kitchen's Friday payouts email (2026-11-20 revision): only whether each app's orders matched Toast, and how
+ *  many didn't. KoreFi follows up on those with the apps, so nothing is needed from the owner. */
+function fixturePayoutEmail(restaurant: string): Email {
+  const off = (app: FX.PayKey) => FX.UNMATCHED.filter((u) => u.app === app);
+  return {
+    kind: "payouts",
+    subject: `${restaurant} payouts, ${FX.WEEK}: ${FX.ORDERS.unpaid} of ${FX.ORDERS.toast.toLocaleString("en-US")} orders didn't match`,
+    sentAt: "Fri, Nov 13, 8:00 AM",
+    lead: `For ${FX.WEEK}, ${FX.ORDERS.paid.toLocaleString("en-US")} of ${FX.ORDERS.toast.toLocaleString("en-US")} delivery orders matched between Toast and the apps. ${FX.ORDERS.unpaid} orders (${FX.usd2(FX.UNPAID)}) didn't, and we're following up with the apps.`,
+    table: {
+      head: ["App", "Orders", "Not matched"],
+      rows: FX.PAY.map((p) => {
+        const o = off(p.app);
+        return [FX.PAY_APP[p.app], p.orders.toLocaleString("en-US"), o.length ? `${o.length} · ${FX.usd2(o.reduce((n, u) => n + u.amount, 0))}` : "All matched"];
+      }),
+    },
+    footer: "",
+    cta: "Open in KoreFi",
+    attachment: "Excel",
+    attachmentLine: "Details attached (Excel)",
+    closing: "Nothing is needed from you.",
+    agent: "Payout reconciliation",
+  };
+}
+
+/** The same email in a clean week, when every order matched. Not used by the demo week. */
+export function cleanPayoutEmail(restaurant = "Masa Kitchen"): Email {
+  return {
+    kind: "payouts",
+    subject: `${restaurant} payouts, ${FX.WEEK}: all ${FX.ORDERS.toast.toLocaleString("en-US")} orders matched`,
+    sentAt: "Fri, Nov 13, 8:00 AM",
+    lead: `For ${FX.WEEK}, all ${FX.ORDERS.toast.toLocaleString("en-US")} delivery orders matched between Toast and the apps. Nothing is needed from you.`,
+    footer: "",
+    cta: "Open in KoreFi",
+    attachment: "Excel",
+    attachmentLine: "Details attached (Excel)",
+    agent: "Payout reconciliation",
   };
 }
 
@@ -108,7 +164,8 @@ export function chargebackEmail(stores: readonly Store[], restaurant = "Your"): 
   };
 }
 
-export function payoutEmail(stores: readonly Store[]): Email {
+export function payoutEmail(stores: readonly Store[], restaurant = "Your"): Email {
+  if (FX.masaFixture()) return fixturePayoutEmail(restaurant);
   const wk = WEEKS[LAST];
   const total = (w: number) => APPS.reduce((n, a) => addPayout(n, payout(a.key, stores, [WEEKS[w]])), zeroPayout());
   const now = total(LAST);
@@ -121,16 +178,16 @@ export function payoutEmail(stores: readonly Store[]): Email {
   const worst = [...status].sort((a, b) => b.missing.amount - a.missing.amount)[0];
   return {
     kind: "payouts",
-    subject: `3PD payouts, ${wk.label}: ${usd(paid)} paid${off ? ` · ${off} orders not paid` : ""}`,
+    subject: `Delivery payouts, ${wk.label}: ${usd(paid)} paid${off ? ` · ${off} orders not paid` : ""}`,
     sentAt: `${dayLabel(weekDays(LAST).email)}, 8:00 AM`,
-    lead: `The apps paid you ${usd(paid)} on ${usd(now.sales)} of sales, ${usd(Math.abs(change))} ${change >= 0 ? "more" : "less"} than last week. ${off ? `${off} orders in Square (${usd(offAmt)}) were not in the apps' reports, and the KoreFi team is checking them with the apps.` : "Every order matched."}`,
+    lead: `The apps paid you ${usd(paid)} on ${usd(now.sales)} of sales, ${usd(Math.abs(change))} ${change >= 0 ? "more" : "less"} than last week. ${off ? `${off} orders in Toast (${usd(offAmt)}) were not in the apps' reports, and the KoreFi team is checking them with the apps.` : "Every order matched."}`,
     cells: [
       { label: "Paid to you", value: usd(paid), sub: `${signed(change)} vs last week`, tone: change >= 0 ? "success" : "danger" },
       { label: "Apps kept", value: `${Math.round((1 - paid / (now.sales || 1)) * 100)}%`, sub: "of app sales" },
       { label: "Not matched", value: usd(offAmt), sub: `${off} orders`, tone: off ? "danger" : undefined },
     ],
     look: off && worst
-      ? { title: worst.label, tag: `${worst.missing.orders} orders not in the app`, body: `Orders Square rang up that ${worst.label} did not report. We claim them and you'll see each one's status in the dashboard.`, amount: usd(worst.missing.amount), amountSub: "not paid" }
+      ? { title: worst.label, tag: `${worst.missing.orders} orders not in the app`, body: `Orders Toast rang up that ${worst.label} did not report. We claim them and you'll see each one's status in the dashboard.`, amount: usd(worst.missing.amount), amountSub: "not paid" }
       : undefined,
     note: `All ${status.length} payouts arrived on their usual day.`,
     cta: "Open in KoreFi",
@@ -139,4 +196,4 @@ export function payoutEmail(stores: readonly Store[]): Email {
   };
 }
 
-export const emailOf = (kind: EmailKind, stores: readonly Store[], restaurant?: string) => (kind === "chargebacks" ? chargebackEmail(stores, restaurant) : payoutEmail(stores));
+export const emailOf = (kind: EmailKind, stores: readonly Store[], restaurant?: string) => (kind === "chargebacks" ? chargebackEmail(stores, restaurant) : payoutEmail(stores, restaurant));

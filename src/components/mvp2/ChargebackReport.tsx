@@ -166,7 +166,7 @@ export function ChargebackReport({
         ) : view === "overview" ? (
           <Overview rows={rows} scope={scope} apps={chosenApps} ops={ops} />
         ) : (
-          <Transactions
+          <ChargebackTransactions
             rows={rows}
             linked={params.get("open")}
             ops={ops}
@@ -727,18 +727,36 @@ export function timeline(c: Chargeback): TimelineStep[] {
   return steps;
 }
 
-function Transactions({
+/** Every charged-back order, one row each, with a detail drawer. Shared with /mvp3's Chargebacks dashboard
+ *  (Transactions tab), which passes its own `permalink` and `ops={false}`. */
+export function ChargebackTransactions({
   rows,
   linked,
   ops,
   updates,
   accountId,
+  permalink,
+  className = "p-4",
+  columns: custom,
+  toolbar = true,
+  tableClassName,
+  grid,
 }: {
   rows: Chargeback[];
   linked: string | null;
   ops: boolean;
   updates: Record<string, DisputeUpdate[]>;
   accountId?: string;
+  /** Where the drawer's link points. Defaults to this report's own page. */
+  permalink?: (c: Chargeback) => string;
+  className?: string;
+  /** Replace the columns (the drawer stays). Custom columns drop the View column. */
+  columns?: TableColumn<Chargeback>[];
+  /** False when the page draws its own search and filters and passes rows already filtered. */
+  toolbar?: boolean;
+  tableClassName?: string;
+  /** The P&L table's grid look. */
+  grid?: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(linked);
   const [editing, setEditing] = useState<Chargeback | null>(null);
@@ -860,19 +878,28 @@ function Transactions({
   ];
 
   return (
-    <div className="p-4">
+    <div className={className}>
       <ReportTable
-        columns={columns}
+        columns={custom ?? columns}
+        viewColumn={!custom}
+        className={tableClassName}
+        grid={grid}
         rows={rows}
         rowKey={key}
-        search={(c) =>
-          `${c.id} ${c.store} ${c.reason} ${c.detail} ${appLabel(c.app)}`
+        search={
+          toolbar
+            ? (c) => `${c.id} ${c.store} ${c.reason} ${c.detail} ${appLabel(c.app)}`
+            : undefined
         }
         searchPlaceholder="Search orders, outlets, reasons…"
-        filters={[
-          { key: "status", label: "Status", value: (c) => label[c.status] },
-          { key: "reason", label: "Reason", value: (c) => c.reason },
-        ]}
+        filters={
+          toolbar
+            ? [
+                { key: "status", label: "Status", value: (c) => label[c.status] },
+                { key: "reason", label: "Reason", value: (c) => c.reason },
+              ]
+            : []
+        }
         noun="chargebacks"
         pageSize={15}
         initialSort={{ key: "date", dir: "desc" }}
@@ -903,7 +930,9 @@ function Transactions({
         meta={cur && `${cur.detail} · Order ${cur.id} · ${day(cur.date)}`}
         permalink={
           cur
-            ? `${ops ? "/admin" : accountId ? "/admin/as" : "/mvp2"}/chargebacks?tab=transactions&open=${encodeURIComponent(key(cur))}`
+            ? permalink
+              ? permalink(cur)
+              : `${ops ? "/admin" : accountId ? "/admin/as" : "/mvp2"}/chargebacks?tab=transactions&open=${encodeURIComponent(key(cur))}`
             : undefined
         }
         footer={

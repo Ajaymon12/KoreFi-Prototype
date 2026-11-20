@@ -1,18 +1,20 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, MoreHorizontal, Pencil, Play, Plus, Search, SquareArrowOutUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { useDismiss } from "@/components/dashboard/useDismiss";
 import { AGENTS, DRAFTS, FOLDERS, type AgentId } from "@/lib/mvp3/agents";
 import { isSchedule } from "@/lib/mvp3/workflows";
 import { runHistory } from "@/lib/mvp3/runs";
 import { useAgents } from "./AgentsProvider";
 import { useAccount } from "./AccountSwitcher";
 import { AgentAvatar } from "./AgentAvatar";
+import { focusRing, iconButton } from "@/components/mvp3/styles";
+import { Button } from "@/components/ui/Button";
+import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 
 // MVP 3 / Agents, laid out as a grid of compact cards: each agent's face and name on top, two lines of what it
 // does, and its status with the last run (or team) underneath. The whole card opens the agent.
@@ -20,7 +22,6 @@ import { AgentAvatar } from "./AgentAvatar";
 // Run button; the first run makes them live. Report-only: no fix buttons.
 
 const fmtDay = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const focus = "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
 
 type Kind = "live" | "learning" | "idle" | "draft";
 export type Card = { id: string; title: string; blurb: string; kind: Kind; agent?: AgentId; team?: string; hue?: string; meta: string };
@@ -38,17 +39,24 @@ const CATEGORY_NOTE: Record<AgentId, string> = {
   finance: "Payouts, reconciliation and P&L.",
   growth: "Menu prices and how you compare with nearby restaurants.",
 };
+// The page leads with what runs today plus the next three worth turning on (founders' priority order). The rest of
+// the catalog sits behind "Show all", so the owner isn't handed a wall of not-live cards. Search and the
+// Available filter always reach every agent.
+const NEXT_UP = ["channel-pnl", "three-way-recon", "journal-entries"];
+const isLater = (c: Card) => c.kind !== "draft" && c.kind !== "live" && !NEXT_UP.includes(c.id);
 const GROUPS: Group[] = [
   { id: "live", label: "Live", note: "Running on your reports. Each run posts a dashboard in a chat.", match: (c) => c.kind === "live" },
+  { id: "next", label: "Next up", note: "Ready to turn on. The first run makes an agent live.", match: (c) => c.kind !== "draft" && c.kind !== "live" && NEXT_UP.includes(c.id) },
   ...(["operations", "finance", "growth"] as const).map((id): Group => ({
     id,
     label: AGENTS.find((a) => a.id === id)!.name.replace(/ agent$/, ""),
     note: CATEGORY_NOTE[id],
     agent: id,
-    match: (c) => c.kind !== "draft" && c.kind !== "live" && c.agent === id,
+    match: (c) => isLater(c) && c.agent === id,
   })),
   { id: "drafts", label: "Drafts", note: "Agents being written. Publish one to start it.", match: (c) => c.kind === "draft" },
 ];
+const LATER_GROUPS = new Set(["operations", "finance", "growth"]);
 const BADGE: Record<Kind,{ label: string; cls: string }> = {
   live: { label: "Live", cls: "bg-(--color-success-lightest) text-(--color-text-success)" },
   learning: { label: "Learning", cls: "bg-(--color-background-secondary) text-(--color-text-primary)" },
@@ -59,45 +67,32 @@ const BADGE: Record<Kind,{ label: string; cls: string }> = {
 // ───────── Card ─────────
 
 function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDuplicate?: () => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useDismiss(ref, open, () => setOpen(false));
-  const item = cn("flex w-full items-center gap-2 rounded-medium px-2.5 py-2 text-left text-body-md text-(--color-text-primary) hover:bg-(--color-neutral-lightest) [&_svg]:size-4 [&_svg]:text-(--color-text-secondary)", focus);
+  // Astryx DropdownMenu (see docs/mvp3-astryx-components.md). It owns open state, outside-click, Escape, focus and
+  // arrow-key navigation, so the hand-built menu, useDismiss and the manual `open` state are gone.
   return (
-    <div ref={ref} className="relative z-10">
-      <button
-        type="button"
-        aria-label={`More for ${c.title}`}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className={cn("grid size-8 place-items-center rounded-medium text-(--color-text-secondary) hover:bg-(--color-neutral-light) hover:text-(--color-text-primary)", focus, !open && "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 max-sm:opacity-100")}
-      >
-        <MoreHorizontal className="size-4" />
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-9 w-44 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
-          <Link role="menuitem" href={`/mvp3/agent?id=${c.id}`} className={item}>
-            <SquareArrowOutUpRight aria-hidden />
-            Open
-          </Link>
-          <Link role="menuitem" href={`/mvp3/agent?id=${c.id}&edit=1`} className={item}>
-            <Pencil aria-hidden />
-            Edit
-          </Link>
-          {onRun && (
-            <button role="menuitem" type="button" onClick={onRun} className={item}>
-              <Play aria-hidden />
-              Run now
-            </button>
-          )}
-          {onDuplicate && (
-            <button role="menuitem" type="button" onClick={onDuplicate} className={item}>
-              <Copy aria-hidden />
-              Duplicate
-            </button>
-          )}
-        </div>
-      )}
+    <div className="relative z-10">
+      <DropdownMenu
+        placement="below"
+        alignment="end"
+        hasChevron={false}
+        menuWidth={176}
+        renderTrigger={(props) => (
+          <button
+            {...props}
+            type="button"
+            aria-label={`More for ${c.title}`}
+            className={cn(iconButton, "size-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 max-sm:opacity-100")}
+          >
+            <MoreHorizontal className="size-4" />
+          </button>
+        )}
+        items={[
+          { label: "Open", href: `/mvp3/agent?id=${c.id}`, icon: SquareArrowOutUpRight },
+          { label: "Edit", href: `/mvp3/agent?id=${c.id}&edit=1`, icon: Pencil },
+          ...(onRun ? [{ label: "Run now", onClick: onRun, icon: Play }] : []),
+          ...(onDuplicate ? [{ label: "Duplicate", onClick: onDuplicate, icon: Copy }] : []),
+        ]}
+      />
     </div>
   );
 }
@@ -145,7 +140,7 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
       </div>
       <p className="mt-3 line-clamp-2 min-h-[2lh] text-body-md text-(--color-text-secondary)">{c.blurb}</p>
       <div className="mt-4 flex min-w-0 items-center gap-2 text-body-sm text-(--color-text-secondary)">
-        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-circle px-2 py-0.5 text-[11px] font-medium shadow-[0_0_0_1px_var(--color-border-default)]", b.cls)}>
+        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-circle px-2 py-0.5 text-body-sm font-medium shadow-[0_0_0_1px_var(--color-border-default)]", b.cls)}>
           {c.kind === "live" && <span className="size-1.5 rounded-circle bg-current" />}
           {b.label}
         </span>
@@ -158,7 +153,7 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
               runAgent(w);
               router.push("/mvp3");
             }}
-            className={cn("relative z-10 ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-medium border border-(--color-border-default) px-2.5 text-body-sm font-medium text-(--color-text-primary) hover:bg-(--color-neutral-lightest)", focus)}
+            className={cn("relative z-10 ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-medium border border-(--color-border-default) px-2.5 text-body-sm font-medium text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable)", focusRing)}
           >
             <Play className="size-3.5" aria-hidden />
             Run
@@ -189,13 +184,14 @@ export function useAgentCards(): Card[] {
     );
     const drafts: Card[] = [
       ...created.map((w): Card => ({ id: w.id, title: w.title, blurb: w.overview, kind: "draft", agent: w.agent, hue: w.hue, meta: "Edited just now" })),
-      ...DRAFTS.map((d): Card => {
+      // Masa Kitchen (the leadership demo account) has no sample drafts; agents the owner writes still show.
+      ...(account.id === "masa" ? [] : DRAFTS).map((d): Card => {
         const w = getWorkflow(d.id);
         return { id: d.id, title: w?.title ?? d.title, blurb: w?.overview ?? d.blurb, kind: "draft", meta: `${d.updated ? d.updated.replace(/^Last updated /, "Edited ") : "Not started"}` };
       }),
     ];
     return [...skills.sort((a, b) => Number(b.kind === "live") - Number(a.kind === "live")), ...drafts];
-  }, [getWorkflow, created, isNew, account.agentsOff]);
+  }, [getWorkflow, created, isNew, account.agentsOff, account.id]);
 }
 
 // ───────── Page ─────────
@@ -207,21 +203,26 @@ export function AgentsPage() {
   const isNew = account.stage === "new";
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [showAll, setShowAll] = useState(false);
 
   const cards = useAgentCards();
 
   const needle = q.trim().toLowerCase();
   const shown = cards.filter((c) => FILTERS.find((f) => f.id === filter)!.match(c.kind) && (!needle || `${c.title} ${c.blurb} ${c.team ?? ""}`.toLowerCase().includes(needle)));
+  // Collapsed only on the plain "All" view: a search or a status filter means the owner is looking for something.
+  const collapsed = !showAll && !needle && filter === "all";
+  const later = shown.filter(isLater).length;
 
   return (
     <>
       <PageHeader
         title="Agents"
         actions={
-          !account.limited && <button type="button" onClick={() => router.push(`/mvp3/agent?id=${newAgent()}`)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-medium bg-(--color-primary) px-3 text-body-sm font-medium text-white hover:opacity-90", focus, "focus-visible:outline-offset-1")}>
-            <Plus className="size-4" aria-hidden />
-            New agent
-          </button>
+          !account.limited && (
+            <Button type="primary" size="small" className="[&_svg]:size-4" iconLeft={<Plus aria-hidden />} onClick={() => router.push(`/mvp3/agent?id=${newAgent()}`)}>
+              New agent
+            </Button>
+          )
         }
       />
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -242,6 +243,7 @@ export function AgentsPage() {
               {FILTERS.map((f) => {
                 const n = cards.filter((c) => f.match(c.kind)).length;
                 const on = filter === f.id;
+                if (f.id === "drafts" && !n && !on) return null;
                 return (
                   <button
                     key={f.id}
@@ -251,7 +253,7 @@ export function AgentsPage() {
                     onClick={() => setFilter(f.id)}
                     className={cn(
                       "inline-flex h-9 items-center gap-2 rounded-circle border px-3.5 text-body-md font-medium transition-colors",
-                      focus,
+                      focusRing,
                       "focus-visible:outline-offset-2",
                       on ? "border-transparent bg-(--color-text-primary) text-(--color-text-inverse-primary)" : "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary) hover:bg-(--color-neutral-lightest)",
                     )}
@@ -271,6 +273,17 @@ export function AgentsPage() {
               {GROUPS.map((g) => {
                 const group = shown.filter(g.match);
                 if (!group.length) return null;
+                if (collapsed && LATER_GROUPS.has(g.id)) {
+                  // One toggle in place of the first hidden group; the rest render nothing.
+                  if (g.id !== GROUPS.find((x) => LATER_GROUPS.has(x.id) && shown.some(x.match))?.id) return null;
+                  return (
+                    <div key="more" className="flex justify-center">
+                      <button type="button" onClick={() => setShowAll(true)} className={cn("inline-flex h-9 items-center rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-3.5 text-body-md font-medium text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable)", focusRing)}>
+                        Show all agents ({later} more)
+                      </button>
+                    </div>
+                  );
+                }
                 return (
                   <section key={g.id} aria-labelledby={`group-${g.id}`} className="space-y-4">
                     <div className="flex items-center gap-3 border-b border-(--color-border-default) pb-2">

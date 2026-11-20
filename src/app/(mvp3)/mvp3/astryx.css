@@ -1,0 +1,6 @@
+/* Astryx for /mvp3 only (imported by ./layout.tsx). Layer order is declared at the top of app/globals.css.
+   Order matters: reset -> component styles -> neutral theme -> our bridge. */
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "./astryx-bridge.css";

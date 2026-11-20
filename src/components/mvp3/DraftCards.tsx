@@ -22,15 +22,15 @@ export function DraftCard({ d }: { d: Draft }) {
       <div className="mt-4 mr-4 w-[48%] shrink-0 overflow-hidden rounded-t-medium border border-b-0 border-(--color-border-default) bg-(--color-background-secondary) p-3 shadow-sm">
         <p className="text-body-sm font-medium text-(--color-text-primary)">Steps</p>
         {d.steps.length === 0 ? (
-          <p className="text-[11px] text-(--color-text-secondary)">No steps yet</p>
+          <p className="text-body-sm text-(--color-text-secondary)">No steps yet</p>
         ) : (
           <div className="mt-1.5 space-y-2">
             {d.steps.map((g) => (
               <div key={g.group}>
-                <p className="text-[11px] text-(--color-text-secondary)">{g.group}</p>
+                <p className="text-body-sm text-(--color-text-secondary)">{g.group}</p>
                 <ol className="mt-1 space-y-1">
                   {g.items.map((s, i) => (
-                    <li key={s} className={cn("flex gap-1.5 text-[11px] leading-4 text-(--color-text-primary)")}>
+                    <li key={s} className={cn("flex gap-1.5 text-body-sm leading-4 text-(--color-text-primary)")}>
                       <span className="grid size-4 shrink-0 place-items-center rounded-circle border border-(--color-border-default) text-[9px] text-(--color-text-secondary)">{i + 1}</span>
                       {s}
                     </li>

@@ -25,7 +25,7 @@ export function useAccount() {
 const KEY = "korefi.mvp3.account";
 const read = () => {
   try {
-    return window.sessionStorage.getItem(KEY);
+    return window.localStorage.getItem(KEY) ?? window.sessionStorage.getItem(KEY);
   } catch {
     return null;
   }
@@ -46,7 +46,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     const next = ACCOUNTS.find((a) => a.id === id) ?? DEFAULT_ACCOUNT;
     setPicked(next.id);
     try {
-      window.sessionStorage.setItem(KEY, next.id);
+      window.localStorage.setItem(KEY, next.id);
     } catch {
       // Storage blocked (private mode): the pick lasts until the next refresh.
     }
@@ -79,7 +79,7 @@ export function AccountSwitcher() {
       </button>
 
       {open && (
-        <div role="dialog" aria-label="Switch restaurant" className="absolute top-full right-0 z-50 mt-1.5 w-[min(300px,calc(100vw-16px))] overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_12px_32px_rgb(0_0_0/0.14)]">
+        <div role="dialog" aria-label="Switch restaurant" className="absolute top-full right-0 z-50 mt-1.5 w-[min(300px,calc(100vw-16px))] overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1 shadow-[0_12px_32px_rgb(0_0_0/0.14)]">
           <h3 className="px-2.5 pt-1 pb-1.5 text-subtitle-xs tracking-wide text-(--color-text-tertiary) uppercase">Restaurants</h3>
           <div role="radiogroup" aria-label="Restaurants">
             {ACCOUNTS.map((a) => {

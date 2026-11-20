@@ -71,10 +71,11 @@ export type OutletScope = ReturnType<typeof useOutletFilter>;
 
 /** The Filter button and the State / City / Outlet pills. `compact` (phones) keeps the button alone: its panel has every rule. */
 /** `pills`: which field pills to show beside Filter (all three by default). */
-export function OutletFilters({ scope, compact = false, pills }: { scope: OutletScope; compact?: boolean; pills?: Field[] }) {
+/** `panel={false}` drops the Filter button and keeps just the pills. */
+export function OutletFilters({ scope, compact = false, pills, panel = true }: { scope: OutletScope; compact?: boolean; pills?: Field[]; panel?: boolean }) {
   return (
     <>
-      <FilterPanel scope={scope} />
+      {panel && <FilterPanel scope={scope} />}
       {FIELDS.filter((f) => !pills || pills.includes(f.key)).map((f) => (
         <div key={f.key} className={cn("contents", compact && "max-md:hidden")}>
           <FieldPill field={f.key} scope={scope} />

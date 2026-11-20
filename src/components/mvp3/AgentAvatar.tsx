@@ -10,7 +10,8 @@ import type { AgentId } from "@/lib/mvp3/agents";
 const LOOK: Record<AgentId, { type: BotAvatarType; color?: string }> = {
   // Finance is indigo, the hue of its folders, so it never reads as Operations' coral at avatar size.
   finance: { type: "clover", color: "#6C74E6" },
-  operations: { type: "hexagon" }, // coral
+  // Operations takes its folder coral: the library default reads as error red next to money figures.
+  operations: { type: "hexagon", color: "#F2784B" },
   growth: { type: "flower" }, // green
 };
 

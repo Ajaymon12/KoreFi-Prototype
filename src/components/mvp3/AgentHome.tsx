@@ -14,6 +14,7 @@ import { useAgents } from "./AgentsProvider";
 import { useAccount } from "./AccountSwitcher";
 import { AgentAvatar } from "./AgentAvatar";
 import { useOpenPinned } from "./Mvp3Sidebar";
+import { focusRing } from "@/components/mvp3/styles";
 
 // MVP 3 / Home: the restaurant at a glance, from what the agents already read. Taco Pros only (Account.home).
 //  - Pulse: last week's sales (Sales and Net after fees both open the weekly P&L chat), the apps' share, net after fees, chargebacks won back (same figures and spans as
@@ -27,11 +28,10 @@ import { useOpenPinned } from "./Mvp3Sidebar";
 // Home is fixed: it can't be customised, pinned or scheduled; that's what pinned dashboards are for.
 // Report only: the one action is asking (a chat), never a fix.
 
-const focus = "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
 // Every list row: one height, icon slot, title + subtitle, right-hand detail, chevron. Focus ring sits inside the panel.
 const inset = "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-focus-primary)";
 const row = cn("group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-(--color-neutral-lightest)", inset);
-const SOURCES = "DoorDash, Uber Eats, Grubhub and Square";
+const SOURCES = "DoorDash, Uber Eats, Grubhub and Toast";
 
 /** "Ask →" on hover: says what a click does. */
 function AskHint({ label = "Ask" }: { label?: string }) {
@@ -43,14 +43,15 @@ function AskHint({ label = "Ask" }: { label?: string }) {
   );
 }
 
-function Spark({ values, tone, wide }: { values: number[]; tone?: "success" | "danger"; wide?: boolean }) {
+/** A trend line in neutral ink: it shows shape over time, not good or bad, so it never takes a status colour. */
+function Spark({ values, wide }: { values: number[]; wide?: boolean }) {
   if (values.length < 2) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
   const W = wide ? 240 : 96;
   const H = wide ? 44 : 28;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * W).toFixed(1)},${(H - 2 - ((v - min) / (max - min || 1)) * (H - 4)).toFixed(1)}`).join(" ");
-  const color = tone === "danger" ? "var(--color-text-danger)" : tone === "success" ? "var(--color-text-success)" : "var(--color-primary)";
+  const color = "var(--color-text-secondary)";
   return (
     <svg aria-hidden width={wide ? "100%" : W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="shrink-0 overflow-visible">
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
@@ -60,10 +61,21 @@ function Spark({ values, tone, wide }: { values: number[]; tone?: "success" | "d
 
 const when = (at: number) => new Date(at).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "UTC" });
 
-// The live agents and the run metric each sparkline follows.
-const LIVE: { id: string; metric: string }[] = [
-  { id: "chargebacks", metric: "Won back" },
-  { id: "payouts", metric: "Matched" },
+// The live agents and the figure each card leads with (its sparkline follows the same figure). Payouts leads with
+// what hasn't matched yet, the money still at stake; what did match is the quieter second line.
+type Lead = { label: string; value: (r: Run) => number; money: boolean; second?: (r: Run) => string | undefined };
+const metric = (r: Run, label: string) => r.metrics.find((x) => x.label === label)?.value ?? 0;
+const LIVE: { id: string; lead: Lead }[] = [
+  { id: "chargebacks", lead: { label: "won back, last run", value: (r) => metric(r, "Won back"), money: true, second: (r) => `of ${usd(metric(r, "Charged back"))} charged back` } },
+  {
+    id: "payouts",
+    lead: {
+      label: "not matched yet, last run",
+      value: (r) => metric(r, "In Toast only") + metric(r, "In app only"),
+      money: true,
+      second: (r) => `${usd(metric(r, "Matched"))} matched`,
+    },
+  },
 ];
 
 export function AgentHome() {
@@ -88,12 +100,11 @@ export function AgentHome() {
 
   const agents = useMemo(
     () =>
-      LIVE.map(({ id, metric }) => {
+      LIVE.map(({ id, lead }) => {
         const skill = FOLDERS.flatMap((f) => f.skills).find((s) => s.id === id)!;
         const folder = FOLDERS.find((f) => f.skills.some((s) => s.id === id))!;
         const runs = runHistory(id, skill.thread);
-        const m = runs[0]?.metrics.find((x) => x.label === metric);
-        return { id, name: skill.name, agent: folder.agent as AgentId, latest: runs[0] as Run | undefined, spark: [...runs].reverse().map((r) => r.metrics.find((x) => x.label === metric)?.value ?? 0), metric, tone: m?.tone };
+        return { id, name: skill.name, agent: folder.agent as AgentId, latest: runs[0] as Run | undefined, spark: [...runs].reverse().map(lead.value), lead };
       }),
     [],
   );
@@ -110,14 +121,17 @@ export function AgentHome() {
     { label: "Sales", value: usd(week.all.sales), delta: <Delta now={week.all.sales} before={prev.all.sales} />, sub: "vs week before", question: "How did we do last week?" },
     { label: "From delivery apps", value: `${Math.round(data.appShare * 100)}%`, delta: <Delta now={data.appShare} before={data.appShareBefore} points />, sub: "of sales", question: "Which delivery app pays me more?" },
     { label: "Net after fees", value: usd(week.all.moneyIn), delta: <Delta now={week.all.moneyIn} before={prev.all.moneyIn} />, sub: `${Math.round((week.all.moneyIn / (week.all.sales || 1)) * 100)}¢ of every $1`, question: "How did we do last week?" },
-    { label: "Chargebacks won back", value: usd(sumOf(won, "wonBack")), sub: `of ${usd(sumOf(cbs, "amount"))} · last 13 weeks`, question: "How are chargebacks going?", tone: "success" },
+    // The one figure here that isn't last week: its label says so, so it can't be read as last week's.
+    { label: "Won back, last 13 weeks", value: usd(sumOf(won, "wonBack")), sub: `of ${usd(sumOf(cbs, "amount"))} charged back`, question: "How are chargebacks going?", tone: "success" },
   ];
 
-  const flags: { title: string; sub: string; agent: AgentId; question: string }[] = [
-    data.off > 0 && { title: data.pay.title, sub: `Week of ${WEEK_LABEL} · the KoreFi team is checking them with the apps`, agent: "finance" as AgentId, question: "Did every payout match Square?" },
+  // alert: a real exception (money not matched). The rest are rankings worth a look, so they get a neutral mark.
+  type Flag = { title: string; sub: string; agent: AgentId; question: string; alert?: boolean };
+  const flags: Flag[] = [
+    data.off > 0 && { title: data.pay.title, sub: `Week of ${WEEK_LABEL} · the KoreFi team is checking them with the apps`, agent: "finance" as AgentId, question: "Did every payout match Toast?", alert: true },
     data.topCb && { title: `${data.topCb.label} has the most chargebacks`, sub: `${data.topCb.sub} · ${data.topCb.value} over 13 weeks`, agent: "operations" as AgentId, question: "Which outlets get the most chargebacks?" },
-    data.worst && { title: `${data.worst.label} kept the least`, sub: `${data.worst.value} profit margin over 4 weeks`, agent: "finance" as AgentId, question: "Which outlets made the least?" },
-  ].filter(Boolean) as { title: string; sub: string; agent: AgentId; question: string }[];
+    data.worst && { title: `${data.worst.label} has the lowest profit margin`, sub: `${data.worst.value} of sales kept as profit · last 4 weeks`, agent: "finance" as AgentId, question: "Which outlets made the least?" },
+  ].filter(Boolean) as Flag[];
 
   const pinned = dashboards.filter((d) => d.pinned);
 
@@ -147,15 +161,17 @@ export function AgentHome() {
             </div>
           </Section>
 
-          {/* Needs a look: what the agents flagged, first thing after the figures */}
+          {/* Needs a look: what the agents flagged, first thing after the figures. Not for Masa Kitchen (user ask 2026-11-20). */}
+          {!account.limited && (
           <Section id="flags" title="Needs a look" aside={flags.length ? <span className="text-body-sm text-(--color-text-secondary)">{flags.length} this week</span> : undefined}>
             {flags.length ? (
               <ul className="divide-y divide-(--color-border-default)">
                 {flags.map((f) => (
                   <li key={f.question}>
                     <button type="button" onClick={() => go(f.question)} title={`Ask: ${f.question}`} className={row}>
-                      <span aria-hidden className="grid size-8 shrink-0 place-items-center">
-                        <span className="size-2 rounded-circle bg-(--color-warning-default)" />
+                      <span className="grid size-8 shrink-0 place-items-center">
+                        <span className={cn("size-2 rounded-circle", f.alert ? "bg-(--color-warning-default)" : "bg-(--color-border-darker)")} />
+                        {f.alert && <span className="sr-only">Needs checking:</span>}
                       </span>
                       <Lines title={f.title} sub={f.sub} />
                       <AskHint label="Ask why" />
@@ -168,6 +184,7 @@ export function AgentHome() {
               <p className="px-5 py-4 text-body-md text-(--color-text-secondary)">Nothing flagged this week. Your agents will post here when something changes.</p>
             )}
           </Section>
+          )}
 
           {/* Agents: each live agent's latest run */}
           <Section
@@ -175,7 +192,7 @@ export function AgentHome() {
             bare
             title="Your agents"
             aside={
-              <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focus)}>
+              <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focusRing)}>
                 All agents <ArrowUpRight aria-hidden className="size-3.5" />
               </Link>
             }
@@ -212,43 +229,43 @@ export function AgentHome() {
   );
 }
 
-type AgentSummary = { id: string; name: string; agent: AgentId; latest?: Run; spark: number[]; metric: string; tone?: "success" | "danger" };
+type AgentSummary = { id: string; name: string; agent: AgentId; latest?: Run; spark: number[]; lead: Lead };
 
-/** A live agent as a card: face, name and Live badge; the latest run's headline; its metric over 13 weeks; when it ran.
+/** A live agent as a card: face, name and Live badge; the latest run's headline; its lead figure over 13 weeks; when it ran.
  *  The whole card opens the agent's details page (overview, runs, activity). */
 function AgentTile({ a }: { a: AgentSummary }) {
-  const latest = a.latest?.metrics.find((m) => m.label === a.metric);
+  const value = a.latest ? a.lead.value(a.latest) : undefined;
+  const second = a.latest && a.lead.second?.(a.latest);
   return (
     <Link
       href={`/mvp3/agent?id=${a.id}`}
       className={cn(
         "group flex h-full flex-col gap-4 rounded-xlarge border border-(--color-border-default) bg-(--color-background-secondary) p-5 transition-[border-color,box-shadow]",
         "hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
-        focus,
+        focusRing,
         "focus-visible:outline-offset-2",
       )}
     >
       <span className="flex items-center gap-3">
         <AgentAvatar agent={a.agent} size={32} />
         <span className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary)">{a.name}</span>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-circle bg-(--color-success-lightest) px-2 py-0.5 text-[11px] font-medium text-(--color-text-success) shadow-[0_0_0_1px_var(--color-border-default)]">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-circle bg-(--color-success-lightest) px-2 py-0.5 text-body-sm font-medium text-(--color-text-success) shadow-[0_0_0_1px_var(--color-border-default)]">
           <span className="size-1.5 rounded-circle bg-current" />
           Live
         </span>
       </span>
       <span className="text-body-md text-(--color-text-secondary)">{a.latest?.headline ?? "No runs yet"}</span>
       <span className="flex items-end gap-4">
-        {latest && (
+        {value !== undefined && (
           <span className="shrink-0">
-            <span className={cn("block text-jumbo-sm tabular-nums", a.tone === "danger" ? "text-(--color-text-danger)" : a.tone === "success" ? "text-(--color-text-success)" : "text-(--color-text-primary)")}>
-              {latest.money ? usd(latest.value) : latest.value.toLocaleString("en-US")}
-            </span>
-            <span className="mt-1 block text-body-sm text-(--color-text-secondary)">{a.metric.toLowerCase()}, last run</span>
+            <span className="block text-jumbo-sm tabular-nums text-(--color-text-primary)">{a.lead.money ? usd(value) : value.toLocaleString("en-US")}</span>
+            <span className="mt-1 block text-body-sm text-(--color-text-secondary)">{a.lead.label}</span>
+            {second && <span className="mt-0.5 block text-body-sm tabular-nums text-(--color-text-tertiary)">{second}</span>}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <Spark values={a.spark} tone={a.tone} wide />
-          <span className="mt-1 block text-right text-[11px] text-(--color-text-tertiary)">{a.spark.length} weeks</span>
+          <Spark values={a.spark} wide />
+          <span className="mt-1 block text-right text-body-sm text-(--color-text-tertiary)">{a.spark.length} weeks</span>
         </span>
       </span>
       <span className="mt-auto flex items-center justify-between gap-2 border-t border-(--color-border-default) pt-3 text-body-sm">
@@ -275,7 +292,7 @@ function Section({ id, title, aside, bare, children }: { id: string; title: stri
       {bare ? (
         children
       ) : (
-        <div className="rounded-large bg-(--gray-300) p-1.5">
+        <div className="rounded-large bg-(--gray-300) p-1">
           <div className="overflow-hidden rounded-medium bg-(--color-background-secondary)">{children}</div>
         </div>
       )}

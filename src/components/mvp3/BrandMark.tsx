@@ -39,7 +39,7 @@ export function BrandMark({ id, name, size = 40 }: { id: SourceId; name: string;
           <circle cx="16" cy="16" r="5" />
         </svg>
       ) : (
-        <span className="grid size-full place-items-center rounded-circle bg-(--gray-1200) font-semibold text-white" style={{ fontSize: size * 0.4 }}>
+        <span className="grid size-full place-items-center rounded-circle bg-(--color-text-primary) font-medium text-(--color-text-inverse-primary)" style={{ fontSize: size * 0.4 }}>
           {name.charAt(0)}
         </span>
       )}

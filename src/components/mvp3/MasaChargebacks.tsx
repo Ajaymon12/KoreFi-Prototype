@@ -1,15 +1,19 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { AppName, ReportTable, type TableColumn } from "@/components/ui/ReportTable";
 import { OutletUniverse, useOutletFilter } from "@/components/mvp2/OutletFilters";
 import { StatRow, Tray } from "@/components/mvp2/parts";
-import { LAST } from "@/components/finance/PnlStory";
+import { LAST, PRESETS, WEEKS } from "@/components/finance/PnlStory";
+import { DateRangeFilter } from "@/components/finance/DateRangeFilter";
+import type { Preset } from "@/components/finance/TimelineRange";
 import { appLabel, type AppKey } from "@/lib/finance/chargebacks";
 import * as FX from "@/lib/mvp3/masaFixture";
 import { useAgents } from "./AgentsProvider";
 import { useAccount } from "./AccountSwitcher";
 import { FilterBar, NoOutlets, TableCard } from "./masaParts";
+import { pill } from "@/components/mvp3/styles";
 
 // Masa Kitchen's pinned Chargebacks dashboard: the agent-journey prototype's words and figures (journey 3, sample week
 // Nov 1–7 in lib/mvp3/masaFixture), built from the /mvp2 report parts: the outlet filters, StatRow, the payout report's
@@ -18,6 +22,8 @@ import { FilterBar, NoOutlets, TableCard } from "./masaParts";
 // Report-only, except "Ask why", which asks the agent.
 
 export const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+/** The period chip opens on "Last week" (the sample week). Its calendar uses the shared report weeks, which end Sep 30. */
+export const PERIODS: Preset[] = [{ label: "Last week", range: [LAST, LAST] }, ...PRESETS];
 const SOURCE: Record<AppKey, string> = { doordash: "doordash", uber: "ubereats", grubhub: "grubhub" };
 
 type OutletRow = FX.FxOutlet & { total?: boolean };
@@ -47,7 +53,8 @@ export function MasaChargebacks() {
 function Body() {
   const { active, ask, send } = useAgents();
   const router = useRouter();
-  const scope = useOutletFilter([LAST, LAST]);
+  const [range, setRange] = useState<[number, number]>(PERIODS[0].range);
+  const scope = useOutletFilter(range);
   const rows = FX.FX_OUTLETS.filter((x) => scope.stores.includes(x.store));
   const all = rows.length === FX.FX_OUTLETS.length;
   // In the dashboard's own chat the answer lands there; from the full page there is no chat open, so one starts.
@@ -63,53 +70,48 @@ function Body() {
   const sales = rows.reduce((n, x) => n + x.sales, 0);
   const flagged = rows.filter((x) => FX.rate(x) > FX.LIMIT);
   const total: OutletRow = { ...rows[0], store: rows[0]?.store, name: all ? "All outlets" : `${rows.length} ${rows.length === 1 ? "outlet" : "outlets"}`, sales, charged, errors, usual: 0, won, total: true };
-  const chip = "h-7 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3 text-body-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
+  const chip = cn(pill, "h-7 px-3");
 
   return (
     <>
-      <FilterBar scope={scope} />
+      <FilterBar scope={scope}>
+        <DateRangeFilter weeks={WEEKS} presets={PERIODS} value={range} onChange={setRange} />
+      </FilterBar>
       {rows.length === 0 ? (
         <NoOutlets scope={scope} />
       ) : (
         <>
-          <h2 className="text-subtitle-md font-medium text-(--color-text-primary)">
-            {all
-              ? `Chargebacks cost you ${usd(charged)} this week, ${usd(charged - FX.USUAL)} more than usual.`
-              : `Chargebacks at ${rows.length === 1 ? rows[0].name : `these ${rows.length} outlets`} cost ${usd(charged)} this week.`}
-          </h2>
           <StatRow
             label="Chargebacks this week"
             cols="sm:grid-cols-3"
             stats={[
               { label: "Charged back", value: usd(charged), sub: `${errors} orders` },
-              { label: "Won back", value: usd(won), tone: "success", sub: all ? `${FX.WON_SHARE}% of disputed` : "so far" },
+              { label: "Won back", value: usd(won), tone: "success", sub: all ? `${FX.WON_SHARE}% of ${usd(FX.DISPUTED)} disputed` : "so far" },
               ...(all ? [{ label: "Still to dispute", value: usd(FX.CBST.todo), sub: "not filed yet" }] : [{ label: "Share of app sales", value: `${((charged / sales) * 100).toFixed(1)}%`, sub: `your limit is ${FX.LIMIT}%` }]),
             ]}
           />
 
           {flagged.length > 0 && (
-            <Tray title="Needs a look">
-              <div className="space-y-2">
+            // One line per outlet over the limit: no card in a card, the figures and Ask why on the same row.
+            <Tray title="Needs a look" sub={`Over your ${FX.LIMIT}% limit`}>
+              <ul className="-mx-2 divide-y divide-(--color-border-default)">
                 {flagged.map((x) => (
-                  <div key={x.name} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 rounded-medium border border-l-[3px] border-(--color-border-default) border-l-(--color-danger-darker,#c92a2a) p-3.5">
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-2">
-                        <b className="font-medium text-(--color-text-primary)">{x.name}</b>
-                        <span className="rounded-circle bg-(--color-danger-lightest) px-2 py-0.5 text-body-sm text-(--color-danger-darkest)">{FX.rateLabel(x)} of app sales</span>
-                      </p>
-                      <p className="mt-1 text-body-md text-(--color-text-secondary)">{x.errors} orders with errors, up from its usual {x.usual}.</p>
-                    </div>
-                    <p className="text-right text-subtitle-md font-medium tabular-nums text-(--color-text-primary)">
-                      {usd(x.charged)}
-                    </p>
-                    <div className="col-span-2 flex flex-wrap items-center gap-3">
+                  <li key={x.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2">
+                    <span aria-hidden className="size-2 shrink-0 rounded-circle bg-(--color-danger-darkest)" />
+                    <b className="font-medium text-(--color-text-primary)">{x.name}</b>
+                    <span className="text-body-sm font-medium text-(--color-text-danger) tabular-nums">{FX.rateLabel(x)} of app sales</span>
+                    <span className="min-w-0 text-body-sm text-(--color-text-secondary)">
+                      {x.errors} orders with errors, usually {x.usual}
+                    </span>
+                    <span className="ml-auto flex items-center gap-3">
+                      <span className="text-body-md font-medium tabular-nums text-(--color-text-primary)">{usd(x.charged)}</span>
                       <button type="button" className={chip} onClick={() => askWhy(`Why is ${x.name} high?`)}>
                         Ask why
                       </button>
-                    </div>
-                  </div>
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </Tray>
           )}
 
@@ -118,9 +120,10 @@ function Body() {
             columns={OUTLET_COLUMNS}
             rows={[...rows.filter((x) => x.charged), total] as OutletRow[]}
             rowKey={(x) => (x.total ? "total" : x.name)}
-            rowClassName={(x) => (x.total ? "bg-(--gray-200) font-medium" : undefined)}
+            rowClassName={(x) => (x.total ? "bg-(--color-neutral-lightest) font-medium" : undefined)}
             noun="outlets"
           />
+          {all && FX.zero.length > 0 && <p className="px-5 py-3 text-body-sm text-(--color-text-secondary)">No chargebacks this week: {FX.zero.map((x) => x.name).join(", ")}.</p>}
           </TableCard>
 
           {all ? (
@@ -152,3 +155,4 @@ function Body() {
     </>
   );
 }
+

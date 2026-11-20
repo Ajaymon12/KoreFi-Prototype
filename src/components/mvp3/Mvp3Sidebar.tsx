@@ -13,6 +13,7 @@ import { AgentAvatar } from "./AgentAvatar";
 import { ChatSearch, openChatSearch } from "./ChatSearch";
 import { useOnboarding } from "./Onboarding";
 import { useAccount } from "./AccountSwitcher";
+import { iconButton } from "@/components/mvp3/styles";
 
 // MVP 3's sidebar, built like MVP 2's (components/shell/Mvp2Sidebar.tsx) with MVP 3's pages:
 //  - "Workspace": Home (Taco Pros only), New chat, Search chats (ChatGPT-style dialog, also ⌘K) and Agents (presets, drafts, New agent).
@@ -131,7 +132,7 @@ const useNarrow = () => useSyncExternalStore(subscribe, readNarrow, () => false)
 
 export function StatusDot({ status }: { status: "watching" | "learning" }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[11px] font-normal", status === "watching" ? "text-(--color-text-success)" : "text-(--color-text-secondary)")}>
+    <span className={cn("inline-flex items-center gap-1 text-body-sm font-normal", status === "watching" ? "text-(--color-text-success)" : "text-(--color-text-secondary)")}>
       <span className={cn("relative size-1.5 rounded-circle", status === "watching" ? "bg-(--color-success-default)" : "bg-(--color-border-darker)")}>
         {status === "watching" && <span className="absolute inset-0 rounded-circle bg-(--color-success-default) motion-safe:animate-ping" />}
       </span>
@@ -320,11 +321,12 @@ function ChatList({ path, onFollow, big = false }: { path: string; onFollow?: ()
 
 function PinnedSection({ path, big = false, onFollow }: { path: string; big?: boolean; onFollow?: () => void }) {
   const { dashboards } = useAgents();
-  if (!dashboards.some((d) => d.pinned)) return null;
+  // Nothing pinned at the start (leadership flows, 2026-11-20): the heading stays, with a hint.
+  const none = !dashboards.some((d) => d.pinned);
   return (
     <>
       <p className={cn("pt-4 pb-2 text-body-sm text-(--color-text-secondary)", big ? "px-3 pt-5 pb-1.5" : "px-2")}>Dashboards</p>
-      <PinnedList path={path} big={big} onFollow={onFollow} />
+      {none ? <p className={cn("pb-1 text-body-sm text-(--color-text-tertiary)", big ? "px-3" : "px-2")}>Pin a dashboard to keep it here.</p> : <PinnedList path={path} big={big} onFollow={onFollow} />}
     </>
   );
 }
@@ -354,7 +356,7 @@ function Workspace({ path, onCollapse }: { path: string; onCollapse: () => void 
       <div className="shrink-0">
         <div className="flex items-center justify-between px-2 pt-1 pb-2">
           <p className="text-body-sm text-(--color-text-secondary)">Workspace</p>
-          <button type="button" onClick={onCollapse} aria-label="Collapse sidebar" title="Collapse sidebar  [" className="-mr-1 grid size-7 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+          <button type="button" onClick={onCollapse} aria-label="Collapse sidebar" title="Collapse sidebar  [" className={cn(iconButton, "-mr-1 size-7")}>
             <PanelLeftClose className="size-4" aria-hidden />
           </button>
         </div>
@@ -448,7 +450,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
             <Bot aria-hidden />
           </Link>
         </li>
-        {dashboards.some((d) => d.pinned) && (
+        {(
           <li>
             <button
               type="button"
@@ -458,7 +460,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
                 "dashboards",
                 <div className="w-60 p-1.5">
                   <p className="px-2 pt-1 pb-1.5 text-subtitle-xs text-(--color-text-secondary)">Dashboards</p>
-                  <PinnedList path={path} onFollow={() => setFly(null)} />
+                  {dashboards.some((d) => d.pinned) ? <PinnedList path={path} onFollow={() => setFly(null)} /> : <p className="px-2 pb-1.5 text-body-sm text-(--color-text-tertiary)">Pin a dashboard to keep it here.</p>}
                 </div>,
               )}
             >

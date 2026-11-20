@@ -1,3 +1,5 @@
+import "./astryx.css";
+import { AstryxProvider } from "@/components/mvp3/AstryxProvider";
 import { TopBar } from "@/components/shell/TopBar";
 import { ThemeShell } from "@/components/shell/ThemeShell";
 import { DockArea } from "@/components/ui/Dock";
@@ -12,19 +14,23 @@ import { AccountProvider, AccountSwitcher } from "@/components/mvp3/AccountSwitc
 export default function Mvp3Layout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeShell className="flex h-screen flex-col overflow-clip bg-(--color-background-secondary) text-(--color-text-primary)">
+      <AstryxProvider>
       <AccountProvider>
       <AgentsProvider>
         <OnboardingProvider>
           <TopBar menu={<Mvp3MobileNav />} assistant={false} switcher={<AccountSwitcher />} />
-          <div data-module="mvp" className="flex min-h-0 flex-1 px-0 pt-0 pb-0 sm:px-2 sm:pb-2 lg:pt-1">
-            <div className="flex min-w-0 flex-1 overflow-hidden border-t border-(--color-border-default) bg-(--color-background-secondary) sm:rounded-medium sm:border">
+          <div data-module="mvp" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-0 pt-0 pb-0 sm:px-2 sm:pb-2 lg:flex-row lg:gap-3 lg:overflow-visible lg:pt-1">
+            <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden border-t border-(--color-border-default) bg-(--color-background-secondary) sm:rounded-medium sm:border">
               <Mvp3Sidebar />
               <DockArea>{children}</DockArea>
             </div>
+            {/* A page can put a second card here, beside the panel (the agent editor's workflow, Figma 1663:11254). Empty on every other page. */}
+            <div id="mvp3-beside" className="contents" />
           </div>
         </OnboardingProvider>
       </AgentsProvider>
       </AccountProvider>
+      </AstryxProvider>
     </ThemeShell>
   );
 }

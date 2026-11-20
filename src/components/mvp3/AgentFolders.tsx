@@ -7,6 +7,7 @@ import { AGENTS, type AgentId } from "@/lib/mvp3/agents";
 import { useAccount } from "./AccountSwitcher";
 import { AgentAvatar } from "./AgentAvatar";
 import { AgentCard, useAgentCards } from "./AgentsPage";
+import { focusRing } from "@/components/mvp3/styles";
 
 // Home / Your agents, after a projects home strip: a row of tabs grouped by agent (All, Operations,
 // Finance, Growth) with "Browse all" on the right, and under it a row of the same preview cards as the
@@ -15,21 +16,22 @@ import { AgentCard, useAgentCards } from "./AgentsPage";
 // Report-only: cards open the agent; Run now and Duplicate sit in each card's menu.
 
 const ROW = 3;
-const focus = "outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
 
 export function AgentFolders() {
   const { account } = useAccount();
   const real = account.stage !== "new";
-  const cards = useAgentCards().filter((c) => c.kind !== "draft");
+  // Home shows only live agents; the rest (not live, learning, drafts) are on the Agents page via "Browse all".
+  const cards = useAgentCards().filter((c) => c.kind === "live");
   const [tab, setTab] = useState<AgentId | "all">("all");
   // The three agents (Operations, Finance, Growth), named as on the Agents page.
-  const teams = AGENTS.map((a) => ({ agent: a.id, label: a.name.replace(/ agent$/, "") }));
+  // Only teams with a live agent get a tab.
+  const teams = AGENTS.map((a) => ({ agent: a.id, label: a.name.replace(/ agent$/, "") })).filter((f) => cards.some((c) => c.agent === f.agent));
   const groups = (tab === "all" ? teams : teams.filter((f) => f.agent === tab)).map((f) => ({ f, all: cards.filter((c) => c.agent === f.agent) })).filter((g) => g.all.length);
 
   const tabCls = (on: boolean) =>
     cn(
       "inline-flex h-9 shrink-0 items-center gap-2 rounded-circle border px-3.5 text-body-md transition-colors",
-      focus,
+      focusRing,
       on ? "border-(--color-border-darker) bg-(--color-neutral-light) font-medium text-(--color-text-primary)" : "border-transparent text-(--color-text-secondary) hover:text-(--color-text-primary)",
     );
 
@@ -47,12 +49,13 @@ export function AgentFolders() {
             </button>
           ))}
         </div>
-        <Link href="/mvp3/agents" className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-medium px-1 text-body-md font-medium text-(--color-text-primary) hover:text-(--color-text-clickable)", focus)}>
+        <Link href="/mvp3/agents" className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-medium px-1 text-body-md font-medium text-(--color-text-primary) hover:text-(--color-text-clickable)", focusRing)}>
           Browse all
           <ArrowRight className="size-4" aria-hidden />
         </Link>
       </div>
       <div className="space-y-8">
+        {!cards.length && <p className="text-body-md text-(--color-text-secondary)">No live agents yet. Browse all to run one.</p>}
         {groups.map(({ f, all }) => {
           const shown = tab === "all" ? all.slice(0, ROW) : all;
           return (
@@ -65,7 +68,7 @@ export function AgentFolders() {
                     <span className="text-body-md font-normal text-(--color-text-secondary)">{all.length}</span>
                   </h3>
                   {all.length > ROW && (
-                    <button type="button" onClick={() => setTab(f.agent)} className={cn("ml-auto inline-flex items-center gap-1 rounded-medium px-1 text-body-sm text-(--color-text-clickable) hover:underline", focus)}>
+                    <button type="button" onClick={() => setTab(f.agent)} className={cn("ml-auto inline-flex items-center gap-1 rounded-medium px-1 text-body-sm text-(--color-text-clickable) hover:underline", focusRing)}>
                       See all
                       <ArrowRight className="size-3.5" aria-hidden />
                     </button>

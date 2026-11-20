@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Check, ChevronRight, Clock, Lock, Search, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { CountTabs } from "@/components/ui/CountTabs";
 import { Toast } from "@/components/ui/Toast";
 import { FreshnessStamp } from "@/components/dashboard/primitives";
@@ -20,6 +21,7 @@ import { useAgents } from "./AgentsProvider";
 import { BrandMark } from "./BrandMark";
 import { useAccount } from "./AccountSwitcher";
 import { AppCard, EmailCard, GUIDE, emailsFor, useOnboarding as useFirstVisit, type App } from "./Onboarding";
+import { dialogSurface, scrim } from "@/components/mvp3/styles";
 
 // MVP 3 / Integrations, after ChatGPT's Apps directory and its "Connecting to Figma" flow (Mobbin):
 //  list   — title, search, category pills (Featured first: QuickBooks and the POS systems), two-column rows;
@@ -73,7 +75,7 @@ const skillsUsing = (c: SourceConnection) => FOLDERS.flatMap((f) => f.skills.fil
 
 function KoreFiMark({ size = 48 }: { size?: number }) {
   return (
-    <span aria-hidden className="grid shrink-0 place-items-center rounded-large bg-(--color-primary) font-semibold text-(--color-text-inverse-primary)" style={{ width: size, height: size, fontSize: size * 0.46 }}>
+    <span aria-hidden className="grid shrink-0 place-items-center rounded-large bg-(--color-primary) font-medium text-(--color-text-inverse-primary)" style={{ width: size, height: size, fontSize: size * 0.46 }}>
       K
     </span>
   );
@@ -160,7 +162,10 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
     setToast(`${c.name} is disconnected`);
   };
 
+  // Same top bar as every other /mvp3 page (Home, Agents, Settings); the page's own heading sits below it.
   return (
+    <>
+    <PageHeader title="Integrations" />
     <div className="relative min-h-0 flex-1 overflow-y-auto">
       {selected ? (
         <Detail c={selected} busy={step !== null && step !== "add"} onBack={() => router.push(path)} onConnect={() => setStep(isApp(selected.id) ? "add" : "consent")} onDisconnect={() => setLeaving(selected.id)} />
@@ -175,6 +180,7 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
 
       <Toast message={toast} onDismiss={dismissToast} />
     </div>
+    </>
   );
 }
 
@@ -189,15 +195,9 @@ function Directory({ items, onOpen }: { items: Item[]; onOpen: (id: SourceId) =>
     .filter((c) => !query || `${c.name} ${info(c).blurb} ${CATEGORY[c.group]}`.toLowerCase().includes(query));
 
   return (
-    <div className="mx-auto w-full max-w-[880px] px-4 py-10 sm:px-8 sm:py-14">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-page-title font-medium text-(--color-text-primary)">
-            Integrations
-            <span className="rounded-small border border-(--color-border-default) px-1.5 py-px text-subtitle-xs font-medium tracking-wide text-(--color-text-secondary) uppercase">Read-only</span>
-          </h1>
-          <p className="mt-1 text-body-md text-(--color-text-secondary)">Connect your delivery apps, POS and books so your agents can read them.</p>
-        </div>
+    <div className="mx-auto w-full max-w-[880px] px-4 py-6 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-body-md text-(--color-text-secondary)">Connect your delivery apps, POS and books so your agents can read them. KoreFi only reads, never changes anything.</p>
         <label className="flex h-[34px] w-full items-center gap-2 rounded-medium border border-(--color-border-input) bg-(--color-background-secondary) px-3 text-(--color-text-secondary) focus-within:border-(--color-focus-primary) sm:w-64">
           <Search className="size-4 shrink-0" aria-hidden />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search integrations" aria-label="Search integrations" className="min-w-0 flex-1 bg-transparent text-field-md text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)" />
@@ -260,7 +260,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
       <header className="mt-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <BrandMark id={c.id} name={c.name} size={64} />
-          <h1 className="mt-4 text-page-title font-medium text-(--color-text-primary)">{c.name}</h1>
+          <h2 className="mt-4 text-page-title font-medium text-(--color-text-primary)">{c.name}</h2>
           <p className="mt-1 text-body-lg text-(--color-text-secondary)">{blurb}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
               <div ref={menuRef} className="relative">
                 <Button size="small" icon={<Settings aria-hidden />} aria-label={`${c.name} settings`} title="Settings" aria-expanded={menu} onClick={() => setMenu((m) => !m)} />
                 {menu && (
-                  <div role="menu" className="absolute top-10 right-0 z-30 w-56 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1.5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
+                  <div role="menu" className="absolute top-10 right-0 z-30 w-56 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
                     <p className="px-2.5 pt-1 pb-2 text-body-sm text-(--color-text-secondary)">
                       <StatusLine c={c} />
                       {c.lastSyncedAt && (
@@ -340,7 +340,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
                   {skills.map((s) => (
                     <li key={s.id}>
                       {(
-                        <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+                        <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
                           <AgentAvatar agent={s.agent} size={20} />
                           {s.name}
                           {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not live" : "learning"}</span>}
@@ -369,7 +369,7 @@ function AddUser({ c, app, restaurant, onClose, onAdded }: { c: Item; app: App; 
   const [stuck, setStuck] = useState(false);
   return (
     <Overlay onClose={onClose} label={`Add KoreFi to ${c.name}`}>
-      <div className="space-y-3 rounded-xlarge bg-(--color-background-secondary) p-5 shadow-[0_24px_64px_-12px_rgb(0_0_0/0.35)]">
+      <div className={cn(dialogSurface, "space-y-3 p-5")}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-subtitle-lg font-medium text-(--color-text-primary)">Add KoreFi to {c.name}</h2>
@@ -396,7 +396,7 @@ function Overlay({ onClose, children, label }: { onClose: () => void; children: 
   const panel = useRef<HTMLDivElement>(null);
   useDismiss(panel, true, onClose);
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-black/40 p-4 motion-safe:animate-page-in">
+    <div className={cn(scrim, "z-[60] grid place-items-center overflow-y-auto p-4 motion-safe:animate-page-in")}>
       <div ref={panel} role="dialog" aria-modal="true" aria-label={label} className="w-full max-w-[460px]">
         {children}
       </div>
@@ -410,7 +410,7 @@ function Consent({ c, onClose, onContinue }: { c: Item; onClose: () => void; onC
   const { reads } = info(c);
   return (
     <Overlay onClose={onClose} label={`Use ${c.name} in KoreFi`}>
-      <div className="overflow-hidden rounded-xlarge bg-(--color-background-secondary) shadow-[0_24px_64px_-12px_rgb(0_0_0/0.35)]">
+      <div className={cn(dialogSurface, "overflow-hidden")}>
         <div className="relative border-b border-(--color-border-default) bg-(--color-background-primary) px-6 pt-8 pb-6 text-center">
           <Button type="text" size="small" icon={<X aria-hidden />} aria-label="Close" onClick={onClose} className="absolute top-3 right-3" />
           <div className="flex items-center justify-center gap-3">

@@ -18,6 +18,7 @@ import { AgentAvatar } from "./AgentAvatar";
 import { Composer, ComposerNote } from "./AgentChat";
 import { useAccount } from "./AccountSwitcher";
 import { DATA_ACCOUNT } from "@/lib/mvp3/accounts";
+import { dialogSurface, pill, scrim } from "@/components/mvp3/styles";
 
 // MVP 3's first visit, from sign-up. KoreFi knows nothing about the restaurant yet, and no delivery app is connected:
 //  1. Sign up (email + password, or Google). "Log in" skips straight to the app.
@@ -134,7 +135,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     if (account.stage === "new" && path !== "/mvp3") router.push("/mvp3");
     // Taco Pros and Masa Kitchen (Account.home) land on Home, on switching and on refresh, unless a ?chat= link is
     // opening one of Taco Pros' chats.
-    else if (account.home && path !== "/mvp3/home" && !new URLSearchParams(window.location.search).has("chat")) router.push("/mvp3/home");
+    // ?dash= (the demo inbox's email button) opens a pinned dashboard instead.
+    else if (account.home && path !== "/mvp3/home" && !/[?&](chat|dash)=/.test(window.location.search)) router.push("/mvp3/home");
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -466,7 +468,7 @@ type Reach = (typeof REACH)[number]["label"];
 // Styles shared with AgentChat's replies, so the welcome chat reads like every other thread.
 const line = "text-body-md text-(--color-text-primary)";
 const card = "w-full max-w-[560px] rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-3.5 motion-safe:animate-page-in";
-const chipLink = "inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) bg-(--color-background-secondary) px-3 py-1.5 text-body-sm text-(--color-text-primary) outline-none transition-colors hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)";
+const chipLink = cn(pill, "inline-flex items-center gap-1.5 px-3 py-1.5");
 /** The welcome chat's face; the sidebar shows the same one beside "Set up …". */
 const SPEAKER: AgentId = "operations";
 
@@ -510,7 +512,7 @@ export function Welcome() {
     opened.current = true;
     say(
       { kind: "text", text: `Hey ${firstName(profile.name)}! We're your KoreFi agents. We watch sales, payouts and chargebacks across your delivery apps, and check in when something changes.` },
-      { kind: "text", text: "Which agents do you want to turn on? Pick as many as you like. You can change this any time." },
+      { kind: "text", text: `Which agents do you want to turn on? We've picked ${STARTERS.length > 1 ? "both" : "it"} to start; you can change this any time.` },
       { kind: "agents" },
     );
   }, [say, profile.name]);
@@ -519,11 +521,11 @@ export function Welcome() {
   useEffect(() => {
     if (!queue.length) return;
     const [head, ...rest] = queue;
-    const wait = head.kind === "user" ? 0 : head.kind === "text" ? 800 : 350;
+    const wait = head.kind === "user" ? 0 : head.kind === "text" ? 450 : 200;
     const t = window.setTimeout(() => {
       post(head);
       setQueue(rest);
-    }, log.length === 0 ? 500 : wait);
+    }, log.length === 0 ? 250 : wait);
     return () => window.clearTimeout(t);
   }, [queue, log.length, post]);
   useEffect(() => {
@@ -699,7 +701,8 @@ export function Welcome() {
     if (last && last.user === u && !u) last.items.push(e);
     else turns.push({ user: u, items: [e] });
   }
-  const status = typing ? "Typing…" : verifying ? "Waiting on your first reports" : "Waiting on your delivery apps";
+  // Says where setup is right now, step by step, never ahead of it.
+  const status = typing ? "Typing…" : !agents ? "Choosing your agents" : !picked ? "Choosing your apps" : verifying ? "Waiting on your first reports" : "Connecting your delivery apps";
   const item = (e: Entry) => {
     switch (e.kind) {
       case "text":
@@ -738,7 +741,7 @@ export function Welcome() {
                 onClick={() => chooseReach(label)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-circle border px-3 py-1.5 text-body-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
-                  reach === label ? "border-(--brand-900) bg-(--brand-200) text-(--brand-1100)" : "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary)",
+                  reach === label ? "border-(--color-primary) bg-(--brand-200) text-(--brand-1100)" : "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary)",
                   reach === null ? "hover:bg-(--color-neutral-lightest)" : reach !== label && "opacity-50",
                 )}
               >
@@ -814,7 +817,7 @@ export function Welcome() {
         </div>
       </div>
       <div className="mx-auto w-full max-w-[720px] shrink-0 px-4 pb-4 sm:px-6">
-        <Composer placeholder={picked ? "Send a message" : "Or type them, like “DoorDash and Grubhub”"} onSend={finish} intercept={intercept} />
+        <Composer placeholder={!agents ? "Or type, like “both”" : picked ? "Send a message" : "Or type them, like “DoorDash and Grubhub”"} onSend={finish} intercept={intercept} />
         <ComposerNote />
       </div>
     </section>
@@ -890,7 +893,7 @@ function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { ag
 
 /** One row per live agent: its face, name, what it does and what it reads. Multi-select, then Continue. */
 function PickAgents({ answered, onPick }: { answered: string[] | null; onPick: (ids: string[]) => void }) {
-  const [sel, setSel] = useState<string[]>([]);
+  const [sel, setSel] = useState<string[]>(() => STARTERS.map((x) => x.id));
   const done = answered !== null;
   const on = (id: string) => (done ? answered.includes(id) : sel.includes(id));
   const allOn = sel.length === STARTERS.length;
@@ -916,7 +919,7 @@ function PickAgents({ answered, onPick }: { answered: string[] | null; onPick: (
                 <span className="block text-body-sm text-(--color-text-secondary)">{x.blurb}</span>
                 <span className="mt-1 block text-body-sm text-(--color-text-tertiary)">Reads {list(x.access.map((a) => (a === "POS" ? "Square" : a)))}</span>
               </span>
-              {on(x.id) && <Check className="absolute top-3 right-3 size-4 text-(--brand-900)" aria-hidden />}
+              {on(x.id) && <Check className="absolute top-3 right-3 size-4 text-(--color-primary)" aria-hidden />}
             </button>
           </li>
         ))}
@@ -955,7 +958,7 @@ function PickApps({ answered, onPick, onSkip }: { answered: App[] | null; onPick
               done && !on(a) && "opacity-50",
             )}
           >
-            {on(a) && <Check className="absolute top-2 right-2 size-4 text-(--brand-900)" aria-hidden />}
+            {on(a) && <Check className="absolute top-2 right-2 size-4 text-(--color-primary)" aria-hidden />}
             <AppLogo app={a} size={28} />
             {GUIDE[a].name}
           </button>
@@ -1115,8 +1118,8 @@ function GuideVideo({ g, onClose }: { g: Guide; onClose: () => void }) {
   const [failed, setFailed] = useState(false);
   useDismiss(panel, true, onClose);
   return createPortal(
-    <div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 p-4 motion-safe:animate-page-in">
-      <div ref={panel} role="dialog" aria-modal="true" aria-label={`How to add KoreFi in ${g.name}`} className="w-full max-w-[880px] overflow-hidden rounded-xlarge bg-(--color-background-secondary) shadow-[0_24px_64px_-12px_rgb(0_0_0/0.45)]">
+    <div className={cn(scrim, "z-[70] grid place-items-center p-4 motion-safe:animate-page-in")}>
+      <div ref={panel} role="dialog" aria-modal="true" aria-label={`How to add KoreFi in ${g.name}`} className={cn(dialogSurface, "w-full max-w-[880px] overflow-hidden")}>
         <div className="flex items-center gap-3 border-b border-(--color-border-default) px-4 py-2.5">
           <p className="min-w-0 flex-1 truncate text-body-md font-medium text-(--color-text-primary)">Add the KoreFi user in {g.name}</p>
           <Button type="text" size="small" icon={<X aria-hidden />} aria-label="Close video" onClick={onClose} />
@@ -1219,7 +1222,7 @@ function Tour({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0" onClick={onClose} />
       <div
         aria-hidden
-        className="pointer-events-none absolute rounded-large shadow-[0_0_0_9999px_rgb(0_0_0/0.45)] ring-2 ring-(--brand-900) transition-all duration-300 ease-out"
+        className="pointer-events-none absolute rounded-large shadow-[0_0_0_9999px_rgb(0_0_0/0.45)] ring-2 ring-(--color-primary) transition-all duration-300 ease-out"
         style={{ left: rect.left - PAD, top: rect.top - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }}
       />
       <div key={i} className="absolute rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-4 shadow-[0_8px_32px_rgb(0_0_0/0.18)] kf-pop" style={{ left, top, width: CARD_W }}>
@@ -1233,7 +1236,7 @@ function Tour({ onClose }: { onClose: () => void }) {
         <div className="mt-4 flex items-center justify-between gap-2">
           <span className="flex gap-1" aria-label={`Step ${i + 1} of ${steps.length}`}>
             {steps.map((s, n) => (
-              <span key={s.target} className={cn("h-1.5 rounded-circle transition-all", n === i ? "w-4 bg-(--brand-900)" : "w-1.5 bg-(--color-border-darker)")} />
+              <span key={s.target} className={cn("h-1.5 rounded-circle transition-all", n === i ? "w-4 bg-(--color-primary)" : "w-1.5 bg-(--color-border-darker)")} />
             ))}
           </span>
           <span className="flex gap-1.5">

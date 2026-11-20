@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PinOff } from "lucide-react";
 import { useAgents } from "./AgentsProvider";
-import { AgentDashboard, ScheduleControl } from "./AgentDashboard";
+import { AgentDashboard, PinToggle, ScheduleControl } from "./AgentDashboard";
 import { ReportView } from "./reportViews";
 import { AgentChatButton } from "./AgentChatButton";
 import { PointLayer } from "./PointLayer";
@@ -26,7 +25,6 @@ export function DashboardPage() {
         </p>
       </div>
     );
-  const btnCls = "inline-flex h-8 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-3.5";
   // A pinned report (P&L Summary…): the real report full page, with its schedule, Unpin and the chat it came from on top.
   if (d.report) {
     const report = d.report;
@@ -34,10 +32,7 @@ export function DashboardPage() {
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="absolute top-1.5 right-3 z-10 flex items-center gap-1.5 bg-(--color-background-secondary)">
           <ScheduleControl d={d} />
-          <button type="button" className={btnCls} onClick={() => pinReport(report, false)}>
-            <PinOff aria-hidden />
-            Unpin
-          </button>
+          <PinToggle on onToggle={() => pinReport(report, false)} />
           {d.thread && (
             <AgentChatButton
               agent={d.agent}

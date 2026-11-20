@@ -25,16 +25,18 @@ export const buttonVariants = cva(
       type: {
         primary:
           "border-(--color-focus-secondary) bg-(--color-primary-solid) text-(--color-text-inverse-primary) hover:bg-(--color-primary) active:bg-(--brand-1200)",
+        // CTA hover is always brand orange: Default/Outline/Dashed take an orange border, a light orange tint
+        // and Text/Clickable label (4.9:1 AA); Primary brightens from Primary Solid to Brand/Primary.
         default:
-          "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary) shadow-[0_1px_1px_var(--color-border-default)] hover:border-(--color-border-darker) hover:bg-(--color-background-primary) active:border-(--color-border-darker) active:bg-(--color-neutral-light)",
+          "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-primary) shadow-[0_1px_1px_var(--color-border-default)] hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) active:border-(--color-primary) active:bg-(--color-primary)/15 active:text-(--color-text-clickable)",
         // Figma exports no colour change for Secondary hover/pressed; the screenshot shows the
         // surface lightening, reproduced here by mixing toward the page background.
         secondary:
           "bg-(--gray-1200) text-(--color-text-inverse-primary) shadow-[0_1px_1px_var(--color-border-default)] hover:bg-[color-mix(in_srgb,var(--gray-1200)_88%,var(--color-background-secondary))] active:bg-[color-mix(in_srgb,var(--gray-1200)_78%,var(--color-background-secondary))]",
         outline:
-          "border-(--color-border-darker) bg-transparent text-(--color-text-primary) hover:border-(--color-border-input) active:border-(--color-border-input) active:bg-(--color-neutral-lightest)",
+          "border-(--color-border-darker) bg-transparent text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) active:border-(--color-primary) active:bg-(--color-primary)/15 active:text-(--color-text-clickable)",
         dashed:
-          "border-dashed border-(--color-border-darker) bg-transparent text-(--color-text-primary) hover:border-(--color-border-input) active:border-(--color-border-input) active:bg-(--color-neutral-lightest)",
+          "border-dashed border-(--color-border-darker) bg-transparent text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) active:border-(--color-primary) active:bg-(--color-primary)/15 active:text-(--color-text-clickable)",
         // Hover/pressed tints of --color-primary (opacity read from the Figma screenshot).
         link: "bg-transparent text-(--color-text-clickable) hover:bg-(--color-primary)/15 active:bg-(--color-primary)/25",
         text: "bg-transparent text-(--color-text-primary) hover:bg-(--color-neutral-light) active:bg-(--gray-500)",

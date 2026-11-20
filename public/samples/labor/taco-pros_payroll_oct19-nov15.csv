@@ -1,0 +1,97 @@
+pay_week_start,outlet,employee_id,employee,role,hourly_rate,regular_hours,overtime_hours,regular_pay,overtime_pay,gross_pay
+2026-10-19,Hyde Park,E1001,Maria Perez,Shift lead,20.50,40,6.83,820.0,210.02,1030.02
+2026-10-19,Hyde Park,E1002,Luis Martinez,Cook,18.00,39.75,0,715.5,0.0,715.5
+2026-10-19,Hyde Park,E1003,Ana Ramirez,Cook,17.50,40,1.17,700.0,30.71,730.71
+2026-10-19,Hyde Park,E1004,Jose Cruz,Cashier,16.00,39.17,0,626.72,0.0,626.72
+2026-10-19,Damen & Chicago,E1005,Carmen Garcia,Shift lead,20.50,40,7.5,820.0,230.62,1050.62
+2026-10-19,Damen & Chicago,E1006,Diego Lopez,Cook,18.00,40,0.5,720.0,13.5,733.5
+2026-10-19,Damen & Chicago,E1007,Sofia Flores,Cook,17.50,40,0.16,700.0,4.2,704.2
+2026-10-19,Damen & Chicago,E1008,Miguel Lopez,Cashier,16.00,39.41,0,630.56,0.0,630.56
+2026-10-19,Chicago & Halsted,E1009,Elena Perez,Shift lead,20.50,40,7.25,820.0,222.94,1042.94
+2026-10-19,Chicago & Halsted,E1010,Carlos Rivera,Cook,18.00,33.58,0,604.44,0.0,604.44
+2026-10-19,Chicago & Halsted,E1011,Rosa Garcia,Cook,17.50,34.34,0,600.95,0.0,600.95
+2026-10-19,Chicago & Halsted,E1012,Juan Flores,Cashier,16.00,38.83,0,621.28,0.0,621.28
+2026-10-19,Edgewater,E1013,Lucia Hernandez,Shift lead,20.50,40,7.58,820.0,233.09,1053.09
+2026-10-19,Edgewater,E1014,Pedro Garcia,Cook,18.00,33.58,0,604.44,0.0,604.44
+2026-10-19,Edgewater,E1015,Isabel Lopez,Cook,17.50,34.25,0,599.38,0.0,599.38
+2026-10-19,Edgewater,E1016,Jorge Ramirez,Cashier,16.00,37.83,0,605.28,0.0,605.28
+2026-10-19,79th & Cicero,E1017,Paula Ramirez,Shift lead,20.50,40,6.92,820.0,212.79,1032.79
+2026-10-19,79th & Cicero,E1018,Raul Lopez,Cook,18.00,33.92,0,610.56,0.0,610.56
+2026-10-19,79th & Cicero,E1019,Daniela Hernandez,Cook,17.50,34.33,0,600.77,0.0,600.77
+2026-10-19,79th & Cicero,E1020,Andres Lopez,Cashier,16.00,38.42,0,614.72,0.0,614.72
+2026-10-19,Carol Stream,E1021,Gabriela Flores,Shift lead,20.50,40,6.16,820.0,189.42,1009.42
+2026-10-19,Carol Stream,E1022,Hector Ramirez,Cook,18.00,33.5,0,603.0,0.0,603.0
+2026-10-19,Carol Stream,E1023,Valeria Garcia,Cook,17.50,33.33,0,583.27,0.0,583.27
+2026-10-19,Carol Stream,E1024,Oscar Rivera,Cashier,16.00,38.58,0,617.28,0.0,617.28
+2026-10-26,Hyde Park,E1001,Maria Perez,Shift lead,20.50,40,7.08,820.0,217.71,1037.71
+2026-10-26,Hyde Park,E1002,Luis Martinez,Cook,18.00,39.58,0,712.44,0.0,712.44
+2026-10-26,Hyde Park,E1003,Ana Ramirez,Cook,17.50,40,0.25,700.0,6.56,706.56
+2026-10-26,Hyde Park,E1004,Jose Cruz,Cashier,16.00,38.5,0,616.0,0.0,616.0
+2026-10-26,Damen & Chicago,E1005,Carmen Garcia,Shift lead,20.50,40,5.33,820.0,163.9,983.9
+2026-10-26,Damen & Chicago,E1006,Diego Lopez,Cook,18.00,39.67,0,714.06,0.0,714.06
+2026-10-26,Damen & Chicago,E1007,Sofia Flores,Cook,17.50,39.67,0,694.23,0.0,694.23
+2026-10-26,Damen & Chicago,E1008,Miguel Lopez,Cashier,16.00,39.74,0,635.84,0.0,635.84
+2026-10-26,Chicago & Halsted,E1009,Elena Perez,Shift lead,20.50,40,6.32,820.0,194.34,1014.34
+2026-10-26,Chicago & Halsted,E1010,Carlos Rivera,Cook,18.00,34.25,0,616.5,0.0,616.5
+2026-10-26,Chicago & Halsted,E1011,Rosa Garcia,Cook,17.50,33.68,0,589.4,0.0,589.4
+2026-10-26,Chicago & Halsted,E1012,Juan Flores,Cashier,16.00,38.41,0,614.56,0.0,614.56
+2026-10-26,Edgewater,E1013,Lucia Hernandez,Shift lead,20.50,40,6.49,820.0,199.57,1019.57
+2026-10-26,Edgewater,E1014,Pedro Garcia,Cook,18.00,33.42,0,601.56,0.0,601.56
+2026-10-26,Edgewater,E1015,Isabel Lopez,Cook,17.50,33.75,0,590.62,0.0,590.62
+2026-10-26,Edgewater,E1016,Jorge Ramirez,Cashier,16.00,38.5,0,616.0,0.0,616.0
+2026-10-26,79th & Cicero,E1017,Paula Ramirez,Shift lead,20.50,40,8.08,820.0,248.46,1068.46
+2026-10-26,79th & Cicero,E1018,Raul Lopez,Cook,18.00,34.09,0,613.62,0.0,613.62
+2026-10-26,79th & Cicero,E1019,Daniela Hernandez,Cook,17.50,34.01,0,595.17,0.0,595.17
+2026-10-26,79th & Cicero,E1020,Andres Lopez,Cashier,16.00,39.17,0,626.72,0.0,626.72
+2026-10-26,Carol Stream,E1021,Gabriela Flores,Shift lead,20.50,40,6.16,820.0,189.42,1009.42
+2026-10-26,Carol Stream,E1022,Hector Ramirez,Cook,18.00,34.17,0,615.06,0.0,615.06
+2026-10-26,Carol Stream,E1023,Valeria Garcia,Cook,17.50,33.33,0,583.27,0.0,583.27
+2026-10-26,Carol Stream,E1024,Oscar Rivera,Cashier,16.00,38.91,0,622.56,0.0,622.56
+2026-11-02,Hyde Park,E1001,Maria Perez,Shift lead,20.50,40,6.59,820.0,202.64,1022.64
+2026-11-02,Hyde Park,E1002,Luis Martinez,Cook,18.00,39.83,0,716.94,0.0,716.94
+2026-11-02,Hyde Park,E1003,Ana Ramirez,Cook,17.50,39.84,0,697.2,0.0,697.2
+2026-11-02,Hyde Park,E1004,Jose Cruz,Cashier,16.00,38.42,0,614.72,0.0,614.72
+2026-11-02,Damen & Chicago,E1005,Carmen Garcia,Shift lead,20.50,40,6.25,820.0,192.19,1012.19
+2026-11-02,Damen & Chicago,E1006,Diego Lopez,Cook,18.00,40,0.49,720.0,13.23,733.23
+2026-11-02,Damen & Chicago,E1007,Sofia Flores,Cook,17.50,39.41,0,689.67,0.0,689.67
+2026-11-02,Damen & Chicago,E1008,Miguel Lopez,Cashier,16.00,38.83,0,621.28,0.0,621.28
+2026-11-02,Chicago & Halsted,E1009,Elena Perez,Shift lead,20.50,40,7.41,820.0,227.86,1047.86
+2026-11-02,Chicago & Halsted,E1010,Carlos Rivera,Cook,18.00,33.33,0,599.94,0.0,599.94
+2026-11-02,Chicago & Halsted,E1011,Rosa Garcia,Cook,17.50,33.66,0,589.05,0.0,589.05
+2026-11-02,Chicago & Halsted,E1012,Juan Flores,Cashier,16.00,38.84,0,621.44,0.0,621.44
+2026-11-02,Edgewater,E1013,Lucia Hernandez,Shift lead,20.50,40,6.57,820.0,202.03,1022.03
+2026-11-02,Edgewater,E1014,Pedro Garcia,Cook,18.00,33.67,0,606.06,0.0,606.06
+2026-11-02,Edgewater,E1015,Isabel Lopez,Cook,17.50,34.41,0,602.17,0.0,602.17
+2026-11-02,Edgewater,E1016,Jorge Ramirez,Cashier,16.00,38.42,0,614.72,0.0,614.72
+2026-11-02,79th & Cicero,E1017,Paula Ramirez,Shift lead,20.50,40,7.67,820.0,235.85,1055.85
+2026-11-02,79th & Cicero,E1018,Raul Lopez,Cook,18.00,34.67,0,624.06,0.0,624.06
+2026-11-02,79th & Cicero,E1019,Daniela Hernandez,Cook,17.50,34.09,0,596.58,0.0,596.58
+2026-11-02,79th & Cicero,E1020,Andres Lopez,Cashier,16.00,38.41,0,614.56,0.0,614.56
+2026-11-02,Carol Stream,E1021,Gabriela Flores,Shift lead,20.50,40,6.42,820.0,197.41,1017.41
+2026-11-02,Carol Stream,E1022,Hector Ramirez,Cook,18.00,33.84,0,609.12,0.0,609.12
+2026-11-02,Carol Stream,E1023,Valeria Garcia,Cook,17.50,33.92,0,593.6,0.0,593.6
+2026-11-02,Carol Stream,E1024,Oscar Rivera,Cashier,16.00,38.74,0,619.84,0.0,619.84
+2026-11-09,Hyde Park,E1001,Maria Perez,Shift lead,20.50,40,6.59,820.0,202.64,1022.64
+2026-11-09,Hyde Park,E1002,Luis Martinez,Cook,18.00,40,0.08,720.0,2.16,722.16
+2026-11-09,Hyde Park,E1003,Ana Ramirez,Cook,17.50,39.42,0,689.85,0.0,689.85
+2026-11-09,Hyde Park,E1004,Jose Cruz,Cashier,16.00,39.59,0,633.44,0.0,633.44
+2026-11-09,Damen & Chicago,E1005,Carmen Garcia,Shift lead,20.50,40,6.33,820.0,194.65,1014.65
+2026-11-09,Damen & Chicago,E1006,Diego Lopez,Cook,18.00,40,0.41,720.0,11.07,731.07
+2026-11-09,Damen & Chicago,E1007,Sofia Flores,Cook,17.50,39.66,0,694.05,0.0,694.05
+2026-11-09,Damen & Chicago,E1008,Miguel Lopez,Cashier,16.00,39.33,0,629.28,0.0,629.28
+2026-11-09,Chicago & Halsted,E1009,Elena Perez,Shift lead,20.50,40,6.83,820.0,210.02,1030.02
+2026-11-09,Chicago & Halsted,E1010,Carlos Rivera,Cook,18.00,34.34,0,618.12,0.0,618.12
+2026-11-09,Chicago & Halsted,E1011,Rosa Garcia,Cook,17.50,34.33,0,600.77,0.0,600.77
+2026-11-09,Chicago & Halsted,E1012,Juan Flores,Cashier,16.00,37.91,0,606.56,0.0,606.56
+2026-11-09,Edgewater,E1013,Lucia Hernandez,Shift lead,20.50,40,6.17,820.0,189.73,1009.73
+2026-11-09,Edgewater,E1014,Pedro Garcia,Cook,18.00,35.24,0,634.32,0.0,634.32
+2026-11-09,Edgewater,E1015,Isabel Lopez,Cook,17.50,33.34,0,583.45,0.0,583.45
+2026-11-09,Edgewater,E1016,Jorge Ramirez,Cashier,16.00,38.33,0,613.28,0.0,613.28
+2026-11-09,79th & Cicero,E1017,Paula Ramirez,Shift lead,20.50,40,6.42,820.0,197.41,1017.41
+2026-11-09,79th & Cicero,E1018,Raul Lopez,Cook,18.00,34.25,0,616.5,0.0,616.5
+2026-11-09,79th & Cicero,E1019,Daniela Hernandez,Cook,17.50,33.25,0,581.88,0.0,581.88
+2026-11-09,79th & Cicero,E1020,Andres Lopez,Cashier,16.00,38.59,0,617.44,0.0,617.44
+2026-11-09,Carol Stream,E1021,Gabriela Flores,Shift lead,20.50,40,6.83,820.0,210.02,1030.02
+2026-11-09,Carol Stream,E1022,Hector Ramirez,Cook,18.00,33.92,0,610.56,0.0,610.56
+2026-11-09,Carol Stream,E1023,Valeria Garcia,Cook,17.50,34.17,0,597.98,0.0,597.98
+2026-11-09,Carol Stream,E1024,Oscar Rivera,Cashier,16.00,40,0.08,640.0,1.92,641.92

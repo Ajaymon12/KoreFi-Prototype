@@ -15,7 +15,7 @@ function Who({ by, size }: { by: Activity["by"]; size: number }) {
   if (by.kind === "agent") return <AgentAvatar agent={by.agent} size={size} />;
   const letter = by.kind === "team" ? by.name[0] : "K";
   return (
-    <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-circle text-[11px] font-medium", by.kind === "team" ? "bg-(--color-neutral-light) text-(--color-text-primary)" : "bg-(--color-primary) text-white")} style={{ width: size, height: size }}>
+    <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-circle text-[11px] font-medium", by.kind === "team" ? "bg-(--color-neutral-light) text-(--color-text-primary)" : "bg-(--color-primary-solid) text-(--color-text-inverse-primary)")} style={{ width: size, height: size }}>
       {letter}
     </span>
   );
@@ -66,7 +66,7 @@ export function ActivityLog({ items, days = 7, compact = false }: { items: Activ
         ))}
       </ol>
       {groups.length > shown && (
-        <button type="button" onClick={() => setShown((n) => n + days)} className="mt-4 h-8 rounded-medium border border-(--color-border-default) px-3 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+        <button type="button" onClick={() => setShown((n) => n + days)} className="mt-4 h-8 rounded-medium border border-(--color-border-default) px-3 text-body-sm font-medium text-(--color-text-primary) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
           Show earlier
         </button>
       )}

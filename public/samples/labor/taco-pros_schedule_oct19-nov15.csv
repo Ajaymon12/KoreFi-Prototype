@@ -1,0 +1,505 @@
+date,outlet,employee_id,employee,role,shift_start,shift_end,scheduled_hours
+2026-10-20,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-21,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-22,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-23,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-24,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-25,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-27,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-28,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-29,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-30,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-31,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-01,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-03,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-04,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-05,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-06,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-07,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-08,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-10,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-11,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-12,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-13,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-14,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-11-15,Hyde Park,E1001,Maria Perez,Shift lead,10:00,18:00,8
+2026-10-19,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-22,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-23,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-24,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-10-25,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-10-26,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-29,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-30,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-10-31,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-11-01,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-11-02,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-05,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-06,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-07,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-11-08,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-11-09,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-12,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-13,Hyde Park,E1002,Luis Martinez,Cook,10:00,19:00,9
+2026-11-14,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-11-15,Hyde Park,E1002,Luis Martinez,Cook,10:00,17:00,7
+2026-10-19,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-20,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-23,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-24,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-10-25,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-10-26,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-27,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-30,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-10-31,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-11-01,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-11-02,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-03,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-06,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-07,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-11-08,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-11-09,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-10,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-13,Hyde Park,E1003,Ana Ramirez,Cook,10:00,19:00,9
+2026-11-14,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-11-15,Hyde Park,E1003,Ana Ramirez,Cook,10:00,17:00,7
+2026-10-19,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-21,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-23,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-24,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-25,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-26,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-28,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-30,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-31,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-01,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-02,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-04,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-06,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-07,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-08,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-09,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-11,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-13,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-14,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-11-15,Hyde Park,E1004,Jose Cruz,Cashier,11:00,19:00,8
+2026-10-19,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-20,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-21,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-22,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-23,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-24,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-26,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-27,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-28,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-29,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-30,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-31,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-02,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-03,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-04,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-05,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-06,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-07,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-09,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-10,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-11,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-12,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-13,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-11-14,Damen & Chicago,E1005,Carmen Garcia,Shift lead,10:00,18:00,8
+2026-10-19,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-20,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-23,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-24,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-10-25,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-10-26,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-27,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-30,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-10-31,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-11-01,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-11-02,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-03,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-06,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-07,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-11-08,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-11-09,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-10,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-13,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,19:00,9
+2026-11-14,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-11-15,Damen & Chicago,E1006,Diego Lopez,Cook,10:00,17:00,7
+2026-10-19,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-21,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-22,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-24,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-10-25,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-10-26,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-28,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-29,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-10-31,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-11-01,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-11-02,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-04,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-05,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-07,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-11-08,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-11-09,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-11,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-12,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,19:00,9
+2026-11-14,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-11-15,Damen & Chicago,E1007,Sofia Flores,Cook,10:00,17:00,7
+2026-10-19,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-20,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-22,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-23,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-25,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-26,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-27,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-29,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-30,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-01,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-02,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-03,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-05,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-06,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-08,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-09,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-10,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-12,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-13,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-11-15,Damen & Chicago,E1008,Miguel Lopez,Cashier,11:00,19:00,8
+2026-10-19,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-21,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-22,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-23,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-24,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-25,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-26,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-28,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-29,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-30,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-31,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-01,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-02,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-04,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-05,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-06,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-07,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-08,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-09,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-11,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-12,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-13,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-14,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-11-15,Chicago & Halsted,E1009,Elena Perez,Shift lead,10:00,18:00,8
+2026-10-20,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-21,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-22,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-24,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-25,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-27,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-28,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-29,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-31,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-01,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-03,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-04,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-05,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-07,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-08,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-10,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-11,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-12,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-14,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-11-15,Chicago & Halsted,E1010,Carlos Rivera,Cook,10:00,17:00,7
+2026-10-19,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-20,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-23,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-24,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-25,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-26,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-27,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-30,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-31,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-01,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-02,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-03,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-06,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-07,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-08,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-09,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-10,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-13,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-14,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-11-15,Chicago & Halsted,E1011,Rosa Garcia,Cook,10:00,17:00,7
+2026-10-20,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-21,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-23,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-24,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-25,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-27,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-28,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-30,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-31,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-01,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-03,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-04,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-06,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-07,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-08,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-10,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-11,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-13,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-14,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-11-15,Chicago & Halsted,E1012,Juan Flores,Cashier,11:00,19:00,8
+2026-10-19,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-20,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-22,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-23,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-24,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-25,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-26,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-27,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-29,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-30,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-31,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-01,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-02,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-03,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-05,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-06,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-07,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-08,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-09,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-10,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-12,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-13,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-14,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-11-15,Edgewater,E1013,Lucia Hernandez,Shift lead,10:00,18:00,8
+2026-10-21,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-22,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-23,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-24,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-25,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-28,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-29,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-30,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-31,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-01,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-04,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-05,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-06,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-07,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-08,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-11,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-12,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-13,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-14,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-11-15,Edgewater,E1014,Pedro Garcia,Cook,10:00,17:00,7
+2026-10-19,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-20,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-22,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-24,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-25,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-26,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-27,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-29,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-31,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-01,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-02,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-03,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-05,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-07,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-08,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-09,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-10,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-12,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-14,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-11-15,Edgewater,E1015,Isabel Lopez,Cook,10:00,17:00,7
+2026-10-20,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-22,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-23,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-24,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-25,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-27,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-29,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-30,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-31,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-01,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-03,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-05,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-06,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-07,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-08,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-10,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-12,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-13,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-14,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-11-15,Edgewater,E1016,Jorge Ramirez,Cashier,11:00,19:00,8
+2026-10-19,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-20,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-21,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-22,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-23,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-25,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-26,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-27,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-28,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-29,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-30,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-01,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-02,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-03,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-04,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-05,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-06,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-08,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-09,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-10,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-11,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-12,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-13,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-11-15,79th & Cicero,E1017,Paula Ramirez,Shift lead,10:00,18:00,8
+2026-10-19,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-20,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-21,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-22,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-25,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-26,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-27,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-28,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-29,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-01,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-02,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-03,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-04,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-05,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-08,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-09,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-10,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-11,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-12,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-11-15,79th & Cicero,E1018,Raul Lopez,Cook,10:00,17:00,7
+2026-10-19,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-21,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-22,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-23,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-25,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-26,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-28,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-29,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-30,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-01,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-02,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-04,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-05,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-06,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-08,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-09,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-11,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-12,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-13,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-11-15,79th & Cicero,E1019,Daniela Hernandez,Cook,10:00,17:00,7
+2026-10-20,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-21,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-22,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-24,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-25,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-27,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-28,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-29,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-31,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-01,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-03,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-04,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-05,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-07,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-08,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-10,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-11,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-12,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-14,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-11-15,79th & Cicero,E1020,Andres Lopez,Cashier,11:00,19:00,8
+2026-10-19,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-20,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-21,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-22,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-23,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-24,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-26,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-27,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-28,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-29,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-30,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-31,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-02,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-03,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-04,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-05,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-06,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-07,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-09,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-10,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-11,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-12,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-13,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-11-14,Carol Stream,E1021,Gabriela Flores,Shift lead,10:00,18:00,8
+2026-10-20,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-21,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-22,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-23,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-25,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-27,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-28,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-29,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-30,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-01,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-03,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-04,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-05,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-06,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-08,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-10,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-11,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-12,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-13,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-11-15,Carol Stream,E1022,Hector Ramirez,Cook,10:00,17:00,7
+2026-10-19,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-20,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-23,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-24,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-25,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-26,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-27,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-30,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-31,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-01,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-02,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-03,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-06,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-07,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-08,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-09,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-10,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-13,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-14,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-11-15,Carol Stream,E1023,Valeria Garcia,Cook,10:00,17:00,7
+2026-10-19,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-21,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-22,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-23,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-25,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-26,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-28,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-29,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-10-30,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-01,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-02,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-04,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-05,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-06,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-08,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-09,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-11,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-12,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-13,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8
+2026-11-15,Carol Stream,E1024,Oscar Rivera,Cashier,11:00,19:00,8

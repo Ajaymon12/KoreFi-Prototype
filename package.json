@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@astryxdesign/core": "0.7.16",
+    "@astryxdesign/theme-neutral": "0.7.16",
+    "@stylexjs/stylex": "0.19.2",
     "border-beam": "^1.4.1",
     "bot-avatars": "^0.2.2",
     "class-variance-authority": "^0.7.1",
@@ -21,6 +24,7 @@
     "thinking-orbs": "^0.3.2"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "0.7.16",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -6,7 +6,7 @@ import type { Account } from "./accounts";
 import type { AgentId } from "./agents";
 
 // MVP 3: the activity log behind an agent and its chats. What happened each week and who did it:
-//  - the KoreFi team (ops) uploads the delivery-app and Square reports, checks them, files disputes, chases mismatches;
+//  - the KoreFi team (ops) uploads the delivery-app and Toast reports, checks them, files disputes, chases mismatches;
 //  - the agent then runs on them, updates the dashboard and emails the owner.
 // Report-only: the owner never acts here; the log shows the work was done.
 // Same week calendar as the runs (lib/mvp3/runs): a week closes Thursday, and the agent runs at 8 AM that day,
@@ -58,17 +58,17 @@ function weekOf(wid: string | undefined, i: number, { account, agent, dashboard 
   } else if (wid === "payouts") {
     const recons = APPS.map((a) => reconcile(a.key, stores, [WEEKS[i]]));
     const off = recons.reduce((s, r) => s + r.posOnly.orders + r.appOnly.orders, 0);
-    add("upload", close + 6.5 * HOUR, team, "Uploaded Square sales and the apps' payout reports", `Week of ${label} · ${n} outlets`);
-    if (agentOn) add("refresh", close + 8 * HOUR, bot, `Updated the ${dashboard ?? "3PD Payouts"} dashboard and emailed you`, off ? `${off} orders don't match Square` : "Every payout matched Square");
+    add("upload", close + 6.5 * HOUR, team, "Uploaded Toast sales and the apps' payout reports", `Week of ${label} · ${n} outlets`);
+    if (agentOn) add("refresh", close + 8 * HOUR, bot, `Updated the ${dashboard ?? "Delivery payouts"} dashboard and emailed you`, off ? `${off} orders don't match Toast` : "Every payout matched Toast");
     if (off) add("chase", close + DAY + 14 * HOUR, team, `Raised ${off} unmatched orders with the apps`);
   } else if (wid === "channel-pnl") {
     // The P&L runs Monday morning on the closed week.
     const mon = close + ((8 - new Date(close).getUTCDay()) % 7) * DAY;
-    add("upload", mon + 6.5 * HOUR, team, "Uploaded Square sales and the apps' payout reports", `Week of ${label} · ${n} outlets`);
+    add("upload", mon + 6.5 * HOUR, team, "Uploaded Toast sales and the apps' payout reports", `Week of ${label} · ${n} outlets`);
     if (agentOn) add("refresh", mon + 8 * HOUR, bot, `Updated the ${dashboard ?? "P&L Summary"} and emailed you`, "P&L by channel for the week");
   } else {
     // A chat with no agent behind it: the reports every answer is read from.
-    add("upload", close + 6.5 * HOUR, team, "Uploaded Square sales and the apps' reports", `Week of ${label} · ${n} outlets`);
+    add("upload", close + 6.5 * HOUR, team, "Uploaded Toast sales and the apps' reports", `Week of ${label} · ${n} outlets`);
   }
   return out;
 }

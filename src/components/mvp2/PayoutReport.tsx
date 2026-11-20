@@ -127,23 +127,23 @@ function Amount({ n, sales, sign, strong, muted, share = true }: { n: number; sa
 }
 
 /** Every app's orders against Square for the chosen weeks and outlets: totals, then one row per app. */
-function MatchedWithSquare({ recons }: { recons: Recon[] }) {
+function MatchedWithSquare({ recons, pos = "Square" }: { recons: Recon[]; pos?: string }) {
   const sum = (f: (r: Recon) => number) => recons.reduce((n, r) => n + f(r), 0);
   const off = (r: Recon) => r.posOnly.orders + r.appOnly.orders;
   const orders = sum(off);
   const gap = (g: { orders: number; amount: number }) => (g.orders ? `${g.orders} · ${usd(g.amount)}` : "—");
   const stats = [
     { label: "Matched", value: usd(sum((r) => r.matched)), cls: "text-(--color-text-success)" },
-    { label: "In Square only", value: usd(sum((r) => r.posOnly.amount)), cls: "text-(--color-text-danger)" },
+    { label: `In ${pos} only`, value: usd(sum((r) => r.posOnly.amount)), cls: "text-(--color-text-danger)" },
     { label: "In app only", value: usd(sum((r) => r.appOnly.amount)), cls: "text-(--color-text-primary)" },
   ];
   const th = "px-3 py-2 text-right font-normal";
   const td = "px-3 py-2.5 text-right tabular-nums";
   return (
-    <section aria-label="Matched with Square" className="mx-4 mt-3 rounded-large bg-(--gray-300) p-1.5">
+    <section aria-label={`Matched with ${pos}`} className="mx-4 mt-3 rounded-large bg-(--gray-300) p-1.5">
       <div className="rounded-medium bg-(--color-background-secondary) px-5 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <p className="text-body-md font-medium text-(--color-text-primary)">{orders ? `${orders.toLocaleString("en-US")} delivery orders don't match Square` : "Every delivery order matched Square"}</p>
+          <p className="text-body-md font-medium text-(--color-text-primary)">{orders ? `${orders.toLocaleString("en-US")} delivery orders don't match ${pos}` : `Every delivery order matched ${pos}`}</p>
           <p className="text-body-sm text-(--color-text-secondary)">{orders ? "The KoreFi team is checking these with the apps." : "Nothing to chase."}</p>
         </div>
         <dl className="mt-3 grid grid-cols-3 divide-x divide-(--color-border-default) rounded-medium border border-(--color-border-default)">
@@ -160,7 +160,7 @@ function MatchedWithSquare({ recons }: { recons: Recon[] }) {
               <tr className="border-b border-(--gray-300) text-body-sm text-(--color-text-secondary)">
                 <th scope="col" className="py-2 pr-3 text-left font-normal">App</th>
                 <th scope="col" className={th}>Matched</th>
-                <th scope="col" className={th}>In Square only</th>
+                <th scope="col" className={th}>In {pos} only</th>
                 <th scope="col" className={th}>In app only</th>
                 <th scope="col" className={cn(th, "pr-0")}>Orders off</th>
               </tr>
@@ -188,7 +188,7 @@ function MatchedWithSquare({ recons }: { recons: Recon[] }) {
   );
 }
 
-export function PayoutReport({ presets = PRESETS }: { presets?: Preset[] } = {}) {
+export function PayoutReport({ presets = PRESETS, title = "3PD Payouts", pos = "Square" }: { presets?: Preset[]; title?: string; pos?: string } = {}) {
   const [range, setRange] = useState<[number, number]>(presets[0].range);
   const outlets = useOutletFilter(range);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -223,7 +223,7 @@ export function PayoutReport({ presets = PRESETS }: { presets?: Preset[] } = {})
 
   return (
     <>
-      <PageHeader title="3PD Payouts" />
+      <PageHeader title={title} />
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
           <OutletFilters scope={outlets} />
@@ -238,7 +238,7 @@ export function PayoutReport({ presets = PRESETS }: { presets?: Preset[] } = {})
           <NoOutlets scope={outlets} />
         ) : (
           <>
-            <MatchedWithSquare recons={cols.map((c) => reconcile(c.key as AppKey, stores, weeks))} />
+            <MatchedWithSquare pos={pos} recons={cols.map((c) => reconcile(c.key as AppKey, stores, weeks))} />
 
             {/* Where each $1 went, per app: compare before reading lines */}
             <section aria-label="Where each dollar of app sales went" className="mx-4 mt-3 rounded-large bg-(--gray-300) p-1.5">

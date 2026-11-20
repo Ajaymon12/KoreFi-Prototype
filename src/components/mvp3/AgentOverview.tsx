@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarClock, Copy, LayoutDashboard, Mail, Pencil, Play, Plug, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
-import { StatusBadge } from "@/components/dashboard/primitives";
-import { ReportTable, type TableColumn } from "@/components/ui/ReportTable";
-import { CountTabs } from "@/components/ui/CountTabs";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Button } from "@astryxdesign/core/Button";
+import { TabList, Tab } from "@astryxdesign/core/TabList";
+import { Table, useTablePagination, proportional, type TableColumn } from "@astryxdesign/core/Table";
 import { FOLDERS, type AgentReply } from "@/lib/mvp3/agents";
 import { isSchedule, type Workflow } from "@/lib/mvp3/workflows";
 import { runHistory, usd, type Run } from "@/lib/mvp3/runs";
@@ -23,12 +24,14 @@ import { activityLog } from "@/lib/mvp3/activity";
 //  - header: who it is, one line of what it does, Edit and Run;
 //  - one setup line: when it runs, what it reads, where results go;
 //  - totals over the run history (same figures as the runs below);
-//  - two tabs: Runs (newest first, the MVP's ReportTable; a row opens that run's chat) and
+//  - two tabs: Runs (newest first; a run's headline opens that run's chat) and
 //    Activity: what the KoreFi team and the agent did each week (reports uploaded, disputes filed, dashboard updated).
 // Report-only: the numbers say what happened; the KoreFi team does every fix.
+// Built with Astryx (Button, Badge, TabList, Table + pagination); colours come through app/(mvp3)/mvp3/astryx-bridge.css.
 
 const fmtDate = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const btn = "inline-flex h-9 items-center gap-1.5 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-3 text-body-sm font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) [&_svg]:size-4";
+const PAGE_SIZE = 10;
+const icon = "size-4";
 const toneText = (tone?: "success" | "danger") => (tone === "success" ? "text-(--color-text-success)" : tone === "danger" ? "text-(--color-text-danger)" : "text-(--color-text-primary)");
 
 type Row = { id: string; at: number | null; status: "completed" | "running"; trigger: "scheduled" | "manual"; week: string; headline: string; stats: NonNullable<AgentReply["stats"]>; reply: AgentReply; thread?: string };
@@ -73,26 +76,35 @@ export function AgentOverview({ w }: { w: Workflow }) {
     router.push("/mvp3");
   };
   const [tab, setTab] = useState<"runs" | "activity">("runs");
+  const [page, setPage] = useState(1);
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pagination = useTablePagination<Row>({ page, onPageChange: setPage, totalItems: rows.length, pageSize: PAGE_SIZE, variant: "count", align: "end", label: "Runs pages" });
   const columns: TableColumn<Row>[] = [
     {
       key: "result",
       header: "Result",
-      cell: (r) => <span className="font-medium text-(--color-text-primary)">{r.headline}</span>,
-      sub: (r) => (
-        <span className="flex flex-wrap items-center gap-2">
-          {r.at ? `${fmtDate(r.at)} · Week of ${r.week}` : `Just now · ${r.week}`}
-          {r.trigger === "manual" && <StatusBadge tone="neutral">Run by {user.firstName}</StatusBadge>}
-          {r.status === "running" && <StatusBadge tone="warning">Running</StatusBadge>}
-        </span>
+      width: proportional(3, { minWidth: 240 }),
+      // Astryx Table has no row click, so the headline is the control: a real button, reachable by keyboard.
+      renderCell: (r) => (
+        <div className="space-y-1 py-0.5">
+          <button type="button" onClick={() => go(r)} className="text-left font-medium text-(--color-text-primary) hover:underline focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+            {r.headline}
+          </button>
+          <div className="flex flex-wrap items-center gap-2 text-body-sm text-(--color-text-secondary)">
+            {r.at ? `${fmtDate(r.at)} · Week of ${r.week}` : `Just now · ${r.week}`}
+            {r.trigger === "manual" && <Badge variant="neutral" label={`Run by ${user.firstName}`} />}
+            {r.status === "running" && <Badge variant="warning" label="Running" />}
+          </div>
+        </div>
       ),
-      sort: (r) => r.at ?? Number.MAX_SAFE_INTEGER,
     },
     ...cols.map(
       (c): TableColumn<Row> => ({
         key: c,
         header: c,
-        align: "right",
-        cell: (r) => {
+        align: "end",
+        width: proportional(1, { minWidth: 110 }),
+        renderCell: (r) => {
           const st = r.stats.find((s) => s.label === c);
           return <span className={cn("font-medium whitespace-nowrap tabular-nums", toneText(st?.tone))}>{st?.value ?? "–"}</span>;
         },
@@ -105,41 +117,33 @@ export function AgentOverview({ w }: { w: Workflow }) {
       <div className="mx-auto w-full max-w-[1100px] space-y-8 px-4 py-6 sm:px-6">
         {/* Header */}
         <header className="space-y-4">
-          <Link href="/mvp3/agents" className="inline-flex items-center gap-1.5 text-body-sm text-(--color-text-secondary) hover:text-(--color-text-primary)">
-            <ArrowLeft className="size-4" aria-hidden />
-            Agents
-          </Link>
+          <Button variant="ghost" size="sm" href="/mvp3/agents" label="Agents" icon={<ArrowLeft className={icon} aria-hidden />} />
           <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
             {w.agent && <AgentAvatar agent={w.agent} size={44} />}
             <div className="min-w-0 flex-1 basis-64">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-subtitle-lg font-medium text-(--color-text-primary)">{w.title}</h1>
-                {sample ? <StatusBadge tone="neutral">Learning</StatusBadge> : <StatusBadge tone="success">Live</StatusBadge>}
+                {sample ? <Badge variant="neutral" label="Learning" /> : <Badge variant="success" label="Live" />}
               </div>
               <p className="mt-1 line-clamp-2 max-w-[640px] text-body-md text-(--color-text-secondary)">{w.overview}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/mvp3/agent?id=${w.id}&edit=1`} className={btn}>
-                <Pencil aria-hidden />
-                Edit
-              </Link>
+              <Button size="sm" href={`/mvp3/agent?id=${w.id}&edit=1`} label="Edit" icon={<Pencil className={icon} aria-hidden />} />
               {!account.limited && (
-                <button type="button" onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)} className={btn}>
-                  <Copy aria-hidden />
-                  Duplicate
-                </button>
+                <Button size="sm" label="Duplicate" icon={<Copy className={icon} aria-hidden />} onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)} />
               )}
-              {!sample && <button
-                type="button"
-                onClick={() => {
-                  runAgent(w);
-                  router.push("/mvp3");
-                }}
-                className={cn(btn, "border-transparent bg-(--color-primary) text-white hover:bg-(--color-primary) hover:opacity-90")}
-              >
-                <Play aria-hidden />
-                Run now
-              </button>}
+              {!sample && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  label="Run now"
+                  icon={<Play className={icon} aria-hidden />}
+                  onClick={() => {
+                    runAgent(w);
+                    router.push("/mvp3");
+                  }}
+                />
+              )}
             </div>
           </div>
 
@@ -152,14 +156,14 @@ export function AgentOverview({ w }: { w: Workflow }) {
             {w.integrations.length > 0 && (
               <li className="inline-flex items-center gap-1.5">
                 <Plug className="size-4 text-(--hue)" aria-hidden />
-                Reads {w.integrations.join(", ")}
+                Reads {w.integrations.map((i) => (i === "POS" ? "Toast" : i)).join(", ")}
               </li>
             )}
             {w.deliver.email && (
               <li className="inline-flex items-center gap-1.5">
                 <Mail className="size-4 text-(--hue)" aria-hidden />
                 Emails {ownerEmail}
-                <EmailPreviewButton workflow={w.id} label="Preview" className="ml-1" />
+                <EmailPreviewButton workflow={w.id} label="See the email" className="ml-1" />
               </li>
             )}
             {dash && (
@@ -192,27 +196,20 @@ export function AgentOverview({ w }: { w: Workflow }) {
 
         {/* Runs and Activity, as tabs */}
         <section className="space-y-4">
-          <CountTabs
-            label="Agent history"
-            value={tab}
-            onChange={setTab}
-            tabs={[
-              { key: "runs", label: "Runs", count: rows.length },
-              { key: "activity", label: "Activity" },
-            ]}
-          />
+          <TabList role="tablist" value={tab} onChange={(v) => setTab(v as "runs" | "activity")} hasDivider>
+            <Tab value="runs" label="Runs" panelId="agent-runs" endContent={<span className="tabular-nums text-(--color-text-secondary)">{rows.length}</span>} />
+            <Tab value="activity" label="Activity" panelId="agent-activity" />
+          </TabList>
           {tab === "runs" ? (
-            <ReportTable
-              columns={columns}
-              rows={rows}
-              rowKey={(r) => r.id}
-              noun="runs"
-              pageSize={10}
-              onRowClick={go}
-              empty="No runs yet. The first one starts once your reports are in."
-            />
+            <div id="agent-runs" role="tabpanel" className="overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
+              {rows.length === 0 ? (
+                <p className="px-4 py-8 text-center text-body-md text-(--color-text-secondary)">No runs yet. The first one starts once your reports are in.</p>
+              ) : (
+                <Table<Row> data={pageRows} columns={columns} idKey="id" hasHover verticalAlign="top" plugins={{ pagination }} />
+              )}
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div id="agent-activity" role="tabpanel" className="space-y-2">
               <p className="text-body-sm text-(--color-text-secondary)">What the KoreFi team and this agent did</p>
               <div className="rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
                 <ActivityLog items={activity} days={5} />

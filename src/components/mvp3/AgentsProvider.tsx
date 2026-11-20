@@ -7,7 +7,9 @@ import { FOLDERS, REPORTS, agentOf, answer, teamPinnedThreads, outletSheet, char
 import { blankWorkflow, isSchedule, workflowOf, type Workflow } from "@/lib/mvp3/workflows";
 import type { Store } from "@/lib/finance/outlets";
 import { setMasaFixture } from "@/lib/mvp3/masaFixture";
-import { findOutlets, outletsLabel } from "@/lib/mvp3/outletScope";
+import { OUT_OF_SCOPE, checklistIn, docsAfterUpload, docsAsk, docsReply, masaReply, missingFor, outOfScope } from "@/lib/mvp3/flows";
+import { findOutletLoose, findOutlets, outletsLabel } from "@/lib/mvp3/outletScope";
+import { LABOR_AGENT, filesIn, isLaborAsk, isLaborThread, laborAfterUpload, laborHowTo, laborAddSchedule, laborNeedsData, laborOutletWhy, laborScheduled, laborWhyNotSquare, looksLabor } from "@/lib/mvp3/labor";
 import { DEFAULT_CONFIG, customize, dashData, dashStores, shortStore, parseSchedule, scopeSentence, widgetTitle, type Automation, type CardRef, type Dashboard } from "@/lib/mvp3/dashboards";
 
 // MVP 3's state, kept in the layout so chats, edited agents and dashboards survive moving between pages.
@@ -18,7 +20,7 @@ import { DEFAULT_CONFIG, customize, dashData, dashStores, shortStore, parseSched
 //  - The canvas is the report or dashboard docked right of the chat (the ChatGPT Dots split).
 // Prototype: all in memory.
 
-export type CanvasId = ReportId | `dash:${string}` | `outlet:${string}`;
+export type CanvasId = ReportId | `dash:${string}` | `outlet:${string}` | `order:${string}`;
 
 /** The first suggestion when the owner points at a card but asks for nothing the agent can do. */
 const CARD_ASKS: Record<NonNullable<CardRef["widget"]>, string> = {
@@ -36,6 +38,8 @@ type Ctx = {
   open: (id: string) => void;
   newChat: () => void;
   send: (text: string) => void;
+  /** Files added in the chat (names only, prototype), with any text typed alongside. */
+  upload: (files: string[], text?: string) => void;
   /** Home's tiles: ask a question in its own chat. Reopens the chat that already asked it, so repeat clicks don't pile up. */
   ask: (question: string) => void;
   busy: boolean;
@@ -44,6 +48,9 @@ type Ctx = {
   setCanvas: (r: CanvasId | null, outlets?: Store[]) => void;
   /** The outlets the open report starts filtered to, or null for all of the restaurant's. */
   canvasOutlets: Store[] | null;
+  /** What the open dashboard switched to after the last reply ("todo", "denied", "unmatched", "uber"), or null. */
+  canvasView: string | null;
+  setCanvasView: (v: string | null) => void;
   expanded: boolean;
   setExpanded: (v: boolean) => void;
   /** The dashboard card the owner pointed at ("Edit in chat"). It rides on their next message, then clears. */
@@ -108,12 +115,14 @@ function seedFor(account: Account) {
   if (account.stage === "new" || account.agentsOff) return [];
   if (!account.home) return seedThreads();
   // Masa Kitchen: only the chats behind the dashboards the KoreFi team pinned, each a summary with suggestions.
-  if (account.teamPinned) return teamPinnedThreads().map((t) => ({ ...t, hidden: true }));
+  // Leadership flows (2026-11-20): Masa's two weekly agent threads are in Recent chats from the start.
+  if (account.teamPinned) return teamPinnedThreads().map((t) => ({ ...t, hidden: false }));
   // Taco Pros' seeded agent chats stay out of Recent chats: they only back the pinned dashboards and agent cards.
   // The Chargebacks chat is where the Chargebacks dashboard was built, so asks there reshape it.
   const seeded = seedThreads().map((t) => ({ ...t, hidden: true, unread: false, ...(t.id === "cb" ? { dashboard: "dash-chargebacks" } : {}) }));
   // Taco Pros also shows a month of past chats in Recent chats (today, yesterday, previous 30 days).
-  return account.id === "tacopros" ? [...historyThreads(), ...seeded] : seeded;
+  // Recent chats starts empty (leadership flows, 2026-11-20); the month of past chats is still in Search chats.
+  return account.id === "tacopros" ? [...historyThreads().map((t) => ({ ...t, hidden: true })), ...seeded] : seeded;
 }
 
 /** Taco Pros (Account.home) opens with two dashboards already pinned (Daily P&L is not live, so it isn't pinned), each built in one of its seeded chats. */
@@ -123,8 +132,8 @@ function seedDashboards(account: Account): Dashboard[] {
   // Masa Kitchen's are pinned by the KoreFi team, and labelled so.
   const by = account.teamPinned ? { pinnedBy: "team" as const } : {};
   return [
-    { ...by, id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
-    { ...by, id: "report-payouts", title: REPORTS.payouts.title, workflow: "payouts", agent: "finance", config: DEFAULT_CONFIG, pinned: true, updated: "Thu 8:00 AM", thread: "payout", report: "payouts", automation: { schedule: thu, email: true, dashboard: true } },
+    { ...by, id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: false, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
+    { ...by, id: "report-payouts", title: REPORTS.payouts.title, workflow: "payouts", agent: "finance", config: DEFAULT_CONFIG, pinned: false, updated: "Thu 8:00 AM", thread: "payout", report: "payouts", automation: { schedule: thu, email: true, dashboard: true } },
   ];
 }
 
@@ -162,6 +171,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [account.id, activeId, canvas]);
   const [canvasOutlets, setCanvasOutlets] = useState<Store[] | null>(null);
+  const [canvasView, setCanvasView] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [pointed, setPointed] = useState<CardRef | null>(null);
   const [hiddenCards, setHiddenCards] = useState<Partial<Record<ReportId, string[]>>>({});
@@ -177,6 +187,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     setActiveId(null);
     setCanvasState(null);
     setCanvasOutlets(null);
+    setCanvasView(null);
     setExpanded(false);
     setPointed(null);
     setHiddenCards({});
@@ -190,6 +201,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const setCanvas = useCallback((r: CanvasId | null, outlets?: Store[]) => {
     setCanvasState(r);
     setCanvasOutlets(outlets?.length ? outlets : null);
+    setCanvasView(null);
     if (!r) {
       setExpanded(false);
       setPointed(null);
@@ -212,14 +224,15 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
   const patch = (tid: string, f: (m: Message[]) => Message[]) => setThreads((ts) => ts.map((t) => (t.id === tid ? { ...t, messages: f(t.messages) } : t)));
 
   /** Post the user's message and a pending reply, fill the work log a step at a time, then swap in the answer. */
-  const play = useCallback((tid: string | null, q: string, reply: AgentReply, extra?: Partial<Thread>, ref?: CardRef) => {
+  const play = useCallback((tid: string | null, q: string, reply: AgentReply, extra?: Partial<Thread>, ref?: CardRef, files?: string[]) => {
     const pid = id();
-    const ask: Message = { id: id(), role: "user", text: q, ...(ref && { ref }) };
+    const ask: Message = { id: id(), role: "user", text: q, ...(ref && { ref }), ...(files?.length && { files }) };
     const pending: Message = { id: pid, role: "agent", pending: true, agent: reply.agent, work: reply.work, done: 0 };
     let target = tid;
     if (!target) {
       target = id();
-      const t: Thread = { id: target, title: q.length > 42 ? q.slice(0, 40) + "…" : q, agent: reply.agent, at: "Now", unread: false, messages: [ask, pending], ...extra };
+      const label = q || files?.[0] || "New chat";
+      const t: Thread = { id: target, title: label.length > 42 ? label.slice(0, 40) + "…" : label, agent: reply.agent, at: "Now", unread: false, messages: [ask, pending], ...extra };
       setThreads((ts) => [t, ...ts]);
       setActiveId(target);
       setCanvasState(null);
@@ -234,11 +247,18 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     timers.current.push(
       window.setTimeout(() => {
         patch(done, (m) => m.map((x) => (x.id === pid ? { id: pid, role: "agent", reply, at: now() } : x)));
+        const moves = !!(reply.dashboard || reply.outlet || reply.report || reply.canvasId);
+        if (moves) setCanvasView(reply.view ?? null);
         if (reply.dashboard) setCanvasState(`dash:${reply.dashboard}`);
         else if (reply.outlet) setCanvasState(`outlet:${reply.outlet}`);
+        else if (reply.canvasId) setCanvasState(reply.canvasId as CanvasId);
         else if (reply.report) {
           setCanvasState(reply.report);
           setCanvasOutlets(reply.outlets?.length ? reply.outlets : null);
+        }
+        if (reply.followOn) {
+          const next = reply.followOn;
+          timers.current.push(window.setTimeout(() => patch(done, (m) => [...m, { id: id(), role: "agent", reply: next, at: next.at ?? now() }]), 2400));
         }
       }, STEP_MS * (reply.work.length + 1)),
     );
@@ -281,6 +301,19 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
 
   const runAgent = useCallback(
     (w: Workflow) => {
+      // An agent missing data the restaurant hasn't shared asks for it, and never says it ran (leadership flows,
+      // 2026-11-20). Labor leakage keeps its own ask (lib/mvp3/labor).
+      const access = FOLDERS.flatMap((f) => f.skills).find((sk) => sk.id === w.id)?.access ?? w.integrations;
+      const needs = !sample && w.id !== "labor-leakage" ? missingFor(access, account) : [];
+      if (needs.length) {
+        const tid = id();
+        const agent = w.agent ?? "operations";
+        setThreads((ts) => [{ id: tid, title: w.title, agent, at: "Now", unread: false, messages: [], workflow: w.id }, ...ts]);
+        setActiveId(tid);
+        setCanvasState(null);
+        play(tid, `Run ${w.title}`, docsAsk(w.id, w.title, agent, needs, account));
+        return;
+      }
       // An agent that isn't live yet goes live on its first run.
       if (w.state === "idle") setWorkflows((ws) => ({ ...ws, [w.id]: { ...(ws[w.id] ?? w), state: "live" } }));
       const steps = w.groups.flatMap((g) => g.steps).filter((s) => s.trim());
@@ -317,6 +350,8 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         reply = { ...payoutCheck(), work };
       } else if (w.id === "channel-pnl") {
         reply = { ...weeklyPnl(), work };
+      } else if (w.id === "labor-leakage") {
+        reply = laborNeedsData();
       } else {
         reply = {
           agent,
@@ -334,7 +369,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       if (dashId) setDashboards((ds) => ds.map((x) => (x.id === dashId ? { ...x, thread: tid } : x)));
       play(tid, `Run ${w.title}`, reply);
     },
-    [dashboards, play, sample, account.name],
+    [dashboards, play, sample, account],
   );
 
   const runChats = useRef<Record<string, string>>({});
@@ -423,6 +458,25 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
       if (sample) {
         play(activeId, q, noReportsYet(thread ? agentOf(thread.agent).id : answer(q).agent, account.name), undefined, ref);
         return;
+      }
+
+      // The leadership flows' scripted replies come first (lib/mvp3/flows): Masa's chargeback and payout weeks, an
+      // agent asking for documents, and questions outside the connected data.
+      if (!ref) {
+        if (thread && checklistIn(thread.messages)) {
+          const d = docsReply(q, thread, account);
+          if (d) {
+            const reply = d.reminder ? { ...d.reply, followOn: { ...d.reminder, at: "Sun, Nov 22" } } : d.reply;
+            if (d.upload) play(activeId, "", reply, undefined, undefined, [d.upload]);
+            else play(activeId, q, reply);
+            return;
+          }
+        }
+        if (account.teamPinned) {
+          const m = masaReply(q, thread);
+          if (m) return play(activeId, q, m);
+        }
+        if ((account.teamPinned || account.agentsOff) && OUT_OF_SCOPE.test(q.toLowerCase())) return play(activeId, q, outOfScope(thread ? agentOf(thread.agent).id : "finance"));
       }
 
       // In a chat that built a dashboard, a request about the dashboard reshapes it.
@@ -528,25 +582,61 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Labor: KoreFi has no hours or pay, so the agent asks for the files first (lib/mvp3/labor).
+      const laborChat = !!thread && isLaborThread(thread.messages);
+      if (laborChat && /(where|how).*(find|get|export|download)|which files/i.test(q)) return play(activeId, q, laborHowTo(), undefined, ref);
+      if (laborChat && /(square|toast)/i.test(q) && /(why|can.?t|use)/i.test(q)) return play(activeId, q, laborWhyNotSquare(), undefined, ref);
+      if (laborChat && /add (my )?(staff )?schedule/i.test(q)) return play(activeId, q, laborAddSchedule(filesIn(thread!.messages)), undefined, ref);
+      if (laborChat && /(every|weekly|email me)/i.test(q)) return play(activeId, q, laborScheduled(), undefined, ref);
+      const laborOutlet = laborChat && /why/i.test(q) ? findOutlets(q)[0] ?? findOutletLoose(q)[0] : undefined;
+      if (laborOutlet) return play(activeId, q, laborOutletWhy(shortStore(laborOutlet)), undefined, ref);
+      if (isLaborAsk(q) && !laborChat) return play(activeId, q, laborNeedsData(), activeId ? undefined : { title: LABOR_AGENT }, ref);
+
       play(activeId, q, answer(q), undefined, ref);
     },
-    [activeId, threads, dashboards, pointed, hiddenCards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account.name],
+    [activeId, threads, dashboards, pointed, hiddenCards, play, setAutomation, getWorkflow, runAgent, pinReport, sample, account],
+  );
+
+  const upload = useCallback(
+    (files: string[], text?: string) => {
+      if (!files.length) return;
+      const q = text?.trim() ?? "";
+      const thread = threads.find((t) => t.id === activeId);
+      const named = files.length === 1 ? files[0] : `${files.length} files`;
+      if (sample) {
+        play(activeId, q, { agent: thread?.agent ?? "operations", title: `Got ${named}`, lines: [`I'll read it alongside your first ${account.name} reports, once they arrive.`], work: files.map((f) => `Saved ${f}`) }, undefined, undefined, files);
+        return;
+      }
+      if (thread && checklistIn(thread.messages)) {
+        const r = docsAfterUpload(thread, files[0], account);
+        if (r) return play(activeId, q, r, undefined, undefined, files);
+      }
+      const laborChat = !!thread && isLaborThread(thread.messages);
+      if (laborChat || files.some(looksLabor) || isLaborAsk(q)) {
+        const all = [...(laborChat && thread ? filesIn(thread.messages) : []), ...files];
+        play(activeId, q, laborAfterUpload(all, files), activeId ? undefined : { title: LABOR_AGENT }, undefined, files);
+        return;
+      }
+      play(activeId, q, { agent: thread?.agent ?? "finance", title: `Got ${named}`, lines: ["I've passed it to the KoreFi team to add to your reports. I'll post here once it's in."], work: files.map((f) => `Read ${f}`) }, undefined, undefined, files);
+    },
+    [activeId, threads, play, sample, account],
   );
 
   const ask = useCallback(
     (question: string) => {
       const asked = threads.find((t) => t.messages[0]?.role === "user" && t.messages[0].text === question);
       if (asked) return open(asked.id);
-      play(null, question, answer(question));
+      const scripted = account.teamPinned ? masaReply(question, undefined) : null;
+      play(null, question, scripted ?? (isLaborAsk(question) ? laborNeedsData() : answer(question)), isLaborAsk(question) ? { title: LABOR_AGENT } : undefined);
     },
-    [threads, open, play],
+    [threads, open, play, account.teamPinned],
   );
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const busy = !!active?.messages.some((m) => "pending" in m);
   const value = useMemo<Ctx>(
-    () => ({ threads, active, open, newChat, send, ask, busy, canvas, setCanvas, canvasOutlets, expanded, setExpanded, pointed, setPointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample }),
-    [threads, active, open, newChat, send, ask, busy, canvas, setCanvas, canvasOutlets, expanded, pointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample],
+    () => ({ threads, active, open, newChat, send, upload, ask, busy, canvas, setCanvas, canvasOutlets, canvasView, setCanvasView, expanded, setExpanded, pointed, setPointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample }),
+    [threads, active, open, newChat, send, upload, ask, busy, canvas, setCanvas, canvasOutlets, canvasView, expanded, pointed, hiddenCards, getWorkflow, saveWorkflow, created, newAgent, duplicateAgent, runAgent, openRun, dashboards, pinDashboard, openDashboard, pinReport, setAutomation, sheetsSent, markSheetSent, sample],
   );
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;
 }

@@ -1,3 +1,7 @@
+/* Layer order for Astryx (used under /mvp3, see docs/mvp3-astryx-components.md). Must stay ABOVE the Tailwind import,
+   otherwise Astryx layers land after "utilities" and the cascade inverts. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
 @import "tailwindcss";
 /* KoreFi Foundation tokens (generated from Figma — see design-system/FOUNDATION.md). */
 @import "./foundation.css";
@@ -102,6 +106,26 @@
 .kf-pop { animation: kf-pop 240ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
 @media (prefers-reduced-motion: reduce) {
   .kf-row-in, .kf-pin-in, .kf-shimmer, .kf-ping, .kf-fade, .kf-pop { animation: none; }
+}
+/* MVP 3 agent canvas (components/mvp3/WorkflowEditor): parts arriving one after another, and the dot that
+   travels between columns while "Watch it work" plays. */
+.kf-step-in { animation: kf-pop 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes kf-travel {
+  0% { left: 0; opacity: 0; }
+  15%, 85% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+.kf-travel { animation: kf-travel 1.1s cubic-bezier(0.3, 0, 0.2, 1) both; }
+/* The agent editor's Steps track: a soft pulse that runs along the line from Trigger to You get, on a loop. */
+@keyframes kf-flow {
+  0% { left: -20%; opacity: 0; }
+  15%, 80% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+.kf-flow { animation: kf-flow 3.2s cubic-bezier(0.45, 0, 0.25, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .kf-step-in, .kf-travel, .kf-flow { animation: none; }
+  .kf-flow { display: none; }
 }
 /* MVP 3 onboarding (components/mvp3/Onboarding): the setup ring breathes while the agents get ready. */
 @keyframes kf-breathe {

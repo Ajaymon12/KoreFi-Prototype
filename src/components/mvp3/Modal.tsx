@@ -2,27 +2,54 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { dialogSurface, iconButton, scrim } from "@/components/mvp3/styles";
 
 // A centred dialog over the whole app, shared by the manager sheet and the email preview. Escape or a click
-// outside closes it. It marks itself aria-modal, so popovers underneath (the schedule editor) stay open behind it.
+// outside closes it; Tab stays inside while it's open. It marks itself aria-modal, so popovers underneath (the schedule editor) stay open behind it.
 
 export function Modal({ label, onClose, children, width = 720 }: { label: string; onClose: () => void; children: React.ReactNode; width?: number }) {
   const close = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    close.current?.focus();
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
+    onCloseRef.current = onClose;
   }, [onClose]);
+  useEffect(() => {
+    // Focus moves in on open, Tab cycles inside the dialog, and focus returns to what opened it on close.
+    const opener = document.activeElement as HTMLElement | null;
+    close.current?.focus();
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onCloseRef.current();
+      if (e.key !== "Tab" || !box.current) return;
+      const items = [...box.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const inside = box.current.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("keydown", key);
+      opener?.focus?.();
+    };
+  }, []);
   return createPortal(
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={label} style={{ maxWidth: width }} className="relative flex max-h-[min(88vh,860px)] w-full flex-col overflow-hidden rounded-large bg-(--color-background-secondary) shadow-[0_24px_64px_rgb(0_0_0/0.28)] motion-safe:animate-page-in">
+    <div className={cn(scrim, "z-50 grid place-items-center p-4")} onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div ref={box} role="dialog" aria-modal="true" aria-label={label} style={{ maxWidth: width }} className={cn(dialogSurface, "relative flex max-h-[min(calc(100dvh-2rem),860px)] w-full flex-col overflow-hidden motion-safe:animate-page-in")}>
         <button
           ref={close}
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="absolute top-2.5 right-2.5 z-10 grid size-8 place-items-center rounded-medium text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+          className={cn(iconButton, "absolute top-3 right-3 z-10 size-8")}
         >
           <X className="size-4" aria-hidden />
         </button>
