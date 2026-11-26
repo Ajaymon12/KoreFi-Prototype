@@ -4,7 +4,7 @@ import { PnlSummary } from "@/components/finance/PnlSummary";
 export default function Page() {
   return (
     <LaunchGate page="pnl">
-      <PnlSummary />
+      <PnlSummary hideState />
     </LaunchGate>
   );
 }

@@ -57,6 +57,8 @@ const GROUPS: Group[] = [
   { id: "drafts", label: "Drafts", note: "Agents being written. Publish one to start it.", match: (c) => c.kind === "draft" },
 ];
 const LATER_GROUPS = new Set(["operations", "finance", "growth"]);
+// Masa Kitchen: every agent is live, so there is no live / not live split. Each sits under its category, with no status badge.
+const FLAT_GROUPS: Group[] = GROUPS.filter((g) => g.id !== "live" && g.id !== "next").map((g) => (g.agent ? { ...g, match: (c) => c.kind !== "draft" && c.agent === g.agent } : g));
 const BADGE: Record<Kind,{ label: string; cls: string }> = {
   live: { label: "Live", cls: "bg-(--color-success-lightest) text-(--color-text-success)" },
   learning: { label: "Learning", cls: "bg-(--color-background-secondary) text-(--color-text-primary)" },
@@ -97,7 +99,8 @@ function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDu
   );
 }
 
-export function AgentCard({ c, real }: { c: Card; real: boolean }) {
+/** `plain`: every agent counts as live, so no status badge or sleeping face, and every card gets a Run button. */
+export function AgentCard({ c, real, plain = false }: { c: Card; real: boolean; plain?: boolean }) {
   const router = useRouter();
   const { getWorkflow, runAgent, duplicateAgent } = useAgents();
   const limited = !!useAccount().account.limited;
@@ -113,7 +116,7 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
     >
       <div className="flex items-center gap-3">
         {c.agent ? (
-          <AgentAvatar agent={c.agent} size={32} mood={c.kind === "live" && real ? "default" : "sleeping"} />
+          <AgentAvatar agent={c.agent} size={32} mood={plain || (c.kind === "live" && real) ? "default" : "sleeping"} />
         ) : (
           <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-circle bg-(--color-neutral-light) text-body-sm font-medium text-(--color-text-primary)">
             {user.firstName[0]}
@@ -140,13 +143,22 @@ export function AgentCard({ c, real }: { c: Card; real: boolean }) {
       </div>
       <p className="mt-3 line-clamp-2 min-h-[2lh] text-body-md text-(--color-text-secondary)">{c.blurb}</p>
       <div className="mt-4 flex min-w-0 items-center gap-2 text-body-sm text-(--color-text-secondary)">
-        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-circle px-2 py-0.5 text-body-sm font-medium shadow-[0_0_0_1px_var(--color-border-default)]", b.cls)}>
-          {c.kind === "live" && <span className="size-1.5 rounded-circle bg-current" />}
-          {b.label}
-        </span>
-        <span className="truncate">{c.meta}</span>
-        {/* Not live yet: a Run button right on the card. The first run makes the agent live. */}
-        {c.kind === "idle" && real && w && (
+        {(!plain || c.kind === "draft") && (
+          <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-circle px-2 py-0.5 text-body-sm font-medium shadow-[0_0_0_1px_var(--color-border-default)]", b.cls)}>
+            {c.kind === "live" && <span className="size-1.5 rounded-circle bg-current" />}
+            {b.label}
+          </span>
+        )}
+        {/* A plain card always leads with the team name, so cards with a last run carry the same tag as the rest. */}
+        {plain && c.team && c.meta !== c.team ? (
+          <span className="truncate">
+            {c.team} · <span className="font-medium text-(--color-text-primary)">{c.meta}</span>
+          </span>
+        ) : (
+          <span className="truncate">{c.meta}</span>
+        )}
+        {/* Not live yet: a Run button right on the card; the first run makes the agent live. On a plain card every agent gets it. */}
+        {(plain ? c.kind !== "draft" : c.kind === "idle") && real && w && (
           <button
             type="button"
             onClick={() => {
@@ -201,6 +213,10 @@ export function AgentsPage() {
   const { account } = useAccount();
   const { newAgent } = useAgents();
   const isNew = account.stage === "new";
+  // Masa Kitchen: every agent is live, so the page shows no status and a Run button on every card.
+  const flat = account.id === "masa";
+  const groups = flat ? FLAT_GROUPS : GROUPS;
+  const filters = flat ? FILTERS.filter((f) => f.id === "all" || f.id === "drafts") : FILTERS;
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [showAll, setShowAll] = useState(false);
@@ -210,7 +226,7 @@ export function AgentsPage() {
   const needle = q.trim().toLowerCase();
   const shown = cards.filter((c) => FILTERS.find((f) => f.id === filter)!.match(c.kind) && (!needle || `${c.title} ${c.blurb} ${c.team ?? ""}`.toLowerCase().includes(needle)));
   // Collapsed only on the plain "All" view: a search or a status filter means the owner is looking for something.
-  const collapsed = !showAll && !needle && filter === "all";
+  const collapsed = !flat && !showAll && !needle && filter === "all";
   const later = shown.filter(isLater).length;
 
   return (
@@ -240,10 +256,12 @@ export function AgentsPage() {
             </label>
             {/* Filter pills: the chosen one is filled dark, the rest are outlined, so the current view is obvious. */}
             <div role="tablist" aria-label="Show" className="flex flex-wrap gap-2">
-              {FILTERS.map((f) => {
+              {filters.map((f) => {
                 const n = cards.filter((c) => f.match(c.kind)).length;
                 const on = filter === f.id;
                 if (f.id === "drafts" && !n && !on) return null;
+                // With no status filters and no drafts, a lone "All" pill says nothing.
+                if (flat && f.id === "all" && !cards.some((c) => c.kind === "draft")) return null;
                 return (
                   <button
                     key={f.id}
@@ -270,12 +288,12 @@ export function AgentsPage() {
             // Live agents on top, then the rest by category (Operations, Finance, Growth), then Drafts, each with a
             // heading and a line of what it covers; the filter pills narrow every group by status.
             <div className="space-y-12">
-              {GROUPS.map((g) => {
+              {groups.map((g) => {
                 const group = shown.filter(g.match);
                 if (!group.length) return null;
                 if (collapsed && LATER_GROUPS.has(g.id)) {
                   // One toggle in place of the first hidden group; the rest render nothing.
-                  if (g.id !== GROUPS.find((x) => LATER_GROUPS.has(x.id) && shown.some(x.match))?.id) return null;
+                  if (g.id !== groups.find((x) => LATER_GROUPS.has(x.id) && shown.some(x.match))?.id) return null;
                   return (
                     <div key="more" className="flex justify-center">
                       <button type="button" onClick={() => setShowAll(true)} className={cn("inline-flex h-9 items-center rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-3.5 text-body-md font-medium text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable)", focusRing)}>
@@ -298,7 +316,7 @@ export function AgentsPage() {
                     </div>
                     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {group.map((c) => (
-                        <AgentCard key={c.id} c={c} real={!isNew} />
+                        <AgentCard key={c.id} c={c} real={!isNew} plain={flat} />
                       ))}
                     </ul>
                   </section>

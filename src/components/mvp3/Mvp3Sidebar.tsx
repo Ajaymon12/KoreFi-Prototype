@@ -3,7 +3,7 @@ import { usePath } from "@/lib/mvp3/usePath";
 import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Blocks, Bot, CalendarClock, FileText, House, LayoutDashboard, MessagesSquare, PanelLeftClose, PanelLeftOpen, Search, Settings, SquarePen } from "lucide-react";
+import { Blocks, Bot, ChartColumn, CalendarClock, FileText, House, LayoutDashboard, MessagesSquare, PanelLeftClose, PanelLeftOpen, Search, Settings, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavDrawer } from "@/components/shell/NavDrawer";
 import { navItemClass } from "@/components/shell/navItem";
@@ -49,6 +49,7 @@ export function useOpenPinned() {
   };
 }
 const AGENTS_HREF = "/mvp3/agents";
+const PNL_HREF = "/mvp3/pnl";
 /** Agents stays lit in the editor and on the old Drafts link. */
 const onAgents = (path: string) => /^\/mvp3\/(agents|agent|drafts)\b/.test(path);
 const dashHref = (id: string) => `/mvp3/dashboard?id=${id}`;
@@ -222,6 +223,12 @@ function TopLinks({ path, onFollow }: { path: string; onFollow?: () => void }) {
         <Link href={AGENTS_HREF} onClick={onFollow} aria-current={onAgents(path) ? "page" : undefined} className={navItemClass(onAgents(path))}>
           <Bot aria-hidden />
           Agents
+        </Link>
+      </li>
+      <li>
+        <Link href={PNL_HREF} onClick={onFollow} aria-current={path === PNL_HREF ? "page" : undefined} className={navItemClass(path === PNL_HREF)}>
+          <ChartColumn aria-hidden />
+          P&amp;L
         </Link>
       </li>
     </ul>
@@ -450,6 +457,11 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
             <Bot aria-hidden />
           </Link>
         </li>
+        <li>
+          <Link href={PNL_HREF} aria-label="P&L" className={icon(path === PNL_HREF)} {...hover("pnl", label("P&L"))}>
+            <ChartColumn aria-hidden />
+          </Link>
+        </li>
         {(
           <li>
             <button
@@ -605,7 +617,7 @@ function MobileWorkspace({ path, onFollow }: { path: string; onFollow: () => voi
             Search chats
           </button>
         </li>
-        {[{ href: AGENTS_HREF, label: "Agents", Icon: Bot }, ...bottom].map(({ href, label, Icon }) => {
+        {[{ href: AGENTS_HREF, label: "Agents", Icon: Bot }, { href: PNL_HREF, label: "P&L", Icon: ChartColumn }, ...bottom].map(({ href, label, Icon }) => {
           const on = href === AGENTS_HREF ? onAgents(path) : path.startsWith(href);
           return (
             <li key={href}>

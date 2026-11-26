@@ -227,7 +227,7 @@ export function Amount({ n, sales, cost, back, est, muted, strong, tone }: { n: 
 
 /** `broken` names the outlet groups (an outlet's store, or "all") showing their DoorDash / Uber Eats / Grubhub columns;
  *  the rest show their total alone. `onBreak` flips one group. Left out, every group shows its platforms. */
-type Props = { t: Totals; recon: Record<AppKey, Recon>; edit: CostEdit; query?: string; sticky?: boolean; outlets?: Outlet[]; scrolled?: { x: boolean; y: boolean }; view?: PnlView; broken?: Set<string>; onBreak?: (group: string) => void };
+type Props = { t: Totals; recon: Record<AppKey, Recon>; edit: CostEdit; query?: string; sticky?: boolean; outlets?: Outlet[]; scrolled?: { x: boolean; y: boolean }; view?: PnlView; broken?: Set<string>; onBreak?: (group: string) => void; clearTotals?: boolean; allBroken?: boolean; onBreakAll?: (on: boolean) => void };
 /** A figure column: a channel, or one of an outlet's apps or their total. `app` columns leave in-store-only lines
  *  empty; `total` closes an outlet's group with a heavier line. */
 type Column = { key: string; head: React.ReactNode; title?: string; name: string; v: Col & Partial<Pick<OutletCol, "staff" | "profit">>; app: boolean; check: ReconSummary | null; total?: boolean };
@@ -240,7 +240,7 @@ export function PnlTable({ view = "amount", ...props }: Props) {
   );
 }
 
-function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled, broken, onBreak }: Omit<Props, "view">) {
+function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled, broken, onBreak, clearTotals, allBroken, onBreakAll }: Omit<Props, "view">) {
   const view = useContext(ViewContext);
   const [open, setOpen] = useState<Set<string>>(new Set());
   // Read here, not at the top: PnlStory and this file import each other, so CHANNELS isn't ready at load.
@@ -255,7 +255,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
     ? [
         ...outlets.flatMap((o) => [
           ...(split(o.store) ? appCols(o.store, short(o.store), o.t, o.recon) : []),
-          { key: o.store, head: "Total", title: `${o.store}: DoorDash, Uber Eats and Grubhub`, name: short(o.store), v: appsOnly(o.t), app: true, check: summarize(Object.values(o.recon)), total: true },
+          { key: o.store, head: clearTotals ? "Outlet total" : "Total", title: `${o.store}: DoorDash, Uber Eats and Grubhub`, name: short(o.store), v: appsOnly(o.t), app: true, check: summarize(Object.values(o.recon)), total: true },
         ]),
         ...(split("all") ? appCols("all", "All outlets", t, recon) : []),
       ]
@@ -280,7 +280,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
   const shows = (text: string) => !q || text.toLowerCase().includes(q);
   // A line shows when it or one of its parts matches; a search opens the lines whose parts match.
   const visible = (l: Line) => shows(l.label) || !!l.parts?.some((p) => shows(p.label));
-  const isOpen = (l: Line) => open.has(l.key) || (!!q && !!l.parts?.some((p) => shows(p.label)));
+  const isOpen = (l: Line) => !!l.parts && (open.has(l.key) || (!!q && l.parts.some((p) => shows(p.label))));
   const toggle = (k: string) =>
     setOpen((o) => {
       const n = new Set(o);
@@ -427,7 +427,19 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
         {outlets && (
           // The outlets over their apps.
           <tr className={cn("text-body-sm [&>th]:h-[34px] [&>th]:bg-(--gray-200)", sticky && "[&>th]:sticky [&>th]:top-0 [&>th]:z-[2]")}>
-            <th aria-hidden className={cn(grid, "left-0 z-[3]!", !sticky && "sticky", edge)} />
+            <th aria-hidden={onBreakAll ? undefined : true} className={cn(grid, "left-0 z-[3]!", !sticky && "sticky", edge, onBreakAll && "px-3 text-left font-normal")}>
+              {onBreakAll && (
+                <button
+                  type="button"
+                  aria-pressed={!!allBroken}
+                  onClick={() => onBreakAll(!allBroken)}
+                  className="flex h-6 items-center gap-1.5 rounded-small px-1.5 text-body-sm whitespace-nowrap text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
+                >
+                  <ChevronRight aria-hidden className={cn("size-3.5 transition-transform duration-150", allBroken && "rotate-90")} />
+                  {allBroken ? "Hide all platforms" : "Show all platforms"}
+                </button>
+              )}
+            </th>
             {[...outlets.map((o) => ({ key: o.store, label: short(o.store), title: o.store })), { key: "all", label: "All outlets", title: undefined }].map((g) => (
               <th key={g.key} scope="colgroup" colSpan={split(g.key) ? APPS.length + 1 : 1} title={g.title} className={cn(grid, groupEnd, "px-3 text-left font-medium text-(--color-text-primary)")}>
                 {/* Stays beside the pinned Line column (280px) while any of its group is in view */}
@@ -483,7 +495,7 @@ function PnlGrid({ t, recon, edit, query = "", sticky = false, outlets, scrolled
             </th>
           ))}
           <th scope="col" className={cn(grid, colW, "px-3 text-right font-medium text-(--color-text-primary)")}>
-            {outlets ? "Total" : "All"}
+            {outlets ? (clearTotals ? "All delivery apps" : "Total") : "All"}
           </th>
         </tr>
       </thead>

@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 // column per outlet, its delivery apps only (PnlTable's `outlets`).
 
 /** `title`: /mvp3 shows it as "Daily P&L" (its Daily operational P&L agent keeps it updated); /mvp2 keeps "P&L Summary". */
-export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
+export function PnlSummary({ title = "P&L Summary", hideState = false, weekly = false }: { title?: string; hideState?: boolean; weekly?: boolean } = {}) {
   const [query, setQuery] = useState("");
   // Last 4 weeks by default; a preset or any custom run of weeks.
   const [range, setRange] = useState<[number, number]>(PRESETS[0].range);
@@ -51,19 +51,19 @@ export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
 
   return (
     <>
-      <PageHeader title={title} />
+      <PageHeader title={title} actions={weekly ? <span className="text-body-sm text-(--color-text-secondary)">Updated weekly · reports through week of {WEEKS[WEEKS.length - 1].label}</span> : undefined} />
       {/* One scroll box for both axes, so the table's header rows can stick to its top. contain-paint keeps a
           wide table's overflow inside it; without it the page took the width too and scrolled away sideways. */}
       <div onScroll={onScroll} className="min-h-0 flex-1 overflow-auto contain-paint">
         {/* Search (the table's lines) and the filters (everything below); pinned left, like everything above the table, so a wide table scrolls under them */}
         {/* z-[4]: sticky makes the bar its own layer, so without it the table's pinned header (z-[3]) covers its menus */}
         <div className="sticky left-0 z-[4] flex flex-wrap items-center gap-2 px-4 pt-3 max-md:hidden">
-          <label className="hidden h-8 w-[260px] max-w-full items-center gap-2 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 focus-within:border-(--color-focus-primary) md:flex">
+          <label className="hidden h-8 w-[180px] max-w-full items-center gap-2 rounded-medium border border-(--color-border-default) bg-(--color-background-secondary) px-2.5 focus-within:border-(--color-focus-primary) md:flex">
             <Search aria-hidden className="size-3.5 shrink-0 text-(--color-text-secondary)" />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." aria-label="Search lines" className="min-w-0 flex-1 bg-transparent text-body-md text-(--color-text-primary) outline-none placeholder:text-(--color-text-secondary)" />
           </label>
           <span aria-hidden className="mx-0.5 hidden h-6 w-px bg-(--color-border-default) md:block" />
-          <OutletFilters scope={outlets} compact />
+          <OutletFilters scope={outlets} compact pills={hideState ? ["city", "outlet"] : undefined} />
           <DateRangeFilter weeks={WEEKS} presets={PRESETS} value={range} onChange={setRange} />
           {/* How the table reads, pinned to the bar's end so the bar stays one line: icons alone until the window
               is wide enough for the labels and the outlet count */}
@@ -72,8 +72,8 @@ export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
               <OutletCount scope={outlets} />
             </span>
             <CompareSwitch on={compare} onChange={setCompare} />
-            {compare && <BreakdownSwitch on={allBroken} onChange={(on) => setBroken(on ? new Set(groups) : new Set())} />}
-            <ViewToggle value={view} onChange={setView} />
+            {compare && !weekly && <BreakdownSwitch on={allBroken} onChange={(on) => setBroken(on ? new Set(groups) : new Set())} />}
+            <ViewToggle value={view} onChange={setView} labelled={weekly} />
           </div>
         </div>
         {/* Phones: what the report covers, one line that opens the filters */}
@@ -96,7 +96,7 @@ export function PnlSummary({ title = "P&L Summary" }: { title?: string } = {}) {
         {!none && (
           <>
             <section ref={table} aria-label={compare ? "Profit and loss by outlet" : "Profit and loss by channel"} className="hidden md:block">
-              <PnlTable t={t} recon={recon} edit={edit} query={query} sticky outlets={compare ? pnl.byOutlet() : undefined} scrolled={scrolled} view={view} broken={broken} onBreak={flip} />
+              <PnlTable clearTotals={weekly} allBroken={allBroken} onBreakAll={weekly ? (on) => setBroken(on ? new Set(groups) : new Set()) : undefined} t={t} recon={recon} edit={edit} query={query} sticky outlets={compare ? pnl.byOutlet() : undefined} scrolled={scrolled} view={view} broken={broken} onBreak={flip} />
             </section>
 
             <div className="px-4 pt-1 pb-24 md:hidden">
@@ -162,10 +162,10 @@ function RoundButton({ label, count = 0, onClick, children }: { label: string; c
 }
 
 /** The table's figures as dollars or as a share of sales: an icon-only segmented control at the bar's end. Desktop only, like the table. */
-function ViewToggle({ value, onChange }: { value: PnlView; onChange: (v: PnlView) => void }) {
+function ViewToggle({ value, onChange, labelled = false }: { value: PnlView; onChange: (v: PnlView) => void; labelled?: boolean }) {
   return (
     <div role="group" aria-label="Show figures as" className="flex h-8 items-center gap-0.5 rounded-medium bg-(--color-neutral-light) p-0.5">
-      {([["amount", DollarSign, "Show amounts ($)"], ["percent", Percent, "Show share of sales (%)"]] as const).map(([v, Icon, label]) => (
+      {([["amount", DollarSign, "Show amounts ($)", "Amount"], ["percent", Percent, "Show share of sales (%)", "% of sales"]] as const).map(([v, Icon, label, text]) => (
         <button
           key={v}
           type="button"
@@ -174,11 +174,13 @@ function ViewToggle({ value, onChange }: { value: PnlView; onChange: (v: PnlView
           title={label}
           onClick={() => onChange(v)}
           className={cn(
-            "grid size-7 place-items-center rounded-small outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
+            "grid h-7 place-items-center rounded-small outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
+            labelled ? "grid-flow-col gap-1.5 px-2.5 text-body-sm whitespace-nowrap" : "size-7",
             value === v ? "bg-(--color-background-secondary) text-(--color-text-primary) shadow-sm" : "text-(--color-text-secondary) hover:text-(--color-text-primary)",
           )}
         >
           <Icon aria-hidden className="size-4" />
+          {labelled && text}
         </button>
       ))}
     </div>

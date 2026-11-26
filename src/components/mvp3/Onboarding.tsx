@@ -136,7 +136,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // Taco Pros and Masa Kitchen (Account.home) land on Home, on switching and on refresh, unless a ?chat= link is
     // opening one of Taco Pros' chats.
     // ?dash= (the demo inbox's email button) opens a pinned dashboard instead.
-    else if (account.home && path !== "/mvp3/home" && !/[?&](chat|dash)=/.test(window.location.search)) router.push("/mvp3/home");
+    else if (account.home && path !== "/mvp3/home" && path !== "/mvp3/pnl" && !/[?&](chat|dash)=/.test(window.location.search)) router.push("/mvp3/home");
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
