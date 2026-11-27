@@ -33,7 +33,7 @@ type Person = (typeof PEOPLE)[number]["key"];
 export const DEFAULT_INSTRUCTIONS: PayoutSettings["instructions"] = [
   {
     title: "Purpose",
-    body: "Checks that every delivery order in your POS was paid by the app, at your plan rate. Flags orders that were missing or paid short, so the KoreFi team can claim them. This is a 2-way check (POS against the apps' reports), so it does not confirm bank deposits.",
+    body: "Checks that every delivery order in your POS was paid by the app, at your plan rate. Flags orders that were missing or paid short, so KoreFi can claim them. This is a 2-way check (POS against the apps' reports), so it does not confirm bank deposits.",
   },
   {
     title: "Load the week",
@@ -93,7 +93,7 @@ export function PayoutEditor({ base }: { base: Workflow }) {
         <IconButton variant="ghost" size="sm" label="Back" tooltip="Back" icon={<ArrowLeft className="size-4" />} onClick={() => router.back()} />
         {base.agent && <AgentAvatar agent={base.agent} size={24} />}
         <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{base.title}</h1>
-        <Badge variant={base.state === "live" ? "success" : "neutral"} label={base.state === "live" ? "Live" : "Not live"} />
+        <Badge variant={base.state === "live" ? "success" : "neutral"} label={base.state === "live" ? "Running" : "Not running"} />
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" variant="ghost" label="Cancel" onClick={() => router.back()} />
           <Button size="sm" variant="primary" label="Save" isDisabled={!dirty} onClick={save} />

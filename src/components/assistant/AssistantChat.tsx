@@ -13,7 +13,7 @@ import { useAssistant, type Message } from "./AssistantProvider";
 // The chat itself, shared by the right-hand panel and the /ai page. Pattern from ClickUp Brain
 // (Mobbin): prompt-first empty state with suggestions that come from your own data, a pinned
 // composer, answers that end in sources and follow-up chips. Owners can't change anything here:
-// the one "action" is passing a note to the KoreFi team.
+// the one "action" is passing a note to KoreFi.
 
 export function SousMark({ className }: { className?: string }) {
   return (
@@ -116,7 +116,7 @@ function AnswerCard({ id, answer, requested, rating }: { id: string; answer: Ans
               className="ml-1 inline-flex h-7 items-center gap-1.5 rounded-medium px-2 text-body-sm text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-light) hover:text-(--color-text-primary) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) disabled:pointer-events-none"
             >
               {requested ? <Check className="size-3.5 text-(--color-text-success)" /> : <HandHelping className="size-3.5" />}
-              {requested ? "Sent to the KoreFi team" : "Ask the team to look at this"}
+              {requested ? "Sent to KoreFi" : "Ask the team to look at this"}
             </button>
           )}
         </div>

@@ -5,7 +5,7 @@ import type { Activity } from "@/lib/mvp3/activity";
 import { agentOf } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
 
-// The activity log (lib/mvp3/activity): a day-by-day timeline of what the KoreFi team and the agent did.
+// The activity log (lib/mvp3/activity): a day-by-day timeline of what KoreFi and the agent did.
 // Used on an agent's overview and in a chat's Activity panel. Report-only: nothing here asks the owner to act.
 
 const day = (t: number) => new Date(t).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
@@ -38,7 +38,7 @@ export function ActivityLog({ items, days = 7, compact = false }: { items: Activ
     }
     return out;
   }, [items]);
-  if (!items.length) return <p className="px-4 py-10 text-center text-body-md text-(--color-text-secondary)">Nothing yet. The KoreFi team’s updates show here once your reports come in.</p>;
+  if (!items.length) return <p className="px-4 py-10 text-center text-body-md text-(--color-text-secondary)">Nothing yet. KoreFi’s updates show here once your reports come in.</p>;
   const size = compact ? 22 : 26;
   return (
     <div className={compact ? "px-4 py-3" : "px-4 py-3"}>

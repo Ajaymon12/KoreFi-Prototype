@@ -101,7 +101,7 @@ function noReportsYet(agent: AgentReply["agent"], restaurant: string): AgentRepl
   return {
     agent,
     title: `No ${restaurant} reports yet`,
-    lines: [`I answer from ${restaurant}'s own delivery-app reports, and none have come in yet. Once your apps are connected and the KoreFi team has verified them, the first reports usually arrive in 2 to 3 days. I'll post here as soon as they do.`],
+    lines: [`I answer from ${restaurant}'s own delivery-app reports, and none have come in yet. Once your apps are connected and KoreFi has verified them, the first reports usually arrive in 2 to 3 days. I'll post here as soon as they do.`],
     work: ["Checked for your reports"],
   };
 }
@@ -114,7 +114,7 @@ function seedFor(account: Account) {
   setMasaFixture(!!account.teamPinned);
   if (account.stage === "new" || account.agentsOff) return [];
   if (!account.home) return seedThreads();
-  // Masa Kitchen: only the chats behind the dashboards the KoreFi team pinned, each a summary with suggestions.
+  // Masa Kitchen: only the chats behind the dashboards KoreFi pinned, each a summary with suggestions.
   // Leadership flows (2026-11-20): Masa's two weekly agent threads are in Recent chats from the start.
   if (account.teamPinned) return teamPinnedThreads().map((t) => ({ ...t, hidden: false }));
   // Taco Pros' seeded agent chats stay out of Recent chats: they only back the pinned dashboards and agent cards.
@@ -129,7 +129,7 @@ function seedFor(account: Account) {
 function seedDashboards(account: Account): Dashboard[] {
   if (!account.home) return [];
   const thu = "Every Thursday, 8:00 AM";
-  // Masa Kitchen's are pinned by the KoreFi team, and labelled so.
+  // Masa Kitchen's are pinned by KoreFi, and labelled so.
   const by = account.teamPinned ? { pinnedBy: "team" as const } : {};
   return [
     { ...by, id: "dash-chargebacks", title: "Chargebacks", workflow: "chargebacks", agent: "operations", config: DEFAULT_CONFIG, pinned: false, updated: "Thu 8:00 AM", thread: "cb", automation: { schedule: thu, email: true, dashboard: true } },
@@ -617,7 +617,7 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
         play(activeId, q, laborAfterUpload(all, files), activeId ? undefined : { title: LABOR_AGENT }, undefined, files);
         return;
       }
-      play(activeId, q, { agent: thread?.agent ?? "finance", title: `Got ${named}`, lines: ["I've passed it to the KoreFi team to add to your reports. I'll post here once it's in."], work: files.map((f) => `Read ${f}`) }, undefined, undefined, files);
+      play(activeId, q, { agent: thread?.agent ?? "finance", title: `Got ${named}`, lines: ["I've passed it to KoreFi to add to your reports. I'll post here once it's in."], work: files.map((f) => `Read ${f}`) }, undefined, undefined, files);
     },
     [activeId, threads, play, sample, account],
   );

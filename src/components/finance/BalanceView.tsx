@@ -125,7 +125,7 @@ export function BalanceView() {
           >
             {balanced ? <Check aria-hidden className="size-4 text-(--color-text-success)" /> : <TriangleAlert aria-hidden className="size-4 text-(--color-text-warning)" />}
             <span>
-              {balanced ? "Balanced" : "Doesn't balance — flagged to the KoreFi team"}: what you own {usd(now.assets)} = what you owe {usd(now.liabilities)} + equity {usd(now.equity)}
+              {balanced ? "Balanced" : "Doesn't balance — flagged to KoreFi"}: what you own {usd(now.assets)} = what you owe {usd(now.liabilities)} + equity {usd(now.equity)}
             </span>
           </div>
         </DashCard>

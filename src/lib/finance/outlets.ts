@@ -5,9 +5,9 @@
 
 import { asset } from "@/lib/asset";
 
-export const BRAND = "Taco Pros";
-/** The cactus mark (Figma 1573:13838), for the restaurant switcher and anywhere the brand shows. */
-export const BRAND_LOGO = asset("/logos/tacopros.svg");
+export const BRAND = "Prairie Taco Co.";
+/** Prairie Taco Co.'s mark (made-up demo logo), for the restaurant switcher and anywhere the brand shows. */
+export const BRAND_LOGO = asset("/logos/prairie-taco.svg");
 
 export type StateCode = "IL" | "IN" | "OH" | "WI";
 export const STATE_NAME: Record<StateCode, string> = { IL: "Illinois", IN: "Indiana", OH: "Ohio", WI: "Wisconsin" };

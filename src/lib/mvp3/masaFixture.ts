@@ -6,7 +6,7 @@ import type { OutletDive } from "./outletDive";
 // Masa Kitchen's pinned Chargebacks dashboard, word for word from the agent-journey prototype (artifact "KoreFi Agent
 // Journeys", journey 3): the same week (Nov 1–7), outlets, figures, findings and sentences, so what the founders signed
 // off is what the owner sees. It is a fixed sample week, not computed from the mock reports. Switched on for the
-// account whose dashboards the KoreFi team pinned (seedFor in AgentsProvider); every other account stays on live figures.
+// account whose dashboards KoreFi pinned (seedFor in AgentsProvider); every other account stays on live figures.
 
 let on = false;
 export const setMasaFixture = (v: boolean) => {
@@ -49,7 +49,9 @@ export const BY_APP: { app: AppKey; orders: number; charged: number; won: number
   { app: "uber", orders: 10, charged: 112, won: 62 },
   { app: "grubhub", orders: 3, charged: 37, won: 15 },
 ];
-export const WRONG: [string, number][] = [["Missing item", 15], ["Wrong item", 8], ["Food quality", 6], ["Never arrived", 4]];
+/** Chargebacks per week, the 11 weeks before the sample week (around the usual $325), then the sample week. */
+export const WEEKLY = [335, 300, 340, 285, 320, 330, 305, 325, 345, 300, 365, 397];
+export const WRONG: [string, number][] =[["Missing item", 15], ["Wrong item", 8], ["Food quality", 6], ["Never arrived", 4]];
 
 // Damen's 14 charges: day, app, item, reason, amount, status
 const DAMEN: [string, "dd" | "ue" | "gh", string, string, number, string][] = [
@@ -120,8 +122,8 @@ export const SHEET_FIXES = [
 
 export const STILL_TO_DISPUTE = {
   title: `$${CBST.todo} is not filed yet`,
-  text: "The KoreFi team reviews each dispute before filing. All of these are inside the apps' deadlines: 14 days from the order on DoorDash, 30 days on Uber Eats and Grubhub. You'll see the result in next Thursday's review.",
-  source: "Dispute status from the KoreFi team's filing log",
+  text: "KoreFi reviews each dispute before filing. All of these are inside the apps' deadlines: 14 days from the order on DoorDash, 30 days on Uber Eats and Grubhub. You'll see the result in next Thursday's review.",
+  source: "Dispute status from KoreFi's filing log",
 };
 export const DENIED = {
   title: `$${CBST.denied} was denied`,
@@ -250,6 +252,30 @@ export function statusFor(names: readonly string[]) {
 /** Orders per reason at one outlet, in REASONS order. */
 export const reasonsFor = (outlet: string) => REASONS.map((r) => CHARGES.filter((x) => x.outlet === outlet && x.reason === r).length);
 /** Orders per day (Sun–Sat) at one outlet. */
+/** Order hour (24h) of each charge, by its place in CHARGES. The sample has no real times, so these are a fixed
+ *  pattern weighted to the lunch and dinner rushes (11 AM–10 PM, the kitchens' hours). */
+const HOUR_PATTERN = [19, 12, 18, 13, 20, 19, 12, 18, 21, 13, 19, 17, 12, 20, 18, 11, 19, 14, 12, 18, 20, 13, 19, 21, 12, 18, 16, 19, 13, 20, 12, 18, 19];
+export const hourOf = (x: FxCharge) => HOUR_PATTERN[CHARGES.indexOf(x) % HOUR_PATTERN.length];
+/** The kitchen's shifts, by the hour they start. */
+export const SHIFTS = [
+  { label: "Lunch", from: 11, to: 15 },
+  { label: "Afternoon", from: 15, to: 17 },
+  { label: "Dinner", from: 17, to: 21 },
+  { label: "Late", from: 21, to: 23 },
+] as const;
+export const OPEN_HOURS = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22] as const;
+/** "11a", "12p", "7p". */
+export const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? "a" : "p"}`;
+/** Orders per shift at one outlet, in SHIFTS order. */
+export function shiftsFor(outlet: string) {
+  const hs = CHARGES.filter((x) => x.outlet === outlet).map(hourOf);
+  return SHIFTS.map((s) => hs.filter((h) => h >= s.from && h < s.to).length);
+}
+/** Orders per hour at one outlet, in OPEN_HOURS order. */
+export function hoursFor(outlet: string) {
+  const hs = CHARGES.filter((x) => x.outlet === outlet).map(hourOf);
+  return OPEN_HOURS.map((h) => hs.filter((x) => x === h).length);
+}
 export function daysFor(outlet: string) {
   const d = WEEK_DAYS.map(() => 0);
   CHARGES.filter((x) => x.outlet === outlet).forEach((x) => d[dayIndex(x.day)]++);
@@ -292,3 +318,21 @@ export function focusOutlets(rows: readonly FxOutlet[]) {
   }
   return out;
 }
+
+// ───────── Home › At a glance (Figma "Korefi – Agents" › Home · scenarios, 2026-11-27) ─────────
+// The weekly agent runs behind the Home page, 13 weeks oldest first, ending on the sample week (Nov 1–7). The sample
+// week matches the figures above (charged $397, won $216, paid $45,580, $119.55 / 4 orders unmatched); the weeks
+// before follow the Figma "Last 4 weeks" frame ($176,500 paid, $1,387 charged, $843 won, $239.10 / 9 orders) and the
+// 13-week chargeback tile ($2,758 won of $4,299).
+
+export const HOME_SERIES = {
+  charged: [352, 335, 300, 340, 285, 320, 330, 305, 345, 330, 300, 360, 397],
+  won: [220, 215, 190, 225, 180, 210, 230, 200, 245, 205, 192, 230, 216],
+  paid: [42100, 42800, 41900, 43300, 42600, 43800, 42400, 43100, 44200, 43900, 43400, PAID - PAID_UP, PAID],
+  unmatched: [64.2, 41.75, 88.1, 22.4, 57.3, 35.85, 70.6, 46.15, 81.9, 38.4, 52.9, 28.25, UNPAID],
+  unmatchedOrders: [3, 2, 4, 1, 3, 2, 3, 2, 4, 2, 2, 1, ORDERS.unpaid],
+};
+/** Each outlet's in-store and website sales in the sample week (the Non-3PD bars on Home › Breakdown › By outlet). */
+export const HOME_INSTORE: Record<string, number> = { Damen: 15260, "Oak Park": 14880, Montrose: 14590, Halsted: 13230, Gurnee: 13800, Niles: 13200, "Hyde Park": 13000 };
+/** When each live agent last ran, as the Home cards write it (payouts are emailed Friday). */
+export const HOME_RAN = { chargebacks: "Thu 8:00 AM", payouts: "Fri 8:00 AM" } as const;

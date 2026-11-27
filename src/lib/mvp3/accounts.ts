@@ -1,4 +1,5 @@
 import { BRAND, BRAND_LOGO, STORES, type Store } from "@/lib/finance/outlets";
+import { asset } from "@/lib/asset";
 
 // The restaurants a /mvp3 viewer can switch between (top-bar switcher), one per stage of a KoreFi customer:
 //  - Taco Pros: the full demo chain, 34 outlets and years of reports (every /mvp2 report follows it).
@@ -10,7 +11,7 @@ import { BRAND, BRAND_LOGO, STORES, type Store } from "@/lib/finance/outlets";
 //    Taco Pros sample data, labelled as such.
 //  - Masa Kitchen: the same use case as Taco Pros (same 34 outlets, reports, Home, pinned dashboards and agents),
 //    but a locked-down workspace: no New chat, no creating or duplicating agents, and Settings
-//    shows only the email. See `limited`. Its dashboards are pinned by the KoreFi team (`teamPinned`), and like Taco Pros
+//    shows only the email. See `limited`. Its dashboards are pinned by KoreFi (`teamPinned`), and like Taco Pros
 //    it always lands on Home.
 // Prototype: Saffron Grill borrows six Taco Pros outlets so its figures still come from the report data.
 
@@ -28,7 +29,7 @@ export type Account = {
   home?: boolean;
   /** Locked-down workspace: no New chat, no new or duplicated agents, Settings shows email only. */
   limited?: boolean;
-  /** The KoreFi team pinned its dashboards: labelled so, each dashboard's chat opens on a summary with suggestions,
+  /** KoreFi pinned its dashboards: labelled so, each dashboard's chat opens on a summary with suggestions,
    *  and the empty chat (/mvp3) summarises them. It still lands on Home. */
   teamPinned?: boolean;
   /** How much history KoreFi holds, shown in the switcher. */
@@ -43,11 +44,15 @@ const DATA = ["DoorDash", "Uber Eats", "Grubhub", "POS"];
 
 export const ACCOUNTS: Account[] = [
   { id: "tacopros", name: BRAND, logo: BRAND_LOGO, stores: STORES, stage: "active", home: true, history: "34 outlets · 2 years of reports", has: DATA, hasLabel: "Toast sales and delivery-app reports, last 2 years" },
-  { id: "saffron", name: "Saffron Grill", stores: STORES.slice(0, 6), stage: "active", agentsOff: true, history: "6 outlets · 6 months of reports", has: DATA, hasLabel: "Toast sales, last 6 months" },
-  { id: "masa", name: "Masa Kitchen", stores: STORES, stage: "active", home: true, limited: true, teamPinned: true, history: "34 outlets · 2 years of reports", has: DATA, hasLabel: "Toast sales and delivery-app reports, last 2 years" },
-  { id: "littlepho", name: "Little Pho", stores: STORES, stage: "new", history: "Joined today · no reports yet" },
+  { id: "saffron", name: "Copper Kettle Grill", logo: asset("/logos/copper-kettle-grill.svg"), stores: STORES.slice(0, 6), stage: "active", agentsOff: true, history: "6 outlets · 6 months of reports", has: DATA, hasLabel: "Toast sales, last 6 months" },
+  { id: "masa", name: "Agave Kitchen", logo: asset("/logos/agave-kitchen.svg"), stores: STORES, stage: "active", home: true, limited: true, teamPinned: true, history: "34 outlets · 2 years of reports", has: DATA, hasLabel: "Toast sales and delivery-app reports, last 2 years" },
+  { id: "littlepho", name: "Maple Street Diner", logo: asset("/logos/maple-street-diner.svg"), stores: STORES, stage: "new", history: "Joined today · no reports yet" },
 ];
 
 /** A refresh opens as the first-time user, on the welcome chat, so a demo starts from the beginning. */
 export const DEFAULT_ACCOUNT = ACCOUNTS.find((a) => a.stage === "new")!;
 export const DATA_ACCOUNT = ACCOUNTS[0];
+
+/** Gets the Home page: the accounts with `home`, plus one with every agent off, which opens on its first-run state
+ *  (Figma "Home · scenarios" › H7). Only `home` accounts land on it. */
+export const hasHome = (a: Account) => !!(a.home || a.agentsOff);

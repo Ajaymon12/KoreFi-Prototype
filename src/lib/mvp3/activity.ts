@@ -6,7 +6,7 @@ import type { Account } from "./accounts";
 import type { AgentId } from "./agents";
 
 // MVP 3: the activity log behind an agent and its chats. What happened each week and who did it:
-//  - the KoreFi team (ops) uploads the delivery-app and Toast reports, checks them, files disputes, chases mismatches;
+//  - KoreFi (ops) uploads the delivery-app and Toast reports, checks them, files disputes, chases mismatches;
 //  - the agent then runs on them, updates the dashboard and emails the owner.
 // Report-only: the owner never acts here; the log shows the work was done.
 // Same week calendar as the runs (lib/mvp3/runs): a week closes Thursday, and the agent runs at 8 AM that day,
@@ -21,14 +21,14 @@ export type Activity = {
   id: string;
   /** Epoch ms. */
   at: number;
-  /** Who did it: someone on the KoreFi team, the agent, or KoreFi itself (account events). */
+  /** Who did it: someone on KoreFi, the agent, or KoreFi itself (account events). */
   by: { kind: "team"; name: string } | { kind: "agent"; agent: AgentId } | { kind: "system" };
   text: string;
   detail?: string;
 };
 
 /** The KoreFi ops people on the account, taking turns week to week. */
-const TEAM = ["Priya · KoreFi team", "Marcus · KoreFi team"];
+const TEAM = ["Priya · KoreFi", "Marcus · KoreFi"];
 
 /** Weeks of activity kept. */
 const WEEKS_SHOWN = 6;
@@ -88,7 +88,7 @@ export function activityLog(wid: string | undefined, opts: Opts): Activity[] {
   const today = WEEKS[LAST].start.getTime() + 7 * DAY + 9 * HOUR;
   const out: Activity[] = [];
   for (let i = LAST; i > LAST - WEEKS_SHOWN && i >= 0; i--) out.push(...weekOf(wid, i, opts));
-  // Masa Kitchen: the KoreFi team pinned its dashboards when they set the account up.
+  // Masa Kitchen: KoreFi pinned its dashboards when they set the account up.
   if (account.teamPinned && opts.dashboard && (wid === "chargebacks" || wid === "payouts")) {
     const first = Math.max(0, LAST - WEEKS_SHOWN + 1);
     out.push({ id: `${wid}-pinned`, at: WEEKS[first].start.getTime() + 7 * DAY + 9 * HOUR, by: { kind: "team", name: TEAM[0] }, text: `Pinned the ${opts.dashboard} dashboard to your sidebar`, detail: "Updates every Thursday, 8:00 AM" });

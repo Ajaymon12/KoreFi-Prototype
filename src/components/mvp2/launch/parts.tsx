@@ -52,4 +52,4 @@ export const SOURCES = {
   books: { icon: <BooksIcon />, name: "QuickBooks Online", status: "First sync" },
 } satisfies Record<string, LaunchSource>;
 
-export const UPLOAD_NOTE = "Your KoreFi team uploads these each week. This page fills in the week the first ones land.";
+export const UPLOAD_NOTE = "KoreFi uploads these each week. This page fills in the week the first ones land.";

@@ -1,9 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDismiss } from "@/components/dashboard/useDismiss";
 import {
-  ArrowLeft,
+  Bot,
+  Check,
   MessageSquare,
+  MoreHorizontal,
   BarChart3,
   BookOpen,
   CalendarClock,
@@ -24,7 +28,6 @@ import {
   Play,
   Plug,
   Plus,
-  Redo2,
   Rocket,
   Send,
   ShieldCheck,
@@ -451,12 +454,10 @@ function examples(w: Workflow) {
 // ───────── Editor ─────────
 
 const card = "rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_1px_2px_rgb(0_0_0/0.04)]";
-/** A section title on the details page ("Steps", "Instructions"): 16px medium (Figma 1687:9591). */
-const pageHead = "text-subtitle-sm font-medium text-(--color-text-primary)";
 
 function Editor({ base }: { base: Workflow }) {
   const router = useRouter();
-  const { saveWorkflow, runAgent, dashboards } = useAgents();
+  const { saveWorkflow, runAgent, dashboards, open: openChat } = useAgents();
   const [w, setW] = useState(base);
   const dash = dashboards.find((d) => d.workflow === w.id);
   const [toast, setToast] = useState<string | null>(null);
@@ -479,7 +480,7 @@ function Editor({ base }: { base: Workflow }) {
   /** The attachment preview open: PDF or Excel. */
   const [file, setFile] = useState<"pdf" | "excel" | null>(null);
   const [past, setPast] = useState<Workflow[]>([]);
-  const [future, setFuture] = useState<Workflow[]>([]);
+  const [, setFuture] = useState<Workflow[]>([]);
   const log = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -561,13 +562,6 @@ function Editor({ base }: { base: Workflow }) {
     setFuture((f) => [w, ...f]);
     apply(prev, changedAreas(prev, w), false);
   };
-  const stepForward = () => {
-    const next = future[0];
-    if (!next) return;
-    setFuture((f) => f.slice(1));
-    setPast((p) => [...p, w]);
-    apply(next, changedAreas(next, w), false);
-  };
 
   const publish = () => {
     const next = { ...w, kind: "preset" as const };
@@ -581,6 +575,13 @@ function Editor({ base }: { base: Workflow }) {
   const run = () => {
     saveWorkflow(w);
     runAgent(w);
+    router.push("/");
+  };
+  // × returns to where you came from (?from=agent|agents|home → back); with no from, to the agent's chat.
+  const params = useSearchParams();
+  const close = () => {
+    if (params.get("from") || !w.thread) return router.back();
+    openChat(w.thread);
     router.push("/");
   };
 
@@ -619,7 +620,7 @@ function Editor({ base }: { base: Workflow }) {
     commit(setGroups(w.groups.filter((_, j) => j !== gi)), `Removed the “${g.title}” stage and its ${g.steps.length} ${g.steps.length === 1 ? "step" : "steps"}.`, ["steps"]);
   };
 
-  const status: { label: string; tone: "success" | "info" | "neutral" } = w.kind === "draft" ? { label: "Draft", tone: "info" } : w.state === "live" ? { label: "Live", tone: "success" } : { label: w.state === "idle" ? "Not live" : "Learning", tone: "neutral" };
+  const status: { label: string; tone: "success" | "info" | "neutral" } = w.kind === "draft" ? { label: "Draft", tone: "info" } : w.state === "live" ? { label: "Running", tone: "success" } : { label: w.state === "idle" ? "Not running" : "Learning", tone: "neutral" };
   const ex = examples(w);
   const fresh = chat.length === 0;
   const unsure = !fresh && chat[chat.length - 1].text.endsWith("for example:");
@@ -991,116 +992,110 @@ function Editor({ base }: { base: Workflow }) {
     </TabList>
   );
 
-  // ───────── the page: one card, header across the top, chat on the left, the agent on the right (Figma 1687:9039) ─────────
+  // ───────── the page (Figma "Korefi – Agents" › Edit agent, E1): no header across the page. The chat is a plain
+  // column with its own header; the agent sits in a grey pane with its own header (name, what it does, Saved + Undo,
+  // Run, close) and its steps and tabs on a white panel. Every change saves straight away.
 
+  const notLive = w.kind === "draft" || w.state !== "live";
+  const chatActions = !notLive && hasRuns(w.id);
   return (
-    <section aria-label="Workflow" className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-(--color-background-secondary) selection:bg-(--color-brand-light)">
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-(--color-border-default) px-3 sm:px-4">
-        <IconButton variant="ghost" size="sm" label="Back" tooltip="Back" icon={<ArrowLeft className="size-4" />} onClick={() => router.back()} />
-        <h1 id="node-name" className={cn("min-w-0 truncate rounded-small px-1 text-body-md font-medium text-(--color-text-primary) transition-colors duration-500", flash.includes("name") && "bg-(--color-brand-light)")}>
-          {w.title}
-        </h1>
-        <Badge variant={status.tone} label={status.label} />
-        <div className="ml-auto flex items-center gap-1">
-          {(saved || w.kind === "draft") && <span className="mr-2 hidden truncate text-body-sm text-(--color-text-secondary) sm:inline">{saved ? `${w.kind === "draft" ? "Draft updated" : "Saved"} ${saved}` : "Not published yet"}</span>}
-          <IconButton variant="ghost" size="sm" label="Undo" tooltip="Undo" icon={<Undo2 className="size-4" />} isDisabled={!past.length} onClick={stepBack} />
-          <IconButton variant="ghost" size="sm" label="Redo" tooltip="Redo" icon={<Redo2 className="size-4" />} isDisabled={!future.length} onClick={stepForward} />
-          {w.kind !== "draft" && hasRuns(w.id) && <Button size="sm" variant="ghost" label="Runs" icon={<History className="size-4" />} onClick={() => router.push(`/agent?id=${w.id}`)} />}
-          {w.kind === "draft" && <Button size="sm" label="Publish" icon={<Rocket className="size-4" />} onClick={publish} />}
-          <span className="ml-1">
-            <Button size="sm" variant="primary" label="Run now" icon={<Play className="size-4" />} onClick={run} />
-          </span>
-        </div>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-        {/* ── the chat: change anything in your own words ── */}
-        <div className="flex shrink-0 flex-col p-3 lg:w-[clamp(320px,30%,420px)]">
-          <aside aria-label="Change this agent by chat" className="flex min-h-[480px] flex-1 flex-col overflow-hidden rounded-[16px] border border-(--color-border-default) bg-(--color-background-primary) lg:min-h-0">
-            {fresh ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-6 text-center">
-                {w.agent ? <AgentAvatar agent={w.agent} size={48} /> : <Sparkles className="size-8 text-(--color-primary)" aria-hidden />}
-                <p className="mt-3 text-subtitle-md font-medium text-balance text-(--color-text-primary)">What should {w.title} do differently?</p>
-                <p className="mt-1.5 max-w-[320px] text-body-md text-pretty text-(--color-text-secondary)">Tell me in your own words, or edit it on the right. I save as I go, and you can undo any change.</p>
-              </div>
-            ) : (
-              <ul ref={log} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5">
-                {chat.map((m, k) =>
-                  m.who === "you" ? (
-                    <li key={k} className="ml-auto w-fit max-w-[85%] rounded-large bg-(--color-neutral-light) px-3 py-1.5 text-body-md text-(--color-text-primary)">
-                      {m.text}
-                    </li>
-                  ) : (
-                    <li key={k} className="flex gap-2.5">
-                      {w.agent && <AgentAvatar agent={w.agent} size={22} className="mt-0.5 shrink-0" />}
-                      <div className="min-w-0 flex-1">
-                        {m.undo ? (
-                          <div className="rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-3">
-                            <p className="text-body-sm font-medium text-(--color-text-secondary)">What I changed</p>
-                            <p className="mt-1 text-body-md text-(--color-text-primary)">{m.text}</p>
-                            <div className="mt-2">
-                              <Button size="sm" variant="ghost" label="Undo" icon={<Undo2 className="size-4" aria-hidden />} onClick={() => undo(k, m.undo!)} />
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-body-md text-(--color-text-primary)">{m.text}</p>
-                        )}
-                        {m.chips?.length && k === chat.length - 1 ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {m.chips.map((x) => (
-                              <button key={x} type="button" onClick={() => send(x)} className={cn(pill, "px-3 py-1.5 text-left")}>
-                                {x}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    </li>
-                  ),
-                )}
-                {typing && (
-                  <li className="flex items-center gap-2.5" aria-live="polite">
-                    {w.agent && <AgentAvatar agent={w.agent} size={22} className="shrink-0" />}
-                    <span className="flex gap-1 rounded-large bg-(--color-neutral-lightest) px-3 py-2.5" aria-label={`${agentName} is typing`}>
-                      {[0, 150, 300].map((d) => (
-                        <span key={d} className="size-1.5 animate-bounce rounded-circle bg-(--color-text-tertiary)" style={{ animationDelay: `${d}ms` }} />
-                      ))}
-                    </span>
-                  </li>
-                )}
-              </ul>
-            )}
-            <div className="shrink-0 px-3 pb-3">
-              {(fresh || unsure) && (
-                <div className="mb-2.5 flex flex-wrap gap-1.5">
-                  {ex.map((x) => (
-                    <button key={x} type="button" onClick={() => send(x)} className={cn(pill, "px-3 py-1.5 text-left")}>
-                      {x}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Composer
-                placeholder={`Reply to ${agentName}`}
-                intercept={(t) => {
-                  send(t);
-                  return true;
-                }}
-              />
-              <ComposerNote />
+    <section aria-label="Workflow" className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-(--color-background-secondary) selection:bg-(--color-brand-light) lg:flex-row lg:overflow-hidden">
+      {/* ── the chat: change anything in your own words ── */}
+      <aside aria-label="Change this agent by chat" className="flex min-h-[480px] shrink-0 flex-col border-b border-(--color-border-default) bg-(--color-background-secondary) lg:min-h-0 lg:w-[clamp(340px,38%,395px)] lg:border-r lg:border-b-0">
+        <header className="mt-3 flex h-8 shrink-0 items-center gap-2 px-4">
+          {w.agent ? <AgentAvatar agent={w.agent} size={24} className="shrink-0" /> : <Sparkles className="size-5 shrink-0 text-(--color-primary)" aria-hidden />}
+          <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">Edit {w.title}</h1>
+          {/* Hidden for agents that aren't live yet: no runs to show. */}
+          {chatActions && (
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              <IconButton variant="ghost" size="sm" label="Runs" tooltip="Runs" icon={<History className="size-4" />} onClick={() => router.push(`/agent?id=${w.id}`)} />
+              <EditMenu id={w.id} />
             </div>
-          </aside>
+          )}
+        </header>
+        {fresh ? (
+          <div className="min-h-0 flex-1 overflow-y-auto px-8 pt-12 pb-6 text-center">
+            <div className="flex flex-col items-center">
+              {w.agent ? <AgentAvatar agent={w.agent} size={48} /> : <Sparkles className="size-8 text-(--color-primary)" aria-hidden />}
+              <p className="mt-4 max-w-[260px] text-subtitle-md font-medium text-balance text-(--color-text-primary)">What should {w.title} do differently?</p>
+              <p className="mt-2 max-w-[300px] text-body-md text-pretty text-(--color-text-secondary)">Tell me in your own words, or edit it on the right. I save as I go, and you can undo any change.</p>
+            </div>
+          </div>
+        ) : (
+          <ul ref={log} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5">
+            {chat.map((m, k) =>
+              m.who === "you" ? (
+                <li key={k} className="ml-auto w-fit max-w-[85%] rounded-large bg-(--color-neutral-light) px-3.5 py-2 text-body-md text-(--color-text-primary)">
+                  {m.text}
+                </li>
+              ) : (
+                <li key={k} className="flex flex-col gap-2">
+                  {w.agent && <AgentAvatar agent={w.agent} size={20} className="shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="text-body-md text-(--color-text-primary)">{m.text}</p>
+                    {m.undo && (
+                      <button type="button" onClick={() => undo(k, m.undo!)} className={cn("mt-2 inline-flex h-6.5 items-center gap-1 rounded-small border border-(--color-border-default) px-2 text-body-sm text-(--color-text-primary) hover:bg-(--color-neutral-lightest)", focusRing)}>
+                        <Undo2 className="size-3.5" aria-hidden />
+                        Undo
+                      </button>
+                    )}
+                    {m.chips?.length && k === chat.length - 1 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {m.chips.map((x) => (
+                          <button key={x} type="button" onClick={() => send(x)} className={cn(pill, "px-3 py-1 text-left")}>
+                            {x}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              ),
+            )}
+            {typing && (
+              <li className="flex items-center gap-2.5" aria-live="polite">
+                {w.agent && <AgentAvatar agent={w.agent} size={20} className="shrink-0" />}
+                <span className="flex gap-1 rounded-large bg-(--color-neutral-lightest) px-3 py-2.5" aria-label={`${agentName} is typing`}>
+                  {[0, 150, 300].map((d) => (
+                    <span key={d} className="size-1.5 animate-bounce rounded-circle bg-(--color-text-tertiary)" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </span>
+              </li>
+            )}
+          </ul>
+        )}
+        <div className="shrink-0 px-3 pb-3">
+          {(fresh || unsure) && (
+            <div className="mb-4 flex flex-col items-start gap-1.5 px-1">
+              {ex.map((x) => (
+                <button key={x} type="button" onClick={() => send(x)} className={cn(pill, "px-3 py-1 text-left")}>
+                  {x}
+                </button>
+              ))}
+            </div>
+          )}
+          <Composer
+            placeholder={`Reply to ${agentName}`}
+            intercept={(t) => {
+              send(t);
+              return true;
+            }}
+          />
+          <ComposerNote />
         </div>
+      </aside>
 
-        {/* ── the agent: who it is, its steps, then Setup or Configure ── */}
-        <div className="min-w-0 flex-1 bg-(--color-background-secondary) lg:overflow-y-auto">
-          <div className="flex flex-col gap-6 p-6">
+      {/* ── the agent: who it is, then its steps and Setup or Configure on a white panel ── */}
+      <div className="flex min-w-0 flex-1 flex-col bg-(--gray-300) lg:min-h-0">
+        <header className="flex shrink-0 items-start gap-3 px-5 pt-5 pb-3">
+          {w.agent ? <AgentAvatar agent={w.agent} size={40} className="shrink-0" /> : <span className="grid size-10 shrink-0 place-items-center rounded-medium bg-(--color-brand-lightest) text-(--color-primary)"><Sparkles className="size-5" aria-hidden /></span>}
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex items-start gap-3">
-              {w.agent ? <AgentAvatar agent={w.agent} size={40} className="shrink-0" /> : <span className="grid size-10 shrink-0 place-items-center rounded-medium bg-(--color-brand-lightest) text-(--color-primary)"><Sparkles className="size-5" aria-hidden /></span>}
-              <div className="min-w-0 flex-1">
-                <label className="group/name flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                <label className="group/name flex min-w-0 items-center gap-2">
                   <input
                     key={w.title}
+                    id="node-name"
                     defaultValue={w.title}
                     aria-label="Agent name"
                     onBlur={(e) => {
@@ -1108,24 +1103,51 @@ function Editor({ base }: { base: Workflow }) {
                       if (t && t !== w.title) commit({ ...w, title: t }, `Renamed to ${t}.`, ["name"]);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                    className="-ml-1.5 field-sizing-content max-w-full min-w-[4ch] rounded-small px-1.5 text-[20px] leading-7 font-medium text-(--color-text-primary) outline-none hover:bg-(--color-neutral-lightest) focus:bg-(--color-neutral-lightest)"
+                    className={cn(
+                      "-ml-1.5 field-sizing-content max-w-full min-w-[4ch] rounded-small px-1.5 text-[26px] leading-[1.2] font-normal tracking-[-0.02em] text-(--color-text-primary) outline-none transition-colors duration-500 hover:bg-(--color-background-secondary)/60 focus:bg-(--color-background-secondary)",
+                      flash.includes("name") && "bg-(--color-brand-light)",
+                    )}
                   />
                   <Pencil className="size-3.5 shrink-0 text-(--color-text-tertiary) opacity-0 group-hover/name:opacity-100" aria-hidden />
                 </label>
-                <textarea
-                  key={w.overview}
-                  defaultValue={w.overview}
-                  aria-label="What it does"
-                  rows={2}
-                  onBlur={(e) => {
-                    const t = e.target.value.trim();
-                    if (t && t !== w.overview) commit({ ...w, overview: t }, "I rewrote the overview.", ["overview"]);
-                  }}
-                  className="-ml-1.5 mt-1 block w-full resize-none field-sizing-content rounded-small px-1.5 py-0.5 text-body-sm text-(--color-text-secondary) outline-none hover:bg-(--color-neutral-lightest) focus:bg-(--color-neutral-lightest) focus:text-(--color-text-primary)"
-                />
+                {/* Agents being set up say so; a live agent needs no chip. */}
+                {notLive && <Badge variant={status.tone} label={status.label} />}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {saved && past.length > 0 && (
+                  <>
+                    <span className="hidden items-center gap-1 text-body-sm text-(--color-text-secondary) sm:inline-flex">
+                      <Check className="size-3.5" aria-hidden />
+                      {w.kind === "draft" ? "Draft updated" : "Saved"}
+                    </span>
+                    <button type="button" onClick={stepBack} className={cn("inline-flex h-8 items-center gap-1 rounded-medium px-2 text-[13px] text-(--color-text-primary) hover:bg-(--color-background-secondary)/70", focusRing)}>
+                      <Undo2 className="size-3.5" aria-hidden />
+                      Undo
+                    </button>
+                  </>
+                )}
+                {w.kind === "draft" && <Button size="sm" label="Publish" icon={<Rocket className="size-4" />} onClick={publish} />}
+                <Button size="sm" variant="primary" label="Run" icon={<Play className="size-3.5" />} onClick={run} />
+                <span aria-hidden className="mx-1 h-5 w-px bg-(--color-border-default)" />
+                <IconButton variant="ghost" size="sm" label="Close" tooltip="Close" icon={<X className="size-4" />} onClick={close} />
               </div>
             </div>
+            <textarea
+              key={w.overview}
+              defaultValue={w.overview}
+              aria-label="What it does"
+              rows={2}
+              onBlur={(e) => {
+                const t = e.target.value.trim();
+                if (t && t !== w.overview) commit({ ...w, overview: t }, "I rewrote the overview.", ["overview"]);
+              }}
+              className="-ml-1.5 block w-full max-w-[640px] resize-none field-sizing-content rounded-small px-1.5 py-0.5 text-body-md text-(--color-text-secondary) outline-none hover:bg-(--color-background-secondary)/60 focus:bg-(--color-background-secondary) focus:text-(--color-text-primary)"
+            />
+          </div>
+        </header>
 
+        <div className="px-2.5 pb-2.5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          <div className="flex min-h-full flex-col gap-6 rounded-[16px] bg-(--color-background-secondary) px-6 pt-4 pb-6">
             {/* What the agent has and what it needs from the owner, before Run (leadership flow 3). */}
             {needs.length > 0 && (
               <section aria-label="What it needs" className="grid max-w-[640px] gap-1.5 rounded-large border border-(--color-border-default) bg-(--color-background-primary) px-4 py-3 text-body-md">
@@ -1139,11 +1161,12 @@ function Editor({ base }: { base: Workflow }) {
             )}
 
             <section aria-labelledby="h-steps">
-              <h2 id="h-steps" className={pageHead}>Steps</h2>
+              <h2 id="h-steps" className="text-body-md font-medium text-(--color-text-primary)">Steps</h2>
               <div className="mt-3 max-w-[680px]">{steps}</div>
             </section>
 
-            {tabs}
+            {/* The selected tab's underline in the brand orange. */}
+            <div className="[--color-accent:var(--color-primary)]">{tabs}</div>
 
             {view === "setup" ? (
               <div id="agent-setup" role="tabpanel" className="-mt-1 flex flex-col gap-6">
@@ -1160,6 +1183,28 @@ function Editor({ base }: { base: Workflow }) {
       {file && <ReportModal format={file} title={w.title} onClose={() => setFile(null)} />}
       <Toast message={toast} onDismiss={dismiss} />
     </section>
+  );
+}
+
+/** The edit chat's ⋯ menu (Figma E11): go to the agent's overview. */
+function EditMenu({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useDismiss(ref, open, () => setOpen(false));
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-label="Options" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} className={cn(iconButton, "size-8", open && "bg-(--color-neutral-light) text-(--color-text-primary)")}>
+        <MoreHorizontal className="size-4" aria-hidden />
+      </button>
+      {open && (
+        <div role="menu" className="absolute top-9 right-0 z-20 w-56 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
+          <Link role="menuitem" href={`/agent?id=${id}`} className={cn("flex w-full items-center gap-2 rounded-medium px-2.5 py-2 text-body-md text-(--color-text-primary) hover:bg-(--color-neutral-lightest)", focusRing)}>
+            <Bot className="size-4 text-(--color-text-secondary)" aria-hidden />
+            Agent overview
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 

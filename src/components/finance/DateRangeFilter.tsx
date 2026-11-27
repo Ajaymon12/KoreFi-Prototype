@@ -16,7 +16,9 @@ const fmt = (d: Date, year = false) => d.toLocaleDateString("en-US", { month: "s
 const monthName = (y: number, m: number) => new Date(Date.UTC(y, m, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 const utcDay = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 
-export function DateRangeFilter({ weeks, presets, value, onChange }: { weeks: TimelineWeek[]; presets: Preset[]; value: [number, number]; onChange: (v: [number, number]) => void }) {
+/** `dates`: the chip always shows the range, years included ("Nov 1, 2026 – Nov 7, 2026"), not the preset's name.
+ *  `align`: which chip edge the menu opens under. `accent`: a chosen period (not the first preset) takes the brand tint. */
+export function DateRangeFilter({ weeks, presets, value, onChange, dates = false, align = "left", accent = false }: { weeks: TimelineWeek[]; presets: Preset[]; value: [number, number]; onChange: (v: [number, number]) => void; dates?: boolean; align?: "left" | "right"; accent?: boolean }) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -33,8 +35,10 @@ export function DateRangeFilter({ weeks, presets, value, onChange }: { weeks: Ti
     if (!el || !r) return;
     const room = document.documentElement.clientWidth - 8;
     const natural = r.right - shift;
-    setShift(natural > room ? Math.max(room - natural, 8 - (r.left - shift)) : 0);
-  }, [open, custom]);
+    const left = r.left - shift;
+    if (align === "right") setShift(left < 8 ? 8 - left : 0);
+    else setShift(natural > room ? Math.max(room - natural, 8 - left) : 0);
+  }, [open, custom]); // eslint-disable-line react-hooks/exhaustive-deps -- align is fixed per chip
 
   const first = utcDay(weeks[0].start);
   const last = utcDay(weeks[weeks.length - 1].start) + 6 * DAY;
@@ -45,6 +49,8 @@ export function DateRangeFilter({ weeks, presets, value, onChange }: { weeks: Ti
     return i;
   };
   const rangeText = ([a, b]: [number, number]) => `${fmt(weeks[a].start)} – ${fmt(new Date(utcDay(weeks[b].start) + 6 * DAY), weeks[a].start.getUTCFullYear() !== weeks[b].start.getUTCFullYear())}`;
+
+  const fullRange = ([a, b]: [number, number]) => `${fmt(weeks[a].start, true)} – ${fmt(new Date(utcDay(weeks[b].start) + 6 * DAY), true)}`;
 
   const preset = presets.find((p) => p.range[0] === value[0] && p.range[1] === value[1]);
   const isDefault = preset === presets[0];
@@ -162,16 +168,20 @@ export function DateRangeFilter({ weeks, presets, value, onChange }: { weeks: Ti
         onClick={openMenu}
         className={cn(
           "flex h-8 items-center gap-1.5 rounded-medium border px-2.5 text-menu-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)",
-          isDefault ? "border-(--color-border-default) bg-(--color-background-secondary) text-(--color-text-secondary) hover:text-(--color-text-primary)" : "border-(--color-border-darker) bg-(--color-neutral-lightest) text-(--color-text-primary)",
+          isDefault
+            ? cn("border-(--color-border-default) bg-(--color-background-secondary) hover:text-(--color-text-primary)", dates ? "text-(--color-text-primary)" : "text-(--color-text-secondary)")
+            : accent
+              ? "border-(--color-brand-light) bg-(--brand-300) text-(--color-text-clickable)"
+              : "border-(--color-border-darker) bg-(--color-neutral-lightest) text-(--color-text-primary)",
         )}
       >
         <CalendarDays aria-hidden className="size-3.5" />
-        {preset ? preset.label : rangeText(value)}
+        {dates ? fullRange(value) : preset ? preset.label : rangeText(value)}
         <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div ref={menu} role="dialog" aria-label="Date range" style={{ translate: shift ? `${shift}px 0` : undefined }} className="absolute top-full left-0 z-30 mt-1.5 flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_8px_24px_rgb(0_0_0/0.12)] sm:flex-row">
+        <div ref={menu} role="dialog" aria-label="Date range" style={{ translate: shift ? `${shift}px 0` : undefined }} className={cn("absolute top-full z-30 mt-1.5 flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-large border border-(--color-border-default) bg-(--color-background-secondary) shadow-[0_8px_24px_rgb(0_0_0/0.12)] sm:flex-row", align === "right" ? "right-0" : "left-0")}>
           {/* Presets */}
           <ul className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-(--color-border-default) p-1.5 sm:w-44 sm:flex-col sm:border-r sm:border-b-0">
             {presets.map((p) => {

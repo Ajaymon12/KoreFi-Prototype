@@ -55,7 +55,7 @@ export function AgentFolders() {
         </Link>
       </div>
       <div className="space-y-8">
-        {!cards.length && <p className="text-body-md text-(--color-text-secondary)">No live agents yet. Browse all to run one.</p>}
+        {!cards.length && <p className="text-body-md text-(--color-text-secondary)">No running agents yet. Browse all to run one.</p>}
         {groups.map(({ f, all }) => {
           const shown = tab === "all" ? all.slice(0, ROW) : all;
           return (

@@ -9,8 +9,9 @@ import { Tray } from "@/components/mvp2/parts";
 // title is text-body-md medium (14px); body text is text-body-md; labels and lines under figures are text-body-sm.
 // Every block is the same grey-tray card, tables included, and panels pad their content px-6 py-6.
 
-/** The /mvp2 outlet filters, with the "N of M outlets" count on the right while filtered. */
-export function FilterBar({ scope, children }: { scope: OutletScope; children?: React.ReactNode }) {
+/** The /mvp2 outlet filters, with the "N of M outlets" count on the right while filtered. `end`: a control after
+ *  the count, at the row's right edge (the Chargebacks Overview's Download PDF). */
+export function FilterBar({ scope, children, end }: { scope: OutletScope; children?: React.ReactNode; end?: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <OutletFilters scope={scope} pills={["outlet"]} />
@@ -18,6 +19,7 @@ export function FilterBar({ scope, children }: { scope: OutletScope; children?: 
       <span className="ml-auto flex items-center gap-2 text-body-sm text-(--color-text-tertiary) tabular-nums">
         <OutletCount scope={scope} />
       </span>
+      {end}
     </div>
   );
 }

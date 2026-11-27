@@ -2,7 +2,7 @@ import type { SourceGroup, SourceId } from "./types";
 
 // What each source gives KoreFi, in plain words. Shown on the Integrations page cards and in the
 // connect dialog. Delivery apps (DoorDash, Uber Eats, Grubhub) connect differently: the owner adds a KoreFi
-// reports-only user in the app's merchant portal and the KoreFi team verifies access (MVP 3 lists them;
+// reports-only user in the app's merchant portal and KoreFi verifies access (MVP 3 lists them;
 // the older Integrations page still hides them via SHOWN_GROUPS).
 
 export type CatalogEntry = { blurb: string; reads: string[]; tint: string };

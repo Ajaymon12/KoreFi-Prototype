@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // page instead of $0 everywhere. A headline and what the page will do on the left, what it's waiting
 // on below that, and a carousel of the page's features (each with a sample preview) on the right.
 // Report-only like the rest of the owner app: the "waiting on" rows are status, not buttons, since
-// the KoreFi team uploads the reports. Shared so every page can launch the same way; each page
+// KoreFi uploads the reports. Shared so every page can launch the same way; each page
 // passes its own copy and previews.
 // The page itself never scrolls sideways. The cards drift left slowly and without end (the set is
 // drawn twice, so the second copy takes over seamlessly); the arrows nudge it a card either way.

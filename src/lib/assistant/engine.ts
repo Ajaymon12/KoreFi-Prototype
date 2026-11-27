@@ -202,7 +202,7 @@ export function answer(question: string, data: DashboardData, pathname = ""): An
     case "help":
       return {
         title: "Hi, I'm Sous",
-        lines: ["I read your sales, payouts, chargebacks, bank and books, and tell you what is happening and why. I never change anything: if something needs fixing, I can pass a note to the KoreFi team."],
+        lines: ["I read your sales, payouts, chargebacks, bank and books, and tell you what is happening and why. I never change anything: if something needs fixing, I can pass a note to KoreFi."],
         sources: [],
         followUps: SUGGESTIONS.slice(0, 4),
       };

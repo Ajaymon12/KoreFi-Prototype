@@ -6,7 +6,7 @@ import { dashData, scopeLabel, type Dashboard } from "@/lib/mvp3/dashboards";
 import { useAgents } from "./AgentsProvider";
 import { useOpenPinned } from "./Mvp3Sidebar";
 
-// The chat home's summary of the pinned dashboards, for a restaurant whose dashboards the KoreFi team pinned
+// The chat home's summary of the pinned dashboards, for a restaurant whose dashboards KoreFi pinned
 // (Masa Kitchen, Account.teamPinned). Shown before any chat is started: each card gives the dashboard's headline
 // from its latest update, and opens it in its chat with the dashboard beside it. Report-only.
 
@@ -36,7 +36,7 @@ export function PinnedSummary() {
   return (
     <section aria-labelledby="pinned-h" className="space-y-2.5">
       <h2 id="pinned-h" className="text-body-sm text-(--color-text-secondary)">
-        {byTeam ? "Your dashboards, pinned by the KoreFi team" : "Your dashboards"}
+        {byTeam ? "Your dashboards, pinned by KoreFi" : "Your dashboards"}
       </h2>
       <ul className="grid gap-2.5 sm:grid-cols-2">
         {pinned.map((d) => {

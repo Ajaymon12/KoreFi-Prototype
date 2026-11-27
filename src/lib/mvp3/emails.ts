@@ -69,7 +69,7 @@ function fixtureChargebackEmail(restaurant: string): Email {
 }
 
 /** The same email in a quiet week, when no outlet is over the limit (leadership flow 1). Not used by the demo week. */
-export function quietChargebackEmail(restaurant = "Masa Kitchen", charged = 290): Email {
+export function quietChargebackEmail(restaurant = "Agave Kitchen", charged = 290): Email {
   return {
     kind: "chargebacks",
     subject: `${restaurant} chargebacks, ${FX.WEEK}: ${usd(charged)} charged`,
@@ -109,7 +109,7 @@ function fixturePayoutEmail(restaurant: string): Email {
 }
 
 /** The same email in a clean week, when every order matched. Not used by the demo week. */
-export function cleanPayoutEmail(restaurant = "Masa Kitchen"): Email {
+export function cleanPayoutEmail(restaurant = "Agave Kitchen"): Email {
   return {
     kind: "payouts",
     subject: `${restaurant} payouts, ${FX.WEEK}: all ${FX.ORDERS.toast.toLocaleString("en-US")} orders matched`,
@@ -143,7 +143,7 @@ export function chargebackEmail(stores: readonly Store[], restaurant = "Your"): 
     cells: [
       { label: "Charged back", value: usd(charged), sub: `${rows.length} orders`, tone: charged > usual ? "danger" : undefined },
       { label: "Won back", value: usd(won), sub: "so far", tone: "success" },
-      { label: "Being disputed", value: usd(open), sub: "the KoreFi team is on it" },
+      { label: "Being disputed", value: usd(open), sub: "KoreFi is on it" },
     ],
     look: d && d.n
       ? {
@@ -180,7 +180,7 @@ export function payoutEmail(stores: readonly Store[], restaurant = "Your"): Emai
     kind: "payouts",
     subject: `Delivery payouts, ${wk.label}: ${usd(paid)} paid${off ? ` · ${off} orders not paid` : ""}`,
     sentAt: `${dayLabel(weekDays(LAST).email)}, 8:00 AM`,
-    lead: `The apps paid you ${usd(paid)} on ${usd(now.sales)} of sales, ${usd(Math.abs(change))} ${change >= 0 ? "more" : "less"} than last week. ${off ? `${off} orders in Toast (${usd(offAmt)}) were not in the apps' reports, and the KoreFi team is checking them with the apps.` : "Every order matched."}`,
+    lead: `The apps paid you ${usd(paid)} on ${usd(now.sales)} of sales, ${usd(Math.abs(change))} ${change >= 0 ? "more" : "less"} than last week. ${off ? `${off} orders in Toast (${usd(offAmt)}) were not in the apps' reports, and KoreFi is checking them with the apps.` : "Every order matched."}`,
     cells: [
       { label: "Paid to you", value: usd(paid), sub: `${signed(change)} vs last week`, tone: change >= 0 ? "success" : "danger" },
       { label: "Apps kept", value: `${Math.round((1 - paid / (now.sales || 1)) * 100)}%`, sub: "of app sales" },

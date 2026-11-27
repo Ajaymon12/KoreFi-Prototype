@@ -20,7 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const usd2 = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
-/** The words the owner and the KoreFi team use for a dispute. */
+/** The words the owner and KoreFi use for a dispute. */
 const STATUS_LABEL: Record<CbStatus, string> = { won: "Won", disputing: "Awaiting decision", new: "Still to dispute", lost: "Denied" };
 const LOGO: Record<AppKey, "doordash" | "ubereats" | "grubhub"> = { doordash: "doordash", uber: "ubereats", grubhub: "grubhub" };
 const TONE: Record<CbStatus, "success" | "warning" | "danger" | "neutral"> = { new: "neutral", won: "success", disputing: "warning", lost: "danger" };

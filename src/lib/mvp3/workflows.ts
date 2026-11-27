@@ -70,13 +70,13 @@ const PRESET: Record<string, Partial<Workflow>> = {
     groups: [
       { title: "Read the apps", steps: ["Read the new adjustment report from DoorDash, Uber Eats and Grubhub.", "List every charge marked as an order error."] },
       { title: "Match charges", steps: ["Match each chargeback to its order in Toast.", "Group chargebacks by item and by outlet."] },
-      { title: "Report", steps: ["Check each dispute's status with the KoreFi team.", "Email the owner a summary of what was won back."] },
+      { title: "Report", steps: ["Check each dispute's status with KoreFi.", "Email the owner a summary of what was won back."] },
     ],
     triggers: ["Every Thursday, 8:00 AM"],
     deliver: { email: true, dashboard: false },
   },
   payouts: {
-    overview: "Matches every delivery order in your POS with the app's record and its payout. It flags orders that are missing from a payout or paid short, so the KoreFi team can chase them with the app.",
+    overview: "Matches every delivery order in your POS with the app's record and its payout. It flags orders that are missing from a payout or paid short, so KoreFi can chase them with the app.",
     inputs: [PERIOD, OUTLETS, { name: "tolerance", type: "number", desc: "Ignore differences under this amount ($)." }],
     groups: [
       { title: "Load the week", steps: ["Read the week's Toast delivery orders.", "Read the payout report from each app."] },

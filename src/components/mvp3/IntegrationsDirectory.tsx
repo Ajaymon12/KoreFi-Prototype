@@ -167,7 +167,7 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
         <Directory items={items} onOpen={(id) => router.push(`${path}?app=${id}`)} />
       )}
 
-      {selected && step === "add" && isApp(selected.id) && <AddUser c={selected} app={selected.id} restaurant={onboarding.profile.restaurant || "Taco Pros"} onClose={() => setStep(null)} onAdded={() => addedUser(selected)} />}
+      {selected && step === "add" && isApp(selected.id) && <AddUser c={selected} app={selected.id} restaurant={onboarding.profile.restaurant || "Prairie Taco Co."} onClose={() => setStep(null)} onAdded={() => addedUser(selected)} />}
       {selected && step === "consent" && <Consent c={selected} onClose={() => setStep(null)} onContinue={() => setStep("authorize")} />}
       {selected && step === "authorize" && <Authorize c={selected} onCancel={() => setStep(null)} onAuthorize={() => finish(selected)} />}
       {selected && leaving === selected.id && <ConnectDialog source={selected} mode="disconnect" onClose={() => setLeaving(null)} onDisconnect={() => disconnect(selected)} />}
@@ -307,7 +307,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
 
       {c.status === "error" && c.detail && <p className="mt-4 rounded-large bg-(--color-danger-lightest) px-4 py-3 text-body-md text-(--color-text-danger)">{c.detail}</p>}
 
-      <p className="mt-8 max-w-[68ch] text-body-md leading-relaxed text-(--color-text-secondary)">{c.group === "marketplace" ? (c.pending ? `You added the KoreFi Reports user in ${c.name}. The KoreFi team is accepting the invite and checking it can see every store, which usually takes about 1 business day. Your agents will message you when the first reports are in.` : `KoreFi reads ${c.name} through a reports-only user you add in its merchant portal. It can't change orders, menus or payouts, and you can remove it from ${c.name} at any time.`) : null}{c.group === "marketplace" ? null : c.connected ? `Your agents read ${c.name} alongside your delivery-app reports.` : `Connect ${c.name} and your agents read it alongside your delivery-app reports.`}{c.group === "marketplace" ? "" : ` KoreFi only reads: it never edits, posts or deletes anything in ${c.name}, and you can disconnect at any time.`}</p>
+      <p className="mt-8 max-w-[68ch] text-body-md leading-relaxed text-(--color-text-secondary)">{c.group === "marketplace" ? (c.pending ? `You added the KoreFi Reports user in ${c.name}. KoreFi is accepting the invite and checking it can see every store, which usually takes about 1 business day. Your agents will message you when the first reports are in.` : `KoreFi reads ${c.name} through a reports-only user you add in its merchant portal. It can't change orders, menus or payouts, and you can remove it from ${c.name} at any time.`) : null}{c.group === "marketplace" ? null : c.connected ? `Your agents read ${c.name} alongside your delivery-app reports.` : `Connect ${c.name} and your agents read it alongside your delivery-app reports.`}{c.group === "marketplace" ? "" : ` KoreFi only reads: it never edits, posts or deletes anything in ${c.name}, and you can disconnect at any time.`}</p>
 
       <section className="mt-10">
         <h2 className="text-subtitle-md font-medium text-(--color-text-primary)">Information</h2>
@@ -337,7 +337,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
                         <button type="button" onClick={() => router.push(`/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
                           <AgentAvatar agent={s.agent} size={20} />
                           {s.name}
-                          {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not live" : "learning"}</span>}
+                          {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not running" : "learning"}</span>}
                         </button>
                       )}
                     </li>
@@ -496,7 +496,7 @@ function Authorize({ c, onCancel, onAuthorize }: { c: Item; onCancel: () => void
               <p className="text-[#59636e]">For these {unit}:</p>
               {(
                 [
-                  ["all", `All ${unit}`, c.group === "pos" ? `Taco Pros · all ${OUTLETS} outlets, including ones you add later.` : "Everything this sign-in can see, now and later."],
+                  ["all", `All ${unit}`, c.group === "pos" ? `Prairie Taco Co. · all ${OUTLETS} outlets, including ones you add later.` : "Everything this sign-in can see, now and later."],
                   ["some", `Only select ${unit}`, "Pick at least one. You can change this later."],
                 ] as const
               ).map(([v, t, d]) => (

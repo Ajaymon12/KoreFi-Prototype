@@ -46,7 +46,7 @@ export default function Login() {
             <Button type="primary" size="medium" htmlType="submit" block className="mt-2">
               {resuming ? "Log in and continue setup" : "Log in"}
             </Button>
-            <p className="text-body-sm text-(--color-text-secondary)">KoreFi team? Log in with your @karboncard.com email to open Ops admin.</p>
+            <p className="text-body-sm text-(--color-text-secondary)">Ops team? Log in with your @karboncard.com email to open Ops admin.</p>
           </form>
         </div>
         <div className="relative hidden w-[455px] shrink-0 self-stretch bg-[#12100e] md:block">

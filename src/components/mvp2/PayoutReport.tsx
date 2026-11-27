@@ -144,7 +144,7 @@ function MatchedWithSquare({ recons, pos = "Square" }: { recons: Recon[]; pos?: 
       <div className="rounded-medium bg-(--color-background-secondary) px-5 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           <p className="text-body-md font-medium text-(--color-text-primary)">{orders ? `${orders.toLocaleString("en-US")} delivery orders don't match ${pos}` : `Every delivery order matched ${pos}`}</p>
-          <p className="text-body-sm text-(--color-text-secondary)">{orders ? "The KoreFi team is checking these with the apps." : "Nothing to chase."}</p>
+          <p className="text-body-sm text-(--color-text-secondary)">{orders ? "KoreFi is checking these with the apps." : "Nothing to chase."}</p>
         </div>
         <dl className="mt-3 grid grid-cols-3 divide-x divide-(--color-border-default) rounded-medium border border-(--color-border-default)">
           {stats.map((s) => (

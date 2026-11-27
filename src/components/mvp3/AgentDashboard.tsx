@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { ArrowRight, CalendarClock, Check, ChevronDown, Download, FileSpreadsheet, FileText, FlaskConical, Mail, MessageSquarePlus, Pin } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, ChevronDown, Download, FileSpreadsheet, FileText, FlaskConical, Mail, MessageSquarePlus, Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { user } from "@/lib/mockData";
 import { StatusBadge } from "@/components/dashboard/primitives";
@@ -17,9 +17,9 @@ import { AgentAvatar } from "./AgentAvatar";
 import { EmailPreviewButton } from "./EmailPreview";
 import * as FX from "@/lib/mvp3/masaFixture";
 import { MasaChargebacks } from "./MasaChargebacks";
+import { PageTabs } from "./pageParts";
 import { ChargebackTransactions } from "./ChargebackTransactions";
 import { printElement } from "@/lib/xlsx";
-import { TabList, Tab } from "@astryxdesign/core/TabList";
 import { useRouter } from "next/navigation";
 import { iconButton } from "@/components/mvp3/styles";
 import { Button } from "@/components/ui/Button";
@@ -335,7 +335,7 @@ export function shortSchedule(t: string) {
 export function PinToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <button type="button" aria-pressed={on} aria-label={on ? "Unpin from sidebar" : "Pin to sidebar"} title={on ? "Pinned to the sidebar. Click to unpin" : "Pin to sidebar"} onClick={onToggle} className={cn(barBtn, "w-8 justify-center")}>
-      <Pin className={cn("size-4", on ? "fill-current text-(--color-primary)" : "text-(--color-text-secondary)")} aria-hidden />
+      {on ? <PinOff className="size-4 text-(--color-text-primary)" aria-hidden /> : <Pin className="size-4 text-(--color-text-secondary)" aria-hidden />}
     </button>
   );
 }
@@ -369,7 +369,7 @@ export function SampleBanner({ what = "numbers" }: { what?: string }) {
     <p className="flex items-start gap-2 rounded-medium border border-(--color-border-default) bg-(--color-neutral-lightest) px-3 py-2 text-body-sm text-(--color-text-primary)">
       <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-(--color-text-secondary)" aria-hidden />
       <span>
-        This is <b className="font-medium">Taco Pros sample data</b>, not yours. Your own {what} show here once your first reports arrive, usually 2 to 3 days after your apps are connected. Pinning and schedules turn on then.
+        This is <b className="font-medium">Prairie Taco Co. sample data</b>, not yours. Your own {what} show here once your first reports arrive, usually 2 to 3 days after your apps are connected. Pinning and schedules turn on then.
       </span>
     </p>
   );
@@ -399,6 +399,8 @@ export function AgentDashboard({ d, actions, padRight = false, onPoint, headerTo
   const hasOrders = d.workflow === "chargebacks";
   const linkedTab = useSyncExternalStore(noSubscribe, () => new URLSearchParams(window.location.search).get("tab"), () => null);
   const [picked, setTab] = useState<"overview" | "transactions" | null>(null);
+  // Where the Overview puts its filters: the tab row's right end (set once that row mounts).
+  const [toolbar, setToolbar] = useState<HTMLElement | null>(null);
   const tab = picked ?? (!inChat && linkedTab === "transactions" ? "transactions" : "overview");
   const onOrders = hasOrders && tab === "transactions";
   // "What is still to dispute?" / "What was denied?" in the chat open Transactions, filtered to those orders.
@@ -416,6 +418,42 @@ export function AgentDashboard({ d, actions, padRight = false, onPoint, headerTo
     const el = document.getElementById(`${d.id}-overview`);
     if (el) printElement(el, `${d.title} overview`);
   };
+  // Masa's Overview puts Download PDF at the end of its filter row (Figma); elsewhere it sits in the bar.
+  const pdfInFilters = fx(d) && !onOrders && !inChat;
+  const downloadBtn = (
+    <button type="button" onClick={download} title={onOrders ? "Download these orders as Excel" : "Download the overview as PDF"} className={cn(barBtn, "gap-1.5 px-2.5")}>
+      {onOrders ? <FileSpreadsheet className="size-4 text-(--color-text-secondary)" aria-hidden /> : <FileText className="size-4 text-(--color-text-secondary)" aria-hidden />}
+      {onOrders ? "Excel" : "PDF"}
+      <Download className="size-3.5 text-(--color-text-secondary)" aria-hidden />
+    </button>
+  );
+  const paneTitle = /dashboard$/i.test(d.title) ? d.title : `${d.title} Dashboard`;
+  // The pane's own header (Figma "Pane header"): a 26px title with an orange Pinned tag, then schedule, unpin, a
+  // divider and the pane's own buttons (expand, close).
+  const paneBar = (
+    <>
+      <div className="flex min-w-0 items-center gap-2 p-2.5">
+        <h2 className="min-w-0 truncate text-[26px] leading-[1.2] font-normal tracking-[-0.02em] text-(--color-text-primary)">{paneTitle}</h2>
+        {d.sample && <SampleTag />}
+        {d.pinned && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-circle bg-(--brand-200) px-2 py-0.5 text-body-sm text-(--color-primary)">
+            <Pin className="size-3" aria-hidden /> Pinned
+          </span>
+        )}
+      </div>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        {!pdfInFilters && downloadBtn}
+        {!d.sample && <ScheduleControl d={d} />}
+        {!d.sample && <PinButton d={d} />}
+        {actions && (
+          <>
+            <BarDivider />
+            {actions}
+          </>
+        )}
+      </div>
+    </>
+  );
   const bar = (
     <>
       {!(inChat && d.title === chatTitle) && <h2 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{d.title}</h2>}
@@ -443,19 +481,28 @@ export function AgentDashboard({ d, actions, padRight = false, onPoint, headerTo
     </>
   );
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className={cn("flex min-h-0 flex-1 flex-col", !inChat && "bg-(--gray-300)")}>
       {inChat ? (
         headerTo && createPortal(bar, headerTo)
       ) : (
-        <header className={cn("flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border-default) bg-(--color-background-secondary) py-1 pl-4", padRight ? "pr-2" : "pr-4")}>{bar}</header>
+        <header className={cn("flex shrink-0 flex-wrap items-center gap-x-2 pt-2.5 pl-2.5", padRight ? "pr-2.5" : "pr-4")}>{paneBar}</header>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[960px] space-y-4 px-6 py-6">
+      {/* Own header: the content sits on a white panel inside the grey pane (Figma "Dashboard pane"). */}
+      <div className={cn("min-h-0 flex-1 overflow-y-auto", !inChat && "px-2.5 pb-2.5")}>
+        <div className={cn(!inChat && "min-h-full rounded-[16px] bg-(--color-background-secondary)")}>
+        <div className={cn("mx-auto w-full max-w-[1080px] space-y-5 px-6", inChat ? "py-6" : "pt-4 pb-6")}>
+          {/* Home's page structure (pageParts): the tabs, with the Overview's filters at the right end of the row. */}
           {hasOrders && (
-            <TabList role="tablist" value={tab} onChange={(v) => setTab(v as "overview" | "transactions")} hasDivider>
-              <Tab value="overview" label="Overview" panelId={`${d.id}-overview`} />
-              <Tab value="transactions" label="Transactions" panelId={`${d.id}-transactions`} />
-            </TabList>
+            <PageTabs
+              id={d.id}
+              tabs={[
+                { value: "overview", label: "Overview" },
+                { value: "transactions", label: "Transactions" },
+              ]}
+              value={tab}
+              onChange={setTab}
+              trailing={fx(d) && !onOrders ? <span ref={setToolbar} className="flex flex-wrap items-center gap-2" /> : undefined}
+            />
           )}
           {onOrders ? (
             <div id={`${d.id}-transactions`} role="tabpanel" className="space-y-4">
@@ -480,12 +527,29 @@ export function AgentDashboard({ d, actions, padRight = false, onPoint, headerTo
               )}
               <span>{fx(d) ? `${FX.WEEK} · all apps` : scopeLabel(d.config)}</span>
               <span>·</span>
-              <span>{d.sample ? "Taco Pros, 34 outlets" : `Updated ${d.updated}`}</span>
+              <span>{d.sample ? "Prairie Taco Co., 34 outlets" : `Updated ${d.updated}`}</span>
             </div>
           )}
           {d.sample && <SampleBanner what="chargebacks" />}
           {fx(d) ? (
-            <MasaChargebacks />
+            <MasaChargebacks
+              edit={
+                d.sample
+                  ? {}
+                  : {
+                      pointed: pointed?.dash === d.id ? pointed.title : null,
+                      onEdit: (title, widget) => {
+                        if (pointed?.dash === d.id && pointed.title === title) return setPointed(null);
+                        const r: CardRef = { dash: d.id, widget, title };
+                        if (onPoint) onPoint(r);
+                        else setPointed(r);
+                      },
+                    }
+              }
+              onSeeOrders={hasOrders ? () => setTab("transactions") : undefined}
+              download={pdfInFilters ? <PdfButton onClick={download} /> : undefined}
+              toolbarTo={hasOrders ? toolbar : undefined}
+            />
           ) : d.config.widgets.length === 0 ? (
             <p className="py-16 text-center text-body-md text-(--color-text-secondary)">Nothing on this dashboard. Ask in the chat to add totals, a weekly chart, outlets or reasons.</p>
           ) : (
@@ -503,8 +567,19 @@ export function AgentDashboard({ d, actions, padRight = false, onPoint, headerTo
           </div>
           )}
         </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Figma's "Download PDF" at the end of the Overview's filter row. */
+function PdfButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} title="Download the overview as PDF" className={cn(barBtn, "gap-1.5 pr-3 pl-2.5 text-body-md")}>
+      <FileText className="size-4 text-(--color-text-danger)" aria-hidden />
+      Download PDF
+    </button>
   );
 }
 

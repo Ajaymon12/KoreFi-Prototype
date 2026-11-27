@@ -25,8 +25,8 @@ import { activityLog } from "@/lib/mvp3/activity";
 //  - one setup line: when it runs, what it reads, where results go;
 //  - totals over the run history (same figures as the runs below);
 //  - two tabs: Runs (newest first; a run's headline opens that run's chat) and
-//    Activity: what the KoreFi team and the agent did each week (reports uploaded, disputes filed, dashboard updated).
-// Report-only: the numbers say what happened; the KoreFi team does every fix.
+//    Activity: what KoreFi and the agent did each week (reports uploaded, disputes filed, dashboard updated).
+// Report-only: the numbers say what happened; KoreFi does every fix.
 // Built with Astryx (Button, Badge, TabList, Table + pagination); colours come through app/(mvp3)/mvp3/astryx-bridge.css.
 
 const fmtDate = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -123,12 +123,12 @@ export function AgentOverview({ w }: { w: Workflow }) {
             <div className="min-w-0 flex-1 basis-64">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-subtitle-lg font-medium text-(--color-text-primary)">{w.title}</h1>
-                {sample ? <Badge variant="neutral" label="Learning" /> : <Badge variant="success" label="Live" />}
+                {sample ? <Badge variant="neutral" label="Learning" /> : <Badge variant="success" label="Running" />}
               </div>
               <p className="mt-1 line-clamp-2 max-w-[640px] text-body-md text-(--color-text-secondary)">{w.overview}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" href={`/agent?id=${w.id}&edit=1`} label="Edit" icon={<Pencil className={icon} aria-hidden />} />
+              <Button size="sm" href={`/agent?id=${w.id}&edit=1&from=agent`} label="Edit" icon={<Pencil className={icon} aria-hidden />} />
               {!account.limited && (
                 <Button size="sm" label="Duplicate" icon={<Copy className={icon} aria-hidden />} onClick={() => router.push(`/agent?id=${duplicateAgent(w)}`)} />
               )}
@@ -210,7 +210,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
             </div>
           ) : (
             <div id="agent-activity" role="tabpanel" className="space-y-2">
-              <p className="text-body-sm text-(--color-text-secondary)">What the KoreFi team and this agent did</p>
+              <p className="text-body-sm text-(--color-text-secondary)">What KoreFi and this agent did</p>
               <div className="rounded-large border border-(--color-border-default) bg-(--color-background-secondary)">
                 <ActivityLog items={activity} days={5} />
               </div>

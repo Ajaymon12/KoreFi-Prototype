@@ -37,7 +37,7 @@ const iconBtn = cn(iconButton, "size-8 [&_svg]:size-4");
 // Home suggestions: ChatGPT's icon pills, one icon per SUGGESTIONS entry (same order).
 const suggestion = cn(pill, "inline-flex items-center gap-2 px-3.5 py-2 text-body-md");
 const SUGGESTION_ICONS = [ShieldCheck, TrendingUp, Landmark, Bike, Users];
-/** A restaurant whose dashboards the KoreFi team pinned (Masa Kitchen): asks about those dashboards. */
+/** A restaurant whose dashboards KoreFi pinned (Masa Kitchen): asks about those dashboards. */
 const PINNED_SUGGESTIONS = [
   { text: "What changed on chargebacks this week?", Icon: ShieldCheck },
   { text: "Which outlets get the most chargebacks?", Icon: Bike },
@@ -646,7 +646,7 @@ function Home() {
   const { threads, open, send, busy } = useAgents();
   const { account } = useAccount();
   const fresh = account.stage === "new";
-  // Masa Kitchen: the KoreFi team pinned its dashboards, so the empty chat opens on their summary.
+  // Masa Kitchen: KoreFi pinned its dashboards, so the empty chat opens on their summary.
   const pinnedHome = !!account.teamPinned && !fresh;
   const suggestions = pinnedHome ? PINNED_SUGGESTIONS : SUGGESTIONS.map((text, i) => ({ text, Icon: SUGGESTION_ICONS[i] ?? Sparkles }));
   return (
@@ -737,7 +737,7 @@ function AgentMenu({ wid }: { wid: string }) {
   );
 }
 
-/** The chat header's Activity button: the log of what the KoreFi team and this chat's agent did each week.
+/** The chat header's Activity button: the log of what KoreFi and this chat's agent did each week.
  *  An icon, so the chat's title keeps the room. The panel hangs from the chat column (the nearest `relative`),
  *  not the button, so it never runs off the column's left edge. */
 function ActivityButton({ wid, agent, dashboard }: { wid?: string; agent: AgentId; dashboard?: string }) {
@@ -822,6 +822,31 @@ function ThreadView() {
       <ComposerNote />
     </div>
   );
+
+  // A dashboard beside the chat (Figma "Korefi – Agents" › Pinned dashboard): no header across the page. The chat
+  // is a plain column with its own header; the dashboard pane brings its own title bar, on a grey pane.
+  if (split && canvas.startsWith("dash:"))
+    return (
+      <section aria-label={active.title} className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-(--color-background-secondary)">
+        <div ref={box} className="flex min-h-0 flex-1">
+          <aside
+            aria-label="Chat"
+            className={cn("@container/chat relative flex min-w-0 flex-1 flex-col border-r border-(--color-border-default) bg-(--color-background-secondary) lg:flex-none lg:shrink-0", !chatWidth && "lg:w-[clamp(360px,28vw,440px)]")}
+            style={colStyle}
+          >
+            <header className="flex h-8 shrink-0 items-center gap-2 px-4 mt-3">
+              <AgentMark agent={active.agent} size={24} />
+              <h1 className="min-w-0 truncate text-body-md font-medium text-(--color-text-primary)">{active.title}</h1>
+              <div className="ml-auto flex shrink-0 items-center gap-0.5">{chatTools}</div>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto">{messages}</div>
+            {composer}
+          </aside>
+          <ResizeHandle box={box} width={chatWidth} onWidth={setChatWidth} />
+          <Canvas id={canvas} chatTitle={active.title} />
+        </div>
+      </section>
+    );
 
   // The agent editor's layout (WorkflowEditor): one page, a header across the top,
   // the chat as a card on the left and the report on the right.

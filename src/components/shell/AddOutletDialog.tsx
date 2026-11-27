@@ -70,7 +70,7 @@ export function AddOutletDialog({ mode, siblings, noun = { one: "branch", many: 
       <div ref={panel} role="dialog" aria-modal="true" aria-label={title} className="my-auto w-full max-w-[480px] rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-6 shadow-[0_16px_48px_rgb(0_0_0/0.18)]">
         <h2 className="text-subtitle-lg text-(--color-text-primary)">{title}</h2>
         <p className="mt-1 text-body-md text-(--color-text-secondary)">
-          {isRestaurant ? `A restaurant is a brand with its own name and logo, like Taco Pros. Add its first ${noun.one} now; more can be added later.` : `${noun.one[0].toUpperCase()}${noun.one.slice(1)}s are its individual stores. Sales appear once the POS is connected.`}
+          {isRestaurant ? `A restaurant is a brand with its own name and logo, like Prairie Taco Co. Add its first ${noun.one} now; more can be added later.` : `${noun.one[0].toUpperCase()}${noun.one.slice(1)}s are its individual stores. Sales appear once the POS is connected.`}
         </p>
 
         <form noValidate onSubmit={submit} className="mt-5 flex flex-col gap-4">

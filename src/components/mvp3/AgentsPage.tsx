@@ -45,8 +45,8 @@ const CATEGORY_NOTE: Record<AgentId, string> = {
 const NEXT_UP = ["channel-pnl", "three-way-recon", "journal-entries"];
 const isLater = (c: Card) => c.kind !== "draft" && c.kind !== "live" && !NEXT_UP.includes(c.id);
 const GROUPS: Group[] = [
-  { id: "live", label: "Live", note: "Running on your reports. Each run posts a dashboard in a chat.", match: (c) => c.kind === "live" },
-  { id: "next", label: "Next up", note: "Ready to turn on. The first run makes an agent live.", match: (c) => c.kind !== "draft" && c.kind !== "live" && NEXT_UP.includes(c.id) },
+  { id: "live", label: "Running", note: "Running on your reports. Each run posts a dashboard in a chat.", match: (c) => c.kind === "live" },
+  { id: "next", label: "Next up", note: "Ready to turn on. The first run turns an agent on.", match: (c) => c.kind !== "draft" && c.kind !== "live" && NEXT_UP.includes(c.id) },
   ...(["operations", "finance", "growth"] as const).map((id): Group => ({
     id,
     label: AGENTS.find((a) => a.id === id)!.name.replace(/ agent$/, ""),
@@ -60,9 +60,9 @@ const LATER_GROUPS = new Set(["operations", "finance", "growth"]);
 // Masa Kitchen: every agent is live, so there is no live / not live split. Each sits under its category, with no status badge.
 const FLAT_GROUPS: Group[] = GROUPS.filter((g) => g.id !== "live" && g.id !== "next").map((g) => (g.agent ? { ...g, match: (c) => c.kind !== "draft" && c.agent === g.agent } : g));
 const BADGE: Record<Kind,{ label: string; cls: string }> = {
-  live: { label: "Live", cls: "bg-(--color-success-lightest) text-(--color-text-success)" },
+  live: { label: "Running", cls: "bg-(--color-success-lightest) text-(--color-text-success)" },
   learning: { label: "Learning", cls: "bg-(--color-background-secondary) text-(--color-text-primary)" },
-  idle: { label: "Not live", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
+  idle: { label: "Not running", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
   draft: { label: "Draft", cls: "bg-(--color-background-secondary) text-(--color-text-secondary)" },
 };
 
@@ -90,7 +90,7 @@ function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDu
         )}
         items={[
           { label: "Open", href: `/agent?id=${c.id}`, icon: SquareArrowOutUpRight },
-          { label: "Edit", href: `/agent?id=${c.id}&edit=1`, icon: Pencil },
+          { label: "Edit", href: `/agent?id=${c.id}&edit=1&from=agents`, icon: Pencil },
           ...(onRun ? [{ label: "Run now", onClick: onRun, icon: Play }] : []),
           ...(onDuplicate ? [{ label: "Duplicate", onClick: onDuplicate, icon: Copy }] : []),
         ]}

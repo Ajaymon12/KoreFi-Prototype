@@ -51,9 +51,9 @@ function chargebackRun(i: number): Omit<Run, "id" | "at" | "minutes" | "status" 
     reply: {
       agent: "operations",
       title: headline,
-      lines: [`The apps charged back ${rows.length} orders in the week of ${WEEKS[i].label}. The KoreFi team disputed them and is still waiting on ${open.length}. There's nothing you need to do.`],
+      lines: [`The apps charged back ${rows.length} orders in the week of ${WEEKS[i].label}. KoreFi disputed them and is still waiting on ${open.length}. There's nothing you need to do.`],
       stats: metrics.map((m) => ({ label: m.label, value: usd(m.value), tone: m.tone })),
-      work: ["Read the new adjustment report from DoorDash, Uber Eats and Grubhub", "Matched each chargeback to its order in Toast", "Checked dispute status with the KoreFi team", "Emailed you the summary"],
+      work: ["Read the new adjustment report from DoorDash, Uber Eats and Grubhub", "Matched each chargeback to its order in Toast", "Checked dispute status with KoreFi", "Emailed you the summary"],
       report: "chargebacks",
     },
   };

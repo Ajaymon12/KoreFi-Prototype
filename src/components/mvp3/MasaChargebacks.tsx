@@ -1,47 +1,44 @@
 "use client";
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AppName, ReportTable, type TableColumn } from "@/components/ui/ReportTable";
-import { OutletUniverse, useOutletFilter } from "@/components/mvp2/OutletFilters";
-import { LAST, PRESETS, WEEKS } from "@/components/finance/PnlStory";
+import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AppName } from "@/components/ui/ReportTable";
+import { OutletFilters, OutletUniverse, useOutletFilter } from "@/components/mvp2/OutletFilters";
+import { LAST, PRESETS } from "@/components/finance/PnlStory";
 import { DateRangeFilter } from "@/components/finance/DateRangeFilter";
 import type { Preset } from "@/components/finance/TimelineRange";
 import { appLabel, type AppKey } from "@/lib/finance/chargebacks";
 import * as FX from "@/lib/mvp3/masaFixture";
-import { useAgents } from "./AgentsProvider";
+import { homeData, periodsFor } from "@/lib/mvp3/home";
 import { useAccount } from "./AccountSwitcher";
-import { FilterBar, NoOutlets, TableCard } from "./masaParts";
-import { HeadlineCards, OutletRanks, OutletTabs, Problems, ReasonGrid, biggestProblems } from "./chargebackOverview";
+import { FilterBar, NoOutlets } from "./masaParts";
+import { ByApp, HeadlineCards, OutletRanks, OutletTabs, Problems, ReasonGrid, biggestProblems, type EditCard } from "./chargebackOverview";
 
 // Masa Kitchen's pinned Chargebacks dashboard (Overview tab): the agent-journey prototype's sample week (Nov 1–7 in
-// lib/mvp3/masaFixture), laid out like the Eggholic chargeback review (chargebackOverview.tsx): cost / where / won back →
-// biggest problems → outlets ranked → what went wrong → one outlet at a time → by app. Every section follows the outlet
-// filter, counted from the week's 33 charges. Report-only, except "Ask why", which asks the agent.
+// lib/mvp3/masaFixture), laid out like Figma "Korefi – Agents" › Pinned dashboard (chargebackOverview.tsx):
+// cost / where / won back → biggest problems → chargebacks by outlet → what went wrong → one outlet at a time → by app.
+// Every section follows the outlet filter, counted from the week's 33 charges. Report-only: "Edit in chat" points a
+// card at the chat, "See N orders" opens Transactions.
 
 export const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 /** The period chip opens on "Last week" (the sample week). Its calendar uses the shared report weeks, which end Sep 30. */
 export const PERIODS: Preset[] = [{ label: "Last week", range: [LAST, LAST] }, ...PRESETS];
 const SOURCE: Record<AppKey, string> = { doordash: "doordash", uber: "ubereats", grubhub: "grubhub" };
 
-const APP_COLUMNS: TableColumn<ReturnType<typeof FX.byApp>[number]>[] = [
-  { key: "app", header: "App", cell: (a) => <AppName source={SOURCE[a.app]} name={appLabel(a.app)} /> },
-  { key: "orders", header: "Orders", align: "right", cell: (a) => a.orders },
-  { key: "charged", header: "Charged back", align: "right", cell: (a) => usd(a.charged) },
-  { key: "won", header: "Won back", align: "right", cell: (a) => usd(a.won) },
-];
-
-export function MasaChargebacks() {
+/** `toolbarTo`: put the filters in this element (the dashboard's tab row, as on Home) instead of their own row;
+ *  null while it mounts. */
+export function MasaChargebacks({ edit = {}, onSeeOrders, download, toolbarTo }: { edit?: EditCard; onSeeOrders?: (outlet: string) => void; download?: React.ReactNode; toolbarTo?: HTMLElement | null }) {
   const { account } = useAccount();
   return (
     <OutletUniverse stores={account.stores}>
-      <Body />
+      <Body edit={edit} onSeeOrders={onSeeOrders} download={download} toolbarTo={toolbarTo} />
     </OutletUniverse>
   );
 }
 
-function Body() {
-  const { active, ask, send } = useAgents();
-  const router = useRouter();
+function Body({ edit, onSeeOrders, download, toolbarTo }: { edit: EditCard; onSeeOrders?: (outlet: string) => void; download?: React.ReactNode; toolbarTo?: HTMLElement | null }) {
+  const { account } = useAccount();
+  // Dated like Home: the sample week is Nov 1–7, 2026.
+  const weeks = useMemo(() => homeData(account.stores).weeks, [account.stores]);
   const [range, setRange] = useState<[number, number]>(PERIODS[0].range);
   const [pick, setPick] = useState<string>(FX.FX_OUTLETS[0].name);
   const detail = useRef<HTMLElement>(null);
@@ -50,12 +47,7 @@ function Body() {
   const all = rows.length === FX.FX_OUTLETS.length;
   const ranked = rows.filter((x) => x.charged).sort((a, b) => b.charged - a.charged);
   const sel = ranked.some((x) => x.name === pick) ? pick : (ranked[0]?.name ?? "");
-  // In the dashboard's own chat the answer lands there; from the full page there is no chat open, so one starts.
-  const askWhy = (q: string) => {
-    if (active?.dashboard === "dash-chargebacks") return send(q);
-    ask(q);
-    router.push("/");
-  };
+  const apps = (all ? FX.BY_APP : FX.byApp(rows.map((x) => x.name))).map((a) => ({ ...a, name: <AppName source={SOURCE[a.app]} name={appLabel(a.app)} /> }));
   // Picking an outlet anywhere above opens it in "By outlet" and brings that card into view.
   const open = (name: string) => {
     setPick(name);
@@ -63,10 +55,22 @@ function Body() {
   };
 
   return (
-    <div className="@container space-y-4">
-      <FilterBar scope={scope}>
-        <DateRangeFilter weeks={WEEKS} presets={PERIODS} value={range} onChange={setRange} />
-      </FilterBar>
+    <div className="@container space-y-5">
+      {toolbarTo === undefined ? (
+        <FilterBar scope={scope} end={download}>
+          <DateRangeFilter weeks={weeks} presets={periodsFor(weeks)} value={range} onChange={setRange} dates accent />
+        </FilterBar>
+      ) : (
+        toolbarTo &&
+        createPortal(
+          <>
+            <OutletFilters scope={scope} pills={["outlet"]} />
+            <DateRangeFilter weeks={weeks} presets={periodsFor(weeks)} value={range} onChange={setRange} dates align="right" accent />
+            {download}
+          </>,
+          toolbarTo,
+        )
+      )}
       {rows.length === 0 ? (
         <NoOutlets scope={scope} />
       ) : ranked.length === 0 ? (
@@ -74,13 +78,11 @@ function Body() {
       ) : (
         <>
           <HeadlineCards rows={rows} ranked={ranked} all={all} />
-          <Problems items={biggestProblems(rows)} onOpen={open} onAsk={askWhy} />
-          <OutletRanks rows={rows} ranked={ranked} all={all} sel={sel} onOpen={open} />
-          <ReasonGrid ranked={ranked} onOpen={open} />
-          <OutletTabs ranked={ranked} rows={rows} sel={sel} onSelect={setPick} sectionRef={detail} />
-          <TableCard title="By app">
-            <ReportTable columns={APP_COLUMNS} rows={all ? FX.BY_APP : FX.byApp(rows.map((x) => x.name))} rowKey={(a) => a.app} noun="apps" />
-          </TableCard>
+          <Problems items={biggestProblems(rows)} onOpen={open} edit={edit} />
+          <OutletRanks rows={rows} ranked={ranked} all={all} onOpen={open} edit={edit} />
+          <ReasonGrid ranked={ranked} edit={edit} />
+          <OutletTabs ranked={ranked} rows={rows} sel={sel} onSelect={setPick} sectionRef={detail} onSeeOrders={onSeeOrders} edit={edit} />
+          <ByApp rows={apps} edit={edit} />
         </>
       )}
     </div>

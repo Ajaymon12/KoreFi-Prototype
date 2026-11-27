@@ -13,6 +13,7 @@ import { AgentAvatar } from "./AgentAvatar";
 import { ChatSearch, openChatSearch } from "./ChatSearch";
 import { useOnboarding } from "./Onboarding";
 import { useAccount } from "./AccountSwitcher";
+import { hasHome as accountHasHome } from "@/lib/mvp3/accounts";
 import { iconButton } from "@/components/mvp3/styles";
 
 // MVP 3's sidebar, built like MVP 2's (components/shell/Mvp2Sidebar.tsx) with MVP 3's pages:
@@ -24,9 +25,9 @@ import { iconButton } from "@/components/mvp3/styles";
 //  - Narrow mode: an icon column (button or "[", remembered per browser) with hover flyouts.
 
 const HOME = "/";
-/** The live summary page, above New chat. Only accounts with `home` (Taco Pros) get it. */
+/** The live summary page, above New chat. Accounts with `home`, and one with every agent off (its first-run state). */
 const HOME_PAGE = "/home";
-const useHasHome = () => !!useAccount().account.home;
+const useHasHome = () => accountHasHome(useAccount().account);
 /** A `limited` account (Masa Kitchen) gets no New chat. */
 const useLimited = () => !!useAccount().account.limited;
 

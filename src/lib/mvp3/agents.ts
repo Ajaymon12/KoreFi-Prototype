@@ -13,7 +13,7 @@ import * as FX from "./masaFixture";
 // MVP 3: KoreFi as always-on agents (after ChatGPT Dots, docs/chatgpt-dots-market-research.md).
 // Each agent watches one part of the business, posts an update when something changes, and answers
 // questions in a chat. Every figure comes from the same Taco Pros reports as /mvp2, so an agent's
-// number matches the report it opens. Agents only report: the KoreFi team does every fix.
+// number matches the report it opens. Agents only report: KoreFi does every fix.
 
 export type AgentId = "finance" | "operations" | "growth";
 export type ReportId = "pnl" | "payouts" | "chargebacks" | "overview";
@@ -29,7 +29,7 @@ export type Agent = {
 
 export const AGENTS: Agent[] = [
   { id: "finance", name: "Finance agent", Icon: Coins, watches: "P&L, payouts and deposits across your outlets", schedule: "Checks daily · P&L every morning", status: "watching" },
-  { id: "operations", name: "Operations agent", Icon: ShieldCheck, watches: "Chargebacks and the disputes the KoreFi team files", schedule: "Checks every new delivery-app report", status: "watching" },
+  { id: "operations", name: "Operations agent", Icon: ShieldCheck, watches: "Chargebacks and the disputes KoreFi files", schedule: "Checks every new delivery-app report", status: "watching" },
   { id: "growth", name: "Growth agent", Icon: WandSparkles, watches: "Menu prices against nearby restaurants", schedule: "First report in about 2 weeks", status: "learning" },
 ];
 export const agentOf = (id: AgentId) => AGENTS.find((a) => a.id === id)!;
@@ -193,14 +193,14 @@ export function chargebackUpdate(): AgentReply {
     agent: "operations",
     title: `${won.length} disputes won, ${usd(sumOf(won, "wonBack"))} back`,
     lines: [
-      `The apps charged back ${cbs.length} orders over the last 13 weeks. The KoreFi team disputed them and is still waiting on ${disputing.length}. There's nothing you need to do.`,
+      `The apps charged back ${cbs.length} orders over the last 13 weeks. KoreFi disputed them and is still waiting on ${disputing.length}. There's nothing you need to do.`,
     ],
     stats: [
       { label: "Charged back", value: usd(sumOf(cbs, "amount")), tone: "danger" },
       { label: "Won back", value: usd(sumOf(won, "wonBack")), tone: "success" },
       { label: "Being disputed", value: usd(sumOf(disputing, "amount")) },
     ],
-    work: ["Read new DoorDash, Uber Eats and Grubhub adjustments", "Matched each chargeback to its order", "Checked dispute status with the KoreFi team"],
+    work: ["Read new DoorDash, Uber Eats and Grubhub adjustments", "Matched each chargeback to its order", "Checked dispute status with KoreFi"],
     report: "chargebacks",
     followUps: ["Which outlets get the most chargebacks?", "Why do orders get charged back?"],
   };
@@ -298,7 +298,7 @@ export function payoutReply(recons: Recon[], week: string): AgentReply {
     title: orders ? `${orders} delivery orders don't match Toast` : "Every payout matched Toast",
     lines: [
       orders
-        ? `Week of ${week}, all 3 apps compared with Toast. ${appLabel(worst.app as AppKey)} had the most orders on only one side (${off(worst)} orders, ${usd(offAmt(worst))}). The KoreFi team is checking these with the apps.`
+        ? `Week of ${week}, all 3 apps compared with Toast. ${appLabel(worst.app as AppKey)} had the most orders on only one side (${off(worst)} orders, ${usd(offAmt(worst))}). KoreFi is checking these with the apps.`
         : `Week of ${week}: every DoorDash, Uber Eats and Grubhub order matched its Toast record and payout.`,
     ],
     stats: [
@@ -419,11 +419,11 @@ function route(q: string): AgentReply {
       by: "Payout reconciliation",
       title: "Grubhub pays Wednesday and DoorDash pays Thursday",
       lines: ["Uber Eats paid on Monday; I'll confirm the amount when its report arrives on Wednesday. You'll get the full summary by email on Friday at 8 AM, and an alert sooner only if a payout does not arrive on its usual day."],
-      source: "From each app's usual schedule for Taco Pros",
+      source: "From each app's usual schedule for Prairie Taco Co.",
       work: ["Read each app's usual payout schedule"],
       followUps: ["Which DoorDash orders are missing?"],
     };
-  if (FX.masaFixture() && /(still|file|not filed)/.test(s) && /dispute/.test(s)) return { agent: "operations", title: FX.STILL_TO_DISPUTE.title, lines: [FX.STILL_TO_DISPUTE.text], source: FX.STILL_TO_DISPUTE.source, work: ["Read the KoreFi team's filing log"], followUps: ["Why is Damen high?"] };
+  if (FX.masaFixture() && /(still|file|not filed)/.test(s) && /dispute/.test(s)) return { agent: "operations", title: FX.STILL_TO_DISPUTE.title, lines: [FX.STILL_TO_DISPUTE.text], source: FX.STILL_TO_DISPUTE.source, work: ["Read KoreFi's filing log"], followUps: ["Why is Damen high?"] };
   if (FX.masaFixture() && /(denied|lost|declined)/.test(s)) return { agent: "operations", title: FX.DENIED.title, lines: [FX.DENIED.text], source: FX.DENIED.source, work: ["Read each app's dispute decisions"], followUps: ["What is still to dispute?"] };
   if (/(charge ?back|dispute|refund)/.test(s)) return many && /(outlet|store|where|most)/.test(s) ? chargebackOutlets() : chargebackUpdate();
   if (/(checked so far|still coming|which apps|when is|when are|when does|due|arrive|status)/.test(s) && /(payout|app|paid|pay\b|report)/.test(s)) return payoutStatusReply();
@@ -500,7 +500,7 @@ function fixtureChargebacks(): AgentReply {
   };
 }
 
-/** Masa Kitchen (the KoreFi team pinned its dashboards): each pinned dashboard's chat opens on one message, a summary
+/** Masa Kitchen (KoreFi pinned its dashboards): each pinned dashboard's chat opens on one message, a summary
  *  of the dashboard and a few suggestions. The owner hasn't asked anything yet. */
 export function teamPinnedThreads(): Thread[] {
   return [
@@ -584,7 +584,7 @@ export const FOLDERS: Folder[] = [
     agent: "operations",
     label: "Operations",
     hue: "#F2784B",
-    skills: [{ id: "chargebacks", name: "Chargeback recovery", blurb: "Finds every error charge on your delivery apps and shows which items and locations cause repeats. The KoreFi team disputes each one.", state: "live", cadence: "Email every Thursday", access: APPS_3PD, thread: "cb" }],
+    skills: [{ id: "chargebacks", name: "Chargeback recovery", blurb: "Finds every error charge on your delivery apps and shows which items and locations cause repeats. KoreFi disputes each one.", state: "live", cadence: "Email every Thursday", access: APPS_3PD, thread: "cb" }],
   },
   {
     agent: "finance",
@@ -646,7 +646,7 @@ export type Draft = { id: string; title: string; blurb: string; by: string; upda
 
 export const DRAFTS: Draft[] = [
   { id: "d1", title: "Weekly outlet scorecard", blurb: "Ranks every outlet each Monday on sales, fees kept and chargebacks, and flags the ones that slipped.", by: "Ajay mon", updated: "Last updated 2 days ago", steps: [{ group: "Read the week", items: ["Read last week's Toast sales for every outlet.", "Read the delivery-app payout reports."] }, { group: "Score outlets", items: ["Rank outlets by share of sales kept after fees.", "Flag outlets that dropped 5 places or more."] }] },
-  { id: "d2", title: "Missing-item watch", blurb: "Spots items that are charged back again and again, so the KoreFi team can fix the cause with the outlet.", by: "Ajay mon", steps: [] },
+  { id: "d2", title: "Missing-item watch", blurb: "Spots items that are charged back again and again, so KoreFi can fix the cause with the outlet.", by: "Ajay mon", steps: [] },
   { id: "d3", title: "Delivery fee check", blurb: "Compares the commission each app charged with the rate in your contract and flags orders charged too much.", by: "Ajay mon", updated: "Last updated a week ago", steps: [{ group: "Compare fees", items: ["Read the commission rate in each app contract.", "Work out the rate charged on every order.", "List orders charged above the contract rate."] }] },
   { id: "d4", title: "Promo payback", blurb: "Shows which app promotions paid for themselves in new orders and which only cost margin.", by: "Ajay mon", steps: [] },
   { id: "d5", title: "New outlet baseline", blurb: "After a new outlet opens, compares its first 8 weeks with your other outlets of the same size.", by: "Ajay mon", steps: [] },

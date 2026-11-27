@@ -77,7 +77,7 @@ export function AgentSettings() {
         <div className="mx-auto w-full max-w-[720px] space-y-8 px-4 py-8 sm:px-6">
           <section className="space-y-1">
             <h2 className="text-subtitle-md font-medium text-(--color-text-primary)">Agent updates</h2>
-            <p className="text-body-md text-(--color-text-secondary)">Choose where each agent tells you what changed. Agents only report. The KoreFi team handles every dispute and fix.</p>
+            <p className="text-body-md text-(--color-text-secondary)">Choose where each agent tells you what changed. Agents only report. KoreFi handles every dispute and fix.</p>
           </section>
 
           <ul className="divide-y divide-(--color-border-default) rounded-large border border-(--color-border-default)">

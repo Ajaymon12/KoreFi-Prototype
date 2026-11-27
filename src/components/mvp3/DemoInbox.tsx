@@ -37,7 +37,7 @@ import { EmailBody } from "./EmailPreview";
 // A generic webmail look (no real mail product's name or logo). Everything but the KoreFi email is filler.
 
 const ACCOUNT_KEY = "korefi.mvp3.account";
-const RESTAURANT = "Masa Kitchen";
+const RESTAURANT = "Agave Kitchen";
 
 type Row = { id: string; from: string; subject: string; snippet: string; at: string; unread?: boolean; starred?: boolean; attach?: boolean; korefi?: boolean };
 

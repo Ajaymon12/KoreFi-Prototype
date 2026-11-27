@@ -81,7 +81,7 @@ const possessive = (n: string) => (/s$/i.test(n) ? `${n}'` : `${n}'s`);
 
 const EMPTY_PROFILE: Profile = { email: "", name: "", restaurant: "" };
 /** The first-time account opens already signed up, straight on the welcome chat (sign-up isn't part of the demo). */
-const NEW_OWNER: Profile = { email: "jane@littlepho.com", name: "Jane Nguyen", restaurant: "Little Pho" };
+const NEW_OWNER: Profile = { email: "jane@maplestreetdiner.com", name: "Jane Nguyen", restaurant: "Maple Street Diner" };
 const NO_APPS: Record<App, AppState> = { doordash: "todo", ubereats: "todo", grubhub: "todo" };
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
@@ -241,7 +241,7 @@ function SignUp({ onDone, onLogin }: { onDone: (a: { email: string; name: string
         </>
       }
     >
-      <Button size="medium" block iconLeft={<GoogleMark />} loading={busy === "google"} disabled={busy !== null} onClick={() => wait("google", { email: "jane@littlepho.com", name: "Jane Nguyen" })}>
+      <Button size="medium" block iconLeft={<GoogleMark />} loading={busy === "google"} disabled={busy !== null} onClick={() => wait("google", { email: "jane@maplestreetdiner.com", name: "Jane Nguyen" })}>
         Continue with Google
       </Button>
       <div className="my-5 flex items-center gap-3 text-body-sm text-(--color-text-tertiary)">
@@ -286,7 +286,7 @@ function SignUp({ onDone, onLogin }: { onDone: (a: { email: string; name: string
 // The one thing KoreFi asks after the account: who's signing up and the restaurant's name (it names the KoreFi
 // emails the owner adds to each delivery app). Locations aren't asked: the team reads them from the apps.
 const FREE_MAIL = /^(gmail|googlemail|yahoo|ymail|outlook|hotmail|live|msn|icloud|me|aol|proton|protonmail|gmx|zoho)$/;
-const KNOWN: Record<string, string> = { tacopros: "Taco Pros", littlepho: "Little Pho" };
+const KNOWN: Record<string, string> = { prairietaco: "Prairie Taco Co.", maplestreetdiner: "Maple Street Diner" };
 
 /** "jane@tacopros.com" → "Taco Pros"; a personal address (gmail…) gives nothing. */
 export function guessRestaurant(email: string) {
@@ -315,7 +315,7 @@ function About({ initial, onDone }: { initial: Profile; onDone: (p: Profile) => 
         <TextField
           label="Restaurant name"
           autoComplete="organization"
-          placeholder="Taco Pros"
+          placeholder="Prairie Taco Co."
           value={restaurant}
           onChange={(e) => setRestaurant(e.target.value)}
           hint={guessed ? `From ${initial.email.split("@")[1]}. Change it if it's wrong.` : "If you run several brands, use the group's name."}
@@ -373,7 +373,7 @@ function Setup({ restaurant, onDone }: { restaurant: string; onDone: () => void 
 //  - One email for every app, copied with one tap (two spares if an app rejects it).
 //  - A card per app: open its portal, the steps, then "I've added it" (one tap, no form). "I can't add users"
 //    gets an answer in the chat. Typing "done" or "added it in Uber Eats" works too.
-//  - Then the agents say what the KoreFi team does next (map stores, check the first reports) and offer
+//  - Then the agents say what KoreFi does next (map stores, check the first reports) and offer
 //    sample data and the tour.
 
 /** `video`: a short screen recording of the steps in /public/guides (shown from "Watch how" on the card). */
@@ -552,9 +552,9 @@ export function Welcome() {
       setAgents(ids);
       post({ kind: "user", text: list(ids.map((id) => starter(id).name)) });
       const pos = needsPos(ids).map((id) => starter(id).name);
-      const posLine = pos.length ? ` ${list(pos)} also ${pos.length > 1 ? "match" : "matches"} them to your Square sales. The KoreFi team sets Square up with you once your apps are in.` : "";
+      const posLine = pos.length ? ` ${list(pos)} also ${pos.length > 1 ? "match" : "matches"} them to your Square sales. KoreFi sets Square up with you once your apps are in.` : "";
       if (!needsApps(ids)) {
-        wrapUp(`Done. The KoreFi team will set up ${list(ids.map((id) => starter(id).name))} with you.`);
+        wrapUp(`Done. KoreFi will set up ${list(ids.map((id) => starter(id).name))} with you.`);
         return;
       }
       say(
@@ -651,7 +651,7 @@ export function Welcome() {
       const left = (picked ?? []).filter((a) => next[a] === "todo");
       say({ kind: "text", text: `Thanks! We'll accept the invite at ${email} and check we can see every ${GUIDE[app].name} store.${left.length ? ` ${names(left)} next?` : ""}` });
       if (!left.length)
-        wrapUp(`That's everything we need. The KoreFi team usually takes about 1 business day: we map your stores to your locations, check your first reports, and message you here when they're in.`);
+        wrapUp(`That's everything we need. KoreFi usually takes about 1 business day: we map your stores to your locations, check your first reports, and message you here when they're in.`);
     },
     [apps, setApp, picked, email, post, say, wrapUp],
   );
@@ -824,7 +824,7 @@ export function Welcome() {
 }
 
 /** "Which delivery apps do you sell on?" — tap the apps, then Continue. Frozen once answered. */
-/** The wrap-up: what's set up, what the KoreFi team does next, and where to go from here. */
+/** The wrap-up: what's set up, what KoreFi does next, and where to go from here. */
 function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { agents: string[]; apps: App[]; todo: App[]; reach: Reach | null; phone: string; email: string; onLeave: () => void }) {
   const reachText = reach === "Email" ? `Email to ${email}` : reach === "Text" ? `Text to ${phone}` : "Here in your chats";
   const setup = [
@@ -833,7 +833,7 @@ function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { ag
     { label: "Updates", value: reachText },
   ];
   const next = [
-    "The KoreFi team accepts the invite and maps each app's stores to your locations.",
+    "KoreFi accepts the invite and maps each app's stores to your locations.",
     "We check your first reports. This usually takes about 1 business day.",
     "Each agent posts its first update here, then runs on its schedule.",
   ];

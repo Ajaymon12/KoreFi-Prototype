@@ -173,7 +173,7 @@ export function BalanceSummary() {
                 </ul>
                 <p role="status" className="mt-1 flex items-center gap-1.5 text-body-sm text-(--color-text-tertiary) tabular-nums">
                   {balanced ? <Check aria-hidden className="size-3.5 text-(--color-text-success)" /> : <TriangleAlert aria-hidden className="size-3.5 text-(--color-text-warning)" />}
-                  {balanced ? "Balanced" : "Doesn't balance, flagged to the KoreFi team"}: own {usd(now.assets)} = owe {usd(now.liabilities)} + equity {usd(now.equity)}
+                  {balanced ? "Balanced" : "Doesn't balance, flagged to KoreFi"}: own {usd(now.assets)} = owe {usd(now.liabilities)} + equity {usd(now.equity)}
                 </p>
               </div>
             </div>

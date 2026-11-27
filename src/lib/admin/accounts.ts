@@ -31,7 +31,7 @@ export type AdminOutlet = { id: string; name: string; address: Address; neighbor
 export type AccountRestaurant = { id: string; name: string; logo?: string; outlets: AdminOutlet[] };
 
 export const OUTLET_META: Record<OutletStatus, { label: string; dot: string }> = {
-  live: { label: "Live", dot: "bg-(--color-success-default)" },
+  live: { label: "Active", dot: "bg-(--color-success-default)" },
   stale: { label: "Stale", dot: "bg-(--color-warning-default)" },
   setting_up: { label: "Setting up", dot: "bg-(--color-text-tertiary)" },
 };

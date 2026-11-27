@@ -44,7 +44,7 @@ export type Dashboard = {
   thread?: string;
   /** A pinned /mvp2 report (P&L Summary, Payouts…) instead of the agent's own blocks. */
   report?: ReportId;
-  /** Pinned by the KoreFi team for the owner (Masa Kitchen), not by the owner in a chat. */
+  /** Pinned by KoreFi for the owner (Masa Kitchen), not by the owner in a chat. */
   pinnedBy?: "team";
   /** Built on Taco Pros sample data for a restaurant with no reports yet. Labelled, and can't be pinned or scheduled. */
   sample?: boolean;

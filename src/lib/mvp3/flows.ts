@@ -29,7 +29,7 @@ const answer = (agent: AgentId, title: string, lines: string[], source: string |
 
 export const OUT_OF_SCOPE = /\b(labou?r cost|staff cost|wages?|payroll|food cost|cost of goods|cogs|profit|margin)\b/;
 export function outOfScope(agent: AgentId): AgentReply {
-  return answer(agent, "I can't see that yet.", ["Labor needs your payroll report, and food cost needs stock counts and supplier bills. The KoreFi team can set either up with you."], undefined, [], { work: ["Checked which reports are connected"] });
+  return answer(agent, "I can't see that yet.", ["Labor needs your payroll report, and food cost needs stock counts and supplier bills. KoreFi can set either up with you."], undefined, [], { work: ["Checked which reports are connected"] });
 }
 
 // ───────── Flow 1: chargeback week ─────────
@@ -70,9 +70,9 @@ function chargebackReply(q: string): AgentReply | null {
     return cb(
       `${FX.usd0(FX.CBST.todo)} on ${FX.TODO.length} orders isn't filed yet.`,
       ["All are inside the apps' deadlines: 14 days on DoorDash, 30 days on Uber Eats and Grubhub. You'll see the result in next Thursday's review."],
-      "From the KoreFi team's filing log",
+      "From KoreFi's filing log",
       ["Why is Damen high?", "What was denied?", "Send Damen's sheet to its manager"],
-      { dashboard: "dash-chargebacks", view: "todo", work: ["Read the KoreFi team's filing log"] },
+      { dashboard: "dash-chargebacks", view: "todo", work: ["Read KoreFi's filing log"] },
     );
   if (/denied|declined|lost/.test(s))
     return cb(
@@ -223,7 +223,7 @@ export function docsAfterUpload(thread: Thread, file: string, account: Account):
     agent: (thread.agent as AgentId) ?? "operations",
     style: "answer",
     title: left.length ? `Got it. ${left.length === 1 ? "One more thing" : `${left.length} more things`} to go.` : "Thanks, that's everything I need.",
-    lines: left.length ? [`Next: ${left[0].label.toLowerCase()}.`] : ["The KoreFi team checks it with you before the first run. It posts here once it's ready."],
+    lines: left.length ? [`Next: ${left[0].label.toLowerCase()}.`] : ["KoreFi checks it with you before the first run. It posts here once it's ready."],
     checklist: next,
     work: [`Read ${file}`],
     followUps: [],
