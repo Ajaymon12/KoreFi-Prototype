@@ -112,7 +112,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
     if (r.kind === "new") newChat();
     else open(r.t.id);
     onClose();
-    if (path !== "/mvp3") router.push("/mvp3");
+    if (path !== "/") router.push("/");
   };
 
   useEffect(() => {

@@ -73,7 +73,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
 
   const go = (r: Row) => {
     openRun({ id: r.id, thread: r.thread, week: r.week, reply: r.reply }, w);
-    router.push("/mvp3");
+    router.push("/");
   };
   const [tab, setTab] = useState<"runs" | "activity">("runs");
   const [page, setPage] = useState(1);
@@ -117,7 +117,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
       <div className="mx-auto w-full max-w-[1100px] space-y-8 px-4 py-6 sm:px-6">
         {/* Header */}
         <header className="space-y-4">
-          <Button variant="ghost" size="sm" href="/mvp3/agents" label="Agents" icon={<ArrowLeft className={icon} aria-hidden />} />
+          <Button variant="ghost" size="sm" href="/agents" label="Agents" icon={<ArrowLeft className={icon} aria-hidden />} />
           <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
             {w.agent && <AgentAvatar agent={w.agent} size={44} />}
             <div className="min-w-0 flex-1 basis-64">
@@ -128,9 +128,9 @@ export function AgentOverview({ w }: { w: Workflow }) {
               <p className="mt-1 line-clamp-2 max-w-[640px] text-body-md text-(--color-text-secondary)">{w.overview}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" href={`/mvp3/agent?id=${w.id}&edit=1`} label="Edit" icon={<Pencil className={icon} aria-hidden />} />
+              <Button size="sm" href={`/agent?id=${w.id}&edit=1`} label="Edit" icon={<Pencil className={icon} aria-hidden />} />
               {!account.limited && (
-                <Button size="sm" label="Duplicate" icon={<Copy className={icon} aria-hidden />} onClick={() => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)} />
+                <Button size="sm" label="Duplicate" icon={<Copy className={icon} aria-hidden />} onClick={() => router.push(`/agent?id=${duplicateAgent(w)}`)} />
               )}
               {!sample && (
                 <Button
@@ -140,7 +140,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
                   icon={<Play className={icon} aria-hidden />}
                   onClick={() => {
                     runAgent(w);
-                    router.push("/mvp3");
+                    router.push("/");
                   }}
                 />
               )}
@@ -168,7 +168,7 @@ export function AgentOverview({ w }: { w: Workflow }) {
             )}
             {dash && (
               <li>
-                <Link href={`/mvp3/dashboard?id=${dash.id}`} className="inline-flex items-center gap-1.5 hover:text-(--color-text-primary)">
+                <Link href={`/dashboard?id=${dash.id}`} className="inline-flex items-center gap-1.5 hover:text-(--color-text-primary)">
                   <LayoutDashboard className="size-4 text-(--hue)" aria-hidden />
                   {dash.title} dashboard
                 </Link>

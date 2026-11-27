@@ -61,7 +61,7 @@ function AskWhy({ outlet }: { outlet: string }) {
         // In the dashboard's own chat, answer there. From the full page there is no chat open: start one.
         if (active?.dashboard === "dash-chargebacks") return send(q);
         ask(q);
-        router.push("/mvp3");
+        router.push("/");
       }}
       title={`Ask why ${name} is high`}
       className="shrink-0 rounded-circle border border-(--color-border-default) px-2 py-0.5 text-body-sm text-(--color-text-clickable) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"

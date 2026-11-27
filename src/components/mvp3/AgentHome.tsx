@@ -85,7 +85,7 @@ export function AgentHome() {
 
   // Home is Taco Pros only: any other restaurant (or switching to one while here) goes back to the chat.
   useEffect(() => {
-    if (!account.home) router.replace("/mvp3");
+    if (!account.home) router.replace("/");
   }, [account.home, router]);
 
   const data = useMemo(() => {
@@ -113,7 +113,7 @@ export function AgentHome() {
 
   const go = (question: string) => {
     ask(question);
-    router.push("/mvp3");
+    router.push("/");
   };
 
   const { week, prev, won, cbs, sumOf } = data;
@@ -192,7 +192,7 @@ export function AgentHome() {
             bare
             title="Your agents"
             aside={
-              <Link href="/mvp3/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focusRing)}>
+              <Link href="/agents" className={cn("inline-flex items-center gap-1 rounded-medium text-body-sm text-(--color-text-clickable) hover:underline", focusRing)}>
                 All agents <ArrowUpRight aria-hidden className="size-3.5" />
               </Link>
             }
@@ -238,7 +238,7 @@ function AgentTile({ a }: { a: AgentSummary }) {
   const second = a.latest && a.lead.second?.(a.latest);
   return (
     <Link
-      href={`/mvp3/agent?id=${a.id}`}
+      href={`/agent?id=${a.id}`}
       className={cn(
         "group flex h-full flex-col gap-4 rounded-xlarge border border-(--color-border-default) bg-(--color-background-secondary) p-5 transition-[border-color,box-shadow]",
         "hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
@@ -319,7 +319,7 @@ function DashRow({ d }: { d: Dashboard }) {
   const openPinned = useOpenPinned();
   const Icon = d.report ? FileText : LayoutDashboard;
   return (
-    <Link href={`/mvp3/dashboard?id=${d.id}`} onClick={(e) => openPinned(d.id) && e.preventDefault()} className={row}>
+    <Link href={`/dashboard?id=${d.id}`} onClick={(e) => openPinned(d.id) && e.preventDefault()} className={row}>
       <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-medium bg-(--color-neutral-lightest) text-(--color-text-secondary)">
         <Icon className="size-4" />
       </span>

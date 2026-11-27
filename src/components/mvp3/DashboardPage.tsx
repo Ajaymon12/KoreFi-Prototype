@@ -18,7 +18,7 @@ export function DashboardPage() {
       <div className="grid flex-1 place-items-center p-6 text-center text-body-md text-(--color-text-secondary)">
         <p>
           This dashboard isn’t here any more. Run an agent to build one, from{" "}
-          <Link href="/mvp3/agents" className="text-(--color-text-clickable) hover:underline">
+          <Link href="/agents" className="text-(--color-text-clickable) hover:underline">
             Agents
           </Link>
           .
@@ -39,7 +39,7 @@ export function DashboardPage() {
               onClick={() => {
                 open(d.thread!);
                 setCanvas(report);
-                router.push("/mvp3");
+                router.push("/");
               }}
             />
           )}
@@ -54,7 +54,7 @@ export function DashboardPage() {
                   open(d.thread!);
                   setCanvas(report);
                   setPointed(r);
-                  router.push("/mvp3");
+                  router.push("/");
                 }
               : undefined
           }
@@ -74,7 +74,7 @@ export function DashboardPage() {
               open(d.thread!);
               setCanvas(`dash:${d.id}`);
               setPointed(r);
-              router.push("/mvp3");
+              router.push("/");
             }
           : undefined
       }
@@ -89,7 +89,7 @@ export function DashboardPage() {
               const w = getWorkflow(d.workflow);
               if (w) runAgent(w);
             }
-            router.push("/mvp3");
+            router.push("/");
           }}
         />
       }

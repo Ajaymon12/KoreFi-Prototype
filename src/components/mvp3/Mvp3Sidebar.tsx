@@ -20,14 +20,14 @@ import { iconButton } from "@/components/mvp3/styles";
 //  - "Dashboards": what the owner pinned from a chat (shown once there is one).
 //  - "Recent chats": every thread, unread ones bold with a dot. Picking one opens it on /mvp3.
 //  - Integrations and Settings pinned to the bottom.
-//  - A `limited` account (Masa Kitchen) drops New chat and Integrations.
+//  - A `limited` account (Masa Kitchen) drops New chat.
 //  - Narrow mode: an icon column (button or "[", remembered per browser) with hover flyouts.
 
-const HOME = "/mvp3";
+const HOME = "/";
 /** The live summary page, above New chat. Only accounts with `home` (Taco Pros) get it. */
-const HOME_PAGE = "/mvp3/home";
+const HOME_PAGE = "/home";
 const useHasHome = () => !!useAccount().account.home;
-/** A `limited` account (Masa Kitchen) gets no New chat and no Integrations. */
+/** A `limited` account (Masa Kitchen) gets no New chat. */
 const useLimited = () => !!useAccount().account.limited;
 
 /** Where Home goes: the Home page, for every account with one (Masa Kitchen included). */
@@ -48,11 +48,11 @@ export function useOpenPinned() {
     return true;
   };
 }
-const AGENTS_HREF = "/mvp3/agents";
-const PNL_HREF = "/mvp3/pnl";
+const AGENTS_HREF = "/agents";
+const PNL_HREF = "/pnl";
 /** Agents stays lit in the editor and on the old Drafts link. */
-const onAgents = (path: string) => /^\/mvp3\/(agents|agent|drafts)\b/.test(path);
-const dashHref = (id: string) => `/mvp3/dashboard?id=${id}`;
+const onAgents = (path: string) => /^\/(agents|agent|drafts)\b/.test(path);
+const dashHref = (id: string) => `/dashboard?id=${id}`;
 
 /** Pinned dashboards, in the order they were built. Suspense: it reads ?id= (the static export needs a boundary). */
 function PinnedList(props: { path: string; onFollow?: () => void; big?: boolean }) {
@@ -72,7 +72,7 @@ function PinnedRows({ path, onFollow, big = false }: { path: string; onFollow?: 
   return (
     <ul className="flex flex-col gap-0.5">
       {pinned.map((d) => {
-        const on = (path.startsWith("/mvp3/dashboard") && id === d.id) || (path === HOME && !!d.thread && active?.id === d.thread && canvas === (d.report ?? `dash:${d.id}`));
+        const on = (path.startsWith("/dashboard") && id === d.id) || (path === HOME && !!d.thread && active?.id === d.thread && canvas === (d.report ?? `dash:${d.id}`));
         return (
           <li key={d.id}>
             <Link
@@ -100,13 +100,10 @@ function PinnedRows({ path, onFollow, big = false }: { path: string; onFollow?: 
   );
 }
 const BOTTOM = [
-  { href: "/mvp3/integrations", label: "Integrations", Icon: Blocks },
-  { href: "/mvp3/settings", label: "Settings", Icon: Settings },
+  { href: "/integrations", label: "Integrations", Icon: Blocks },
+  { href: "/settings", label: "Settings", Icon: Settings },
 ];
-const useBottom = () => {
-  const limited = useLimited();
-  return limited ? BOTTOM.filter((b) => b.href !== "/mvp3/integrations") : BOTTOM;
-};
+const useBottom = () => BOTTOM;
 
 // ---- Narrow mode, remembered per browser ----
 
@@ -467,7 +464,7 @@ function Narrow({ path, onExpand }: { path: string; onExpand: () => void }) {
             <button
               type="button"
               aria-label="Dashboards"
-              className={icon(path.startsWith("/mvp3/dashboard") || dashOpen)}
+              className={icon(path.startsWith("/dashboard") || dashOpen)}
               {...hover(
                 "dashboards",
                 <div className="w-60 p-1.5">

@@ -581,7 +581,7 @@ function Editor({ base }: { base: Workflow }) {
   const run = () => {
     saveWorkflow(w);
     runAgent(w);
-    router.push("/mvp3");
+    router.push("/");
   };
 
   // ── stages ──
@@ -783,7 +783,7 @@ function Editor({ base }: { base: Workflow }) {
           <Toggle on={tw.managerReports} label="Show outlet-wise reports to store managers" onChange={() => tweak({ managerReports: !tw.managerReports }, tw.managerReports ? "Store managers won't get their outlet's report any more." : "Each store manager now gets their own outlet's report.")} />
           <span className="text-body-md text-(--color-text-primary)">Show outlet-wise reports to store managers</span>
           {dash?.pinned && (
-            <button type="button" onClick={() => router.push(`/mvp3/dashboard?id=${dash.id}`)} className={cn("max-w-full truncate rounded-small text-body-sm text-(--color-text-clickable) underline", focusRing)}>
+            <button type="button" onClick={() => router.push(`/dashboard?id=${dash.id}`)} className={cn("max-w-full truncate rounded-small text-body-sm text-(--color-text-clickable) underline", focusRing)}>
               Open {dash.title}
             </button>
           )}
@@ -1005,7 +1005,7 @@ function Editor({ base }: { base: Workflow }) {
           {(saved || w.kind === "draft") && <span className="mr-2 hidden truncate text-body-sm text-(--color-text-secondary) sm:inline">{saved ? `${w.kind === "draft" ? "Draft updated" : "Saved"} ${saved}` : "Not published yet"}</span>}
           <IconButton variant="ghost" size="sm" label="Undo" tooltip="Undo" icon={<Undo2 className="size-4" />} isDisabled={!past.length} onClick={stepBack} />
           <IconButton variant="ghost" size="sm" label="Redo" tooltip="Redo" icon={<Redo2 className="size-4" />} isDisabled={!future.length} onClick={stepForward} />
-          {w.kind !== "draft" && hasRuns(w.id) && <Button size="sm" variant="ghost" label="Runs" icon={<History className="size-4" />} onClick={() => router.push(`/mvp3/agent?id=${w.id}`)} />}
+          {w.kind !== "draft" && hasRuns(w.id) && <Button size="sm" variant="ghost" label="Runs" icon={<History className="size-4" />} onClick={() => router.push(`/agent?id=${w.id}`)} />}
           {w.kind === "draft" && <Button size="sm" label="Publish" icon={<Rocket className="size-4" />} onClick={publish} />}
           <span className="ml-1">
             <Button size="sm" variant="primary" label="Run now" icon={<Play className="size-4" />} onClick={run} />

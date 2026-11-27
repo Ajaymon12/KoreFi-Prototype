@@ -5,7 +5,7 @@ import type { Draft } from "@/lib/mvp3/agents";
 // A draft agent: grey card with its title, who wrote it, and a paper preview of its steps that bleeds off the bottom edge.
 export function DraftCard({ d }: { d: Draft }) {
   return (
-    <Link href={`/mvp3/agent?id=${d.id}`} className="relative flex outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) h-[260px] overflow-hidden rounded-large bg-(--color-neutral-lightest) transition-shadow hover:shadow-[0_6px_20px_-10px_rgb(0_0_0/0.25)] border border-(--color-border-default)">
+    <Link href={`/agent?id=${d.id}`} className="relative flex outline-none focus-visible:outline-2 focus-visible:outline-(--color-focus-primary) h-[260px] overflow-hidden rounded-large bg-(--color-neutral-lightest) transition-shadow hover:shadow-[0_6px_20px_-10px_rgb(0_0_0/0.25)] border border-(--color-border-default)">
       <div className="flex min-w-0 flex-1 flex-col p-4">
         <p className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-(--color-text-clickable) uppercase">
           <span className="size-1.5 rounded-circle bg-current" />

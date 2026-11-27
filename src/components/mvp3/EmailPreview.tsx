@@ -47,7 +47,7 @@ export function EmailModal({ kind, onClose }: { kind: EmailKind; onClose: () => 
   const router = useRouter();
   const go = () => {
     onClose();
-    if (!openPinned(DASH[kind])) router.push(`/mvp3/dashboard?id=${DASH[kind]}`);
+    if (!openPinned(DASH[kind])) router.push(`/dashboard?id=${DASH[kind]}`);
   };
   return (
     <Modal label="Weekly email" onClose={onClose} width={680}>

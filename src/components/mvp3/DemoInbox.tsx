@@ -82,7 +82,7 @@ export function DemoInbox() {
     try {
       window.localStorage.setItem(ACCOUNT_KEY, "masa");
     } catch {}
-    router.push(`/mvp3?dash=${open?.id === "korefi-pay" ? "report-payouts" : "dash-chargebacks"}`);
+    router.push(`/?dash=${open?.id === "korefi-pay" ? "report-payouts" : "dash-chargebacks"}`);
   };
   const show = (r: Row) => {
     setOpenId(r.id);

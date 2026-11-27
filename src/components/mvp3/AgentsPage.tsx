@@ -89,8 +89,8 @@ function CardMenu({ c, onRun, onDuplicate }: { c: Card; onRun?: () => void; onDu
           </button>
         )}
         items={[
-          { label: "Open", href: `/mvp3/agent?id=${c.id}`, icon: SquareArrowOutUpRight },
-          { label: "Edit", href: `/mvp3/agent?id=${c.id}&edit=1`, icon: Pencil },
+          { label: "Open", href: `/agent?id=${c.id}`, icon: SquareArrowOutUpRight },
+          { label: "Edit", href: `/agent?id=${c.id}&edit=1`, icon: Pencil },
           ...(onRun ? [{ label: "Run now", onClick: onRun, icon: Play }] : []),
           ...(onDuplicate ? [{ label: "Duplicate", onClick: onDuplicate, icon: Copy }] : []),
         ]}
@@ -123,7 +123,7 @@ export function AgentCard({ c, real, plain = false }: { c: Card; real: boolean; 
           </span>
         )}
         {/* The whole card opens the agent; the menu sits above the link. */}
-        <Link href={`/mvp3/agent?id=${c.id}`} className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary) outline-none after:absolute after:inset-0 after:rounded-xlarge focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-(--color-focus-primary)">
+        <Link href={`/agent?id=${c.id}`} className="min-w-0 flex-1 truncate text-body-lg font-medium text-(--color-text-primary) outline-none after:absolute after:inset-0 after:rounded-xlarge focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-(--color-focus-primary)">
             {c.title}
           </Link>
         {w && (
@@ -133,11 +133,11 @@ export function AgentCard({ c, real, plain = false }: { c: Card; real: boolean; 
               (c.kind === "live" || c.kind === "idle") && real
                 ? () => {
                     runAgent(w);
-                    router.push("/mvp3");
+                    router.push("/");
                   }
                 : undefined
             }
-            onDuplicate={limited ? undefined : () => router.push(`/mvp3/agent?id=${duplicateAgent(w)}`)}
+            onDuplicate={limited ? undefined : () => router.push(`/agent?id=${duplicateAgent(w)}`)}
           />
         )}
       </div>
@@ -163,7 +163,7 @@ export function AgentCard({ c, real, plain = false }: { c: Card; real: boolean; 
             type="button"
             onClick={() => {
               runAgent(w);
-              router.push("/mvp3");
+              router.push("/");
             }}
             className={cn("relative z-10 ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-medium border border-(--color-border-default) px-2.5 text-body-sm font-medium text-(--color-text-primary) hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable)", focusRing)}
           >
@@ -235,7 +235,7 @@ export function AgentsPage() {
         title="Agents"
         actions={
           !account.limited && (
-            <Button type="primary" size="small" className="[&_svg]:size-4" iconLeft={<Plus aria-hidden />} onClick={() => router.push(`/mvp3/agent?id=${newAgent()}`)}>
+            <Button type="primary" size="small" className="[&_svg]:size-4" iconLeft={<Plus aria-hidden />} onClick={() => router.push(`/agent?id=${newAgent()}`)}>
               New agent
             </Button>
           )

@@ -54,7 +54,7 @@ function Body() {
   const askWhy = (q: string) => {
     if (active?.dashboard === "dash-chargebacks") return send(q);
     ask(q);
-    router.push("/mvp3");
+    router.push("/");
   };
   // Picking an outlet anywhere above opens it in "By outlet" and brings that card into view.
   const open = (name: string) => {

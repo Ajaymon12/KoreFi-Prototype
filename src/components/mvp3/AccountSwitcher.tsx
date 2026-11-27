@@ -40,7 +40,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const hydrated = useSyncExternalStore(noop, () => true, () => false);
   const [picked, setPicked] = useState<string | null>(null);
   // Worked out once, on load: the tab's saved pick, else Taco Pros when the link was its Home.
-  const restored = useMemo(() => (hydrated ? (read() ?? (/\/mvp3\/home\/?$/.test(window.location.pathname) ? HOME_ID : null)) : null), [hydrated]);
+  const restored = useMemo(() => (hydrated ? (read() ?? (/^\/home\/?$/.test(window.location.pathname) ? HOME_ID : null)) : null), [hydrated]);
   const account = ACCOUNTS.find((a) => a.id === (picked ?? restored)) ?? DEFAULT_ACCOUNT;
   const setAccount = useCallback((id: string) => {
     const next = ACCOUNTS.find((a) => a.id === id) ?? DEFAULT_ACCOUNT;

@@ -127,16 +127,16 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, []);
   const toWelcome = useCallback(() => {
     // The welcome chat lives on the home.
-    if (path !== "/mvp3") router.push("/mvp3");
+    if (path !== "/") router.push("/");
     setStage("welcome");
   }, [path, router]);
 
   useEffect(() => {
-    if (account.stage === "new" && path !== "/mvp3") router.push("/mvp3");
+    if (account.stage === "new" && path !== "/") router.push("/");
     // Taco Pros and Masa Kitchen (Account.home) land on Home, on switching and on refresh, unless a ?chat= link is
     // opening one of Taco Pros' chats.
     // ?dash= (the demo inbox's email button) opens a pinned dashboard instead.
-    else if (account.home && path !== "/mvp3/home" && path !== "/mvp3/pnl" && !/[?&](chat|dash)=/.test(window.location.search)) router.push("/mvp3/home");
+    else if (account.home && path !== "/home" && path !== "/pnl" && !/[?&](chat|dash)=/.test(window.location.search)) router.push("/home");
     // Only when the account changes, not on every navigation.
   }, [account.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -720,7 +720,7 @@ export function Welcome() {
         return <AppCard key={e.id} app={e.app} state={apps[e.app]} onAdded={() => added(e.app)} onStuck={() => stuck(e.app)} />;
       case "settings":
         return (
-          <Link key={e.id} href="/mvp3/settings" onClick={finish} className={chipLink}>
+          <Link key={e.id} href="/settings" onClick={finish} className={chipLink}>
             <UserRoundCog className="size-4 text-(--color-text-secondary)" aria-hidden />
             {e.label ?? "Customize your agents"}
             <ChevronRight className="size-3.5 text-(--color-text-secondary)" aria-hidden />
@@ -838,9 +838,9 @@ function SetupSummary({ agents, apps, todo, reach, phone, email, onLeave }: { ag
     "Each agent posts its first update here, then runs on its schedule.",
   ];
   const explore = [
-    { href: "/mvp3/agents", label: "Edit your agents", sub: "Change steps, schedules and what they email you", Icon: Bot },
-    { href: "/mvp3/integrations", label: "Integrations", sub: "Check what's connected, or add an app", Icon: Plug },
-    { href: "/mvp3/settings", label: "Settings", sub: "Where updates reach you", Icon: UserRoundCog },
+    { href: "/agents", label: "Edit your agents", sub: "Change steps, schedules and what they email you", Icon: Bot },
+    { href: "/integrations", label: "Integrations", sub: "Check what's connected, or add an app", Icon: Plug },
+    { href: "/settings", label: "Settings", sub: "Where updates reach you", Icon: UserRoundCog },
   ];
   return (
     <div className={cn(card, "space-y-4 p-4")}>

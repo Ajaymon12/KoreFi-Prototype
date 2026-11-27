@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
           return [
             // The email-code step was removed from signup; old links and open tabs go to the dashboard.
             // (The static site has no redirects; there the not-found page does the same job.)
+            // MVP 3 moved from /mvp3 to the site root; old links and bookmarks follow it.
+            { source: "/mvp3", destination: "/", permanent: false },
+            { source: "/mvp3/:path*", destination: "/:path*", permanent: false },
             { source: "/get-started/verify", destination: "/home/overview", permanent: false },
           ];
         },

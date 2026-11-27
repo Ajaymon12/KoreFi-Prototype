@@ -723,11 +723,11 @@ function AgentMenu({ wid }: { wid: string }) {
       </button>
       {open && (
         <div role="menu" className="absolute top-9 right-0 z-20 w-48 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-1 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:animate-page-in">
-          <Link role="menuitem" href={`/mvp3/agent?id=${wid}`} className={item}>
+          <Link role="menuitem" href={`/agent?id=${wid}`} className={item}>
             <Bot aria-hidden />
             Agent details
           </Link>
-          <Link role="menuitem" href={`/mvp3/agent?id=${wid}&edit=1`} className={item}>
+          <Link role="menuitem" href={`/agent?id=${wid}&edit=1`} className={item}>
             <Pencil aria-hidden />
             Edit agent
           </Link>
@@ -878,7 +878,7 @@ export function AgentWorkspace() {
   const router = useRouter();
   const toHome = !active && !chat && !dash && !!account.limited && stage !== "welcome";
   useEffect(() => {
-    if (toHome) router.replace("/mvp3/home");
+    if (toHome) router.replace("/home");
   }, [toHome, router]);
   // Each link opens once: opening changes the chats, which re-creates openDashboard and re-runs this effect
   // while ?dash= is still in the URL (an endless loop before this guard).
@@ -889,7 +889,7 @@ export function AgentWorkspace() {
     if (dash && openDashboard(dash)) {
       handled.current = key;
       // Drop the param once it's open, so leaving the chat later behaves as usual.
-      router.replace("/mvp3");
+      router.replace("/");
       return;
     }
     if (!chat) return;

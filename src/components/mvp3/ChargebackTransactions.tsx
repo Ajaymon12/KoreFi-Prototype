@@ -106,7 +106,7 @@ function downloadOrders(rows: Chargeback[], file: string) {
   saveBlob(xlsx("Transactions", head, body, [14, 11, 18, 10, 12, 12, 12, 26, 12, 20, 36]), file);
 }
 
-const permalinkFor = (d: Dashboard) => (c: Chargeback) => `/mvp3/dashboard?id=${encodeURIComponent(d.id)}&tab=transactions&open=${encodeURIComponent(disputeKey(c))}`;
+const permalinkFor = (d: Dashboard) => (c: Chargeback) => `/dashboard?id=${encodeURIComponent(d.id)}&tab=transactions&open=${encodeURIComponent(disputeKey(c))}`;
 
 export function ChargebackTransactions({ d, exportRef }: { d: Dashboard; exportRef?: ExportRef }) {
   const { account } = useAccount();

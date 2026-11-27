@@ -49,7 +49,7 @@ export function AgentFolders() {
             </button>
           ))}
         </div>
-        <Link href="/mvp3/agents" className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-medium px-1 text-body-md font-medium text-(--color-text-primary) hover:text-(--color-text-clickable)", focusRing)}>
+        <Link href="/agents" className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-medium px-1 text-body-md font-medium text-(--color-text-primary) hover:text-(--color-text-clickable)", focusRing)}>
           Browse all
           <ArrowRight className="size-4" aria-hidden />
         </Link>

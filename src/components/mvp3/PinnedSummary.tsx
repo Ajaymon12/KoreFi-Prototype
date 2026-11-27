@@ -45,7 +45,7 @@ export function PinnedSummary() {
           return (
             <li key={d.id}>
               <Link
-                href={`/mvp3/dashboard?id=${d.id}`}
+                href={`/dashboard?id=${d.id}`}
                 onClick={(e) => openPinned(d.id) && e.preventDefault()}
                 className="group flex h-full flex-col gap-2 rounded-large border border-(--color-border-default) bg-(--color-background-secondary) p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-(--color-border-darker) hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)] focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)"
               >

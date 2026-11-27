@@ -1,6 +1,6 @@
 "use client";
 import { usePath } from "@/lib/mvp3/usePath";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Check, ChevronRight, Clock, Lock, Search, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,6 @@ import { FOLDERS } from "@/lib/mvp3/agents";
 import { AgentAvatar } from "./AgentAvatar";
 import { useAgents } from "./AgentsProvider";
 import { BrandMark } from "./BrandMark";
-import { useAccount } from "./AccountSwitcher";
 import { AppCard, EmailCard, GUIDE, emailsFor, useOnboarding as useFirstVisit, type App } from "./Onboarding";
 import { dialogSurface, scrim } from "@/components/mvp3/styles";
 
@@ -103,11 +102,6 @@ export function IntegrationsDirectory({ connections }: { connections: SourceConn
   const router = useRouter();
   const path = usePath();
   const appId = useSearchParams().get("app");
-  // A `limited` account (Masa Kitchen) has no Integrations page: a direct link goes back to its Home.
-  const limited = !!useAccount().account.limited;
-  useEffect(() => {
-    if (limited) router.replace("/mvp3/home");
-  }, [limited, router]);
   const shown = useMemo(() => [...connections].sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id)), [connections]);
   const onboarding = useFirstVisit();
   // A new sign-up's delivery apps start where the welcome chat left them; everything else is the seeded account.
@@ -340,7 +334,7 @@ function Detail({ c, busy, onBack, onConnect, onDisconnect }: { c: Item; busy: b
                   {skills.map((s) => (
                     <li key={s.id}>
                       {(
-                        <button type="button" onClick={() => router.push(`/mvp3/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
+                        <button type="button" onClick={() => router.push(`/agent?id=${s.id}`)} className="inline-flex items-center gap-1.5 rounded-circle border border-(--color-border-default) py-0.5 pr-2.5 pl-0.5 text-body-sm text-(--color-text-primary) outline-none hover:border-(--color-primary) hover:bg-(--color-primary)/8 hover:text-(--color-text-clickable) focus-visible:outline-2 focus-visible:outline-(--color-focus-primary)">
                           <AgentAvatar agent={s.agent} size={20} />
                           {s.name}
                           {s.state !== "live" && <span className="text-(--color-text-tertiary)">· {s.state === "idle" ? "not live" : "learning"}</span>}
